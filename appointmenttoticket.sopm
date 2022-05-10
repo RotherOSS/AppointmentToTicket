@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<otobo_package version="1.0">
+    <Name>appointmenttoticket.sopm</Name>
+    <Version>10.0.0</Version>
+    <Framework>10.0.x</Framework>
+    <Vendor>Rother OSS GmbH</Vendor>
+    <URL>https://rother-oss.com/</URL>
+    <License>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</License>
+    <Description Lang="en">..</Description>
+    <Filelist>
+        <File Permission="660" Location="Custom/Kernel/Modules/AgentAppointmentEdit.pm" />
+        <File Permission="660" Location="Custom/Kernel/Output/HTML/Templates/Standard/AgentAppointmentEdit.tt" />
+        <File Permission="660" Location="Custom/Kernel/System/Scheduler.pm" />
+        <File Permission="660" Location="Kernel/System/Daemon/DaemonModules/SchedulerTaskWorker/AppointmentTicket.pm" />
+        <File Permission="660" Location="Kernel/System/Daemon/SchedulerDB.pm" />
+    </Filelist>
+    <DatabaseInstall Type="post">
+        <TableAlter Name="calendar_appointment">
+            <ColumnAdd Name="future_task_id" Required="false" Type="INTEGER"></ColumnAdd>
+        </TableAlter>
+    </DatabaseInstall>
+    <DatabaseUninstall Type="pre">
+        <TableAlter Name="calendar_appointment">
+            <ColumnDrop Name="future_task_id" />
+        </TableAlter>
+    </DatabaseUninstall>
+</otobo_package>
