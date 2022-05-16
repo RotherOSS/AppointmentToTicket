@@ -80,7 +80,7 @@ sub Run {
     # check task params
     my $CheckResult = $Self->_CheckTaskParams(
         %Param,
-        NeededDataAttributes => ['CustomerUser', 'CustomerID', 'UserID', 'QueueID', 'Subject', 'Content'],
+        NeededDataAttributes => ['AppointmentID', 'CustomerUser', 'CustomerID', 'UserID', 'QueueID', 'Subject', 'Content'],
     );
 
     # stop execution if an error in params is detected
@@ -101,17 +101,17 @@ sub Run {
     }
 
     # Check if appointment is recurring and if so, create a new appointment ticket task
-    my %Appointment; # = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( 
-#         AppointmentID => $Param{AppointmentID},
-#     );
+    my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( 
+        AppointmentID => $Param{AppointmentID},
+    );
     
     if( $Appointment{Recurring} ) {
         # Appointment is child
         if( $Appointment{ParentID} ) {
-            # Get all appointments with same title
+            # Get all related appointments
             my @Appointments = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
                 CalendarID => $Appointment{CalendarID},
-                Title => $Appointment{Title}
+                ParentID => $Appointment{ParentID},
             );
 
             # filter for parent id
