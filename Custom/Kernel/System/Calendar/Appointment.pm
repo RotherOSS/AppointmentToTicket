@@ -331,31 +331,6 @@ sub AppointmentCreate {
         if ( !IsStringWithData( $Param{TicketCustomDateTime} ) ) {
             $Param{TicketCustomDateTime} = undef;
         }
-        my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd(
-            ExecutionTime => $Param{TicketDate},
-            Type          => 'AppointmentTicket',
-            Data          => {
-                Time                      => $Param{TicketTime},
-                Template                  => $Param{TicketTemplate},
-                Custom                    => $Param{TicketCustom},
-                CustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
-                CustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
-                CustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                CustomDateTime            => $Param{TicketCustomDateTime},
-                QueueID                   => $Param{TicketQueueID},
-                CustomerID                => $Param{TicketCustomerID},
-                CustomerUser              => $Param{TicketCustomerUser},
-                UserID                    => $Param{TicketUserID},
-                OwnerID                   => $Param{TicketOwnerID},
-                Lock                      => $Param{TicketLock},
-                Priority                  => $Param{TicketPriority},
-                State                     => $Param{TicketState},
-                Title                     => $Param{Title},
-                Subject                   => $Param{Title},
-                Content                   => $Param{Description},
-            },
-        );
-        $Param{FutureTaskID} = $TaskID || undef;
     }
 
 # EO AppointmentToTicket
@@ -562,10 +537,13 @@ sub AppointmentCreate {
         \$Param{NotificationDate},     \$Param{NotificationTemplate}, \$Param{NotificationCustom},
         \$Param{NotificationCustomRelativeUnitCount},   \$Param{NotificationCustomRelativeUnit},
         \$Param{NotificationCustomRelativePointOfTime}, \$Param{NotificationCustomDateTime},
+        \$Param{TicketAppointmentRuleID},               \$Param{UserID}, \$Param{UserID};
 
 # RotherOSS / AppointmentToTicket
-#         \$Param{TicketAppointmentRuleID},               \$Param{UserID}, \$Param{UserID};
-#
+    push @Bind, \$Param{FutureTaskID};
+# EO AppointmentToTicket
+
+# RotherOSS / AppointmentToTicket
 #     my $SQL = "
 #         INSERT INTO calendar_appointment
 #             ($ParentIDCol calendar_id, unique_id, title, description, location, start_time,
@@ -577,7 +555,6 @@ sub AppointmentCreate {
 #         VALUES ($ParentIDVal ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 #             ?, ?, current_timestamp, ?, current_timestamp, ?)
 #     ";
-        \$Param{TicketAppointmentRuleID}, \$Param{UserID}, \$Param{UserID}, \$Param{FutureTaskID};
 
     my $SQL = "
         INSERT INTO calendar_appointment
@@ -590,7 +567,6 @@ sub AppointmentCreate {
         VALUES ($ParentIDVal ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
             ?, ?, current_timestamp, ?, current_timestamp, ?, ?)
     ";
-
 # EO AppointmentToTicket
 
     # create db record
@@ -621,17 +597,6 @@ sub AppointmentCreate {
             $AppointmentID = $Row[0] || '';
         }
 
-# RotherOSS / AppointmentToTicket
-        if ( $Param{AppointmentToTicket} ) {
-            $Param{AppointmentToTicketData}->{AppointmentID} = $AppointmentID;
-            $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskUpdate(
-                TaskID        => $Param{FutureTaskID},
-                ExecutionTime => $Param{StartTime},
-                Data          => $Param{AppointmentToTicketData},
-            );
-        }
-# EO AppointmentToTicket
-
         # return if there is not appointment created
         if ( !$AppointmentID ) {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
@@ -641,6 +606,56 @@ sub AppointmentCreate {
             return;
         }
     }
+
+# RotherOSS / AppointmentToTicket
+    my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd(
+        ExecutionTime => $Param{TicketDate},
+        Type          => 'AppointmentTicket',
+        Data          => {
+            Time                      => $Param{TicketTime},
+            Template                  => $Param{TicketTemplate},
+            Custom                    => $Param{TicketCustom},
+            CustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
+            CustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
+            CustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
+            CustomDateTime            => $Param{TicketCustomDateTime},
+            QueueID                   => $Param{TicketQueueID},
+            CustomerID                => $Param{TicketCustomerID},
+            CustomerUser              => $Param{TicketCustomerUser},
+            UserID                    => $Param{TicketUserID},
+            OwnerID                   => $Param{TicketOwnerID},
+            Lock                      => $Param{TicketLock},
+            Priority                  => $Param{TicketPriority},
+            State                     => $Param{TicketState},
+            Title                     => $Param{Title},
+            Subject                   => $Param{Title},
+            Content                   => $Param{Description},
+            AppointmentID             => $AppointmentID,
+        },
+    );
+    if ($TaskID) {
+        $Param{FutureTaskID} = $TaskID;
+    }
+    else {
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'error',
+            Message => "Ticket task for appointment $AppointmentID could not be created!",
+        );
+    }
+
+    $SQL = "
+        UPDATE calendar_appointment
+        SET future_task_id = ?
+        WHERE id = ?
+    ";
+    @Bind = ($TaskID, $AppointmentID);
+    
+    # update db record
+    return if !$DBObject->Do(
+        SQL  => $SQL,
+        Bind => \@Bind,
+    );
+# EO AppointmentToTicket
 
     # add recurring appointments
     if ( $Param{Recurring} && !$Param{RecurringRaw} ) {
