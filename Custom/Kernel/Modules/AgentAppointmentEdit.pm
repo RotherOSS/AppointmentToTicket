@@ -1128,11 +1128,11 @@ sub Run {
         # ticket custom date selection
         $Param{TicketCustomDateTimeStrg} = $LayoutObject->BuildDateSelection(
             Prefix                           => 'TicketCustomDateTime',
-            NotificationCustomDateTimeYear   => $TicketCustomDateTimeSettings->{Year},
-            NotificationCustomDateTimeMonth  => $TicketCustomDateTimeSettings->{Month},
-            NotificationCustomDateTimeDay    => $TicketCustomDateTimeSettings->{Day},
-            NotificationCustomDateTimeHour   => $TicketCustomDateTimeSettings->{Hour},
-            NotificationCustomDateTimeMinute => $TicketCustomDateTimeSettings->{Minute},
+            TicketCustomDateTimeYear   => $TicketCustomDateTimeSettings->{Year},
+            TicketCustomDateTimeMonth  => $TicketCustomDateTimeSettings->{Month},
+            TicketCustomDateTimeDay    => $TicketCustomDateTimeSettings->{Day},
+            TicketCustomDateTimeHour   => $TicketCustomDateTimeSettings->{Hour},
+            TicketCustomDateTimeMinute => $TicketCustomDateTimeSettings->{Minute},
             Format                           => 'DateInputFormatLong',
             YearPeriodPast                   => $YearPeriodPast{Start},
             YearPeriodFuture                 => $YearPeriodFuture{Start},
@@ -1715,22 +1715,26 @@ sub Run {
         # Get passed plugin parameters.
         my @PluginParams = grep { $_ =~ /^Plugin_/ } keys %GetParam;
 
+        use Data::Dumper;
+        my @FTL = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskList();
+        for my $elem (@FTL) {
+            print STDERR "AgentAppointmentEdit.pm, L.1720: " . Dumper($elem) . "\n";
+            my %FT = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(TaskID => $elem->{TaskID});
+            print STDERR "AgentAppointmentEdit.pm, L.1721: " . Dumper(\%FT) . "\n";
+        }
 # RotherOSS / AppointmentToTicket
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task
-        $GetParam{AppointmentToTicketData} = {
-            Title => 'TestTitle',
-            Subject => 'TestSubject',
-            Content => 'TestContent',
-            QueueID => 2,
-            CustomerID => 1,
-            CustomerUser => 'sha@rother-oss.com',
-            UserID => 1,
-            OwnerID => 1,
-            Lock => 'unlock',
-            Priority => '3 normal',
-            State => 'new',
-        };
+        $GetParam{TicketSubject} = 'TestSubject';
+        $GetParam{TicketContent} = $GetParam{Description};
+        $GetParam{TicketQueueID} = 2;
+        $GetParam{TicketCustomerID} = 1;
+        $GetParam{TicketCustomerUser} = 'sha@rother-oss.com';
+        $GetParam{TicketUserID} = 1;
+        $GetParam{TicketOwnerID} = 1;
+        $GetParam{TicketLock} = 'unlock';
+        $GetParam{TicketPriority} = '3 normal';
+        $GetParam{TicketState} = 'new';
 # EO AppointmentToTicket
 
         if (%Appointment) {

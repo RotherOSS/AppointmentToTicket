@@ -77,6 +77,9 @@ Returns:
 sub Run {
     my ( $Self, %Param ) = @_;
 
+    use Data::Dumper;
+    print STDERR "AppointmentTicket.pm, L.80: " . Dumper(\%Param) . "\n";
+
     # check task params
     my $CheckResult = $Self->_CheckTaskParams(
         %Param,
@@ -89,9 +92,6 @@ sub Run {
     if ( $Self->{Debug} ) {
         print "    $Self->{WorkerName} executes task: $Param{TaskName}\n";
     }
-
-    use Data::Dumper;
-    print STDERR "AppointmentTicket.pm, L.93: " . Dumper(\%Param) . "\n";
 
     # trigger the ticket appointment
     my $Success = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate( %{ $Param{Data} } );
@@ -172,19 +172,21 @@ sub Run {
                     Type => 'AppointmentTicket',
                     Name => 'Test',
                     Data => {
-                        Title => $Param{Title},
-                        QueueID => $Param{QueueID},
-                        Subject => $Param{Subject},
-                        Lock => 'unlock',
-                        TypeID => $Param{TypeID},
-                        ServiceID => $Param{ServiceID},
-                        SLAID => $Param{SLAID},
-                        StateID => $Param{StateID},
-                        PriorityID => $Param{PriorityID},
-                        OwnerID => $Param{OwnerID},
-                        CustomerID => $Param{CustomerID},
-                        CustomerUser => $Param{CustomerUser},
-                        UserID => $Param{UserID},
+                        # TODO Correction
+                        TicketTitle => $Param{TicketTitle},
+                        TicketQueueID => $Param{TicketQueueID},
+                        TicketSubject => $Param{TicketSubject},
+                        TicketLock => 'unlock',
+                        TicketTypeID => $Param{TicketTypeID},
+                        TicketServiceID => $Param{TicketServiceID},
+                        TicketSLAID => $Param{TicketSLAID},
+                        TicketStateID => $Param{TicketStateID},
+                        TicketPriorityID => $Param{TicketPriorityID},
+                        TicketOwnerID => $Param{TicketOwnerID},
+                        TicketCustomerID => $Param{TicketCustomerID},
+                        TicketCustomerUser => $Param{TicketCustomerUser},
+                        TicketUserID => $Param{TicketUserID},
+                        AppointmentID => $NextAppointment{AppointmentID},
                     }
                 );
             }

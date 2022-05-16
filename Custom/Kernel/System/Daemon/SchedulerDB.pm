@@ -898,6 +898,8 @@ Returns:
 sub FutureTaskAdd {
     my ( $Self, %Param ) = @_;
 
+    use Data::Dumper;
+    print STDERR "SchedulerDB.pm, L.901: " . Dumper(\%Param) . "\n";
     # check needed stuff
     for my $Key (qw(ExecutionTime Type Data)) {
         if ( !$Param{$Key} ) {
