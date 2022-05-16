@@ -1020,6 +1020,7 @@ sub FutureTaskAdd {
     return $TaskID;
 }
 
+# RotherOSS / AppointmentToTicket
 =head2 FutureTaskUpdate()
 
 updates an existing task in the scheduler future task list
@@ -1068,6 +1069,24 @@ sub FutureTaskUpdate {
     }    
     $SystemTime = $SystemTime->ToEpoch();
 
+    if ( $Param{MaximumParallelInstances} && $Param{MaximumParallelInstances} =~ m{\A \d+ \z}msx ) {
+
+        # get the list of all future tasks for the specified task type
+        my @List = $Self->FutureTaskList(
+            Type => $Param{Type},
+        );   
+
+        my @FilteredList = @List;
+        if ( $Param{Name} && @List ) {
+
+            # remove all tasks that does not match specified task name
+            @FilteredList = grep { ( $_->{Name} || '' ) eq $Param{Name} } @List;
+        }    
+
+        # compare the number of task with the maximum parallel limit
+        return -1 if scalar @FilteredList >= $Param{MaximumParallelInstances};
+    }
+
     # set default of attempts parameter
     $Param{Attempts} ||= 1;
 
@@ -1091,14 +1110,12 @@ sub FutureTaskUpdate {
         last TRY if $DBObject->Do(
             SQL => '
                 UPDATE scheduler_future_task
-                SET execution_time = ?, data = ?
-                WHERE id = ?
-                VALUES
-                    (?, ?, ?)',
+                SET execution_time = ?, task_data = ?
+                WHERE id = ?',
             Bind => [
-                \$Param{TaskID},
                 \$Param{ExecutionTime},
                 \$Data,
+                \$Param{TaskID},
             ],
         );
     }
@@ -1111,6 +1128,7 @@ sub FutureTaskUpdate {
 
     return 1;
 }
+# EO AppointmentToTicket
 
 =head2 FutureTaskGet()
 
