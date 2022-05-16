@@ -128,7 +128,23 @@ creates a new appointment.
         TicketAppointmentRuleID    => '9bb20ea035e7a9930652a9d82d00c725', # (optional) Ticket appointment rule ID (for ticket appointments only!)
         UserID                     => 1,                                  # (required) UserID
 # RotherOSS / AppointmentToTicket
-        FutureTaskID => 1,
+        TicketTime => '2016-01-10 00:00:00',                              # (optional) Point of time to execute the ticket creat event
+        TicketTemplate => 'Custom',                                       # (optional) Template to be used for ticket point of time
+        TicketCustom => 'relative',                                       # (optional) Type of the custom template ticket point of time
+                                                                          #            Possible "relative", "datetime"
+        TicketCustomRelativeUnitCount => '12',                            # (optional) minutes, hours or days count for custom template
+        TicketCustomRelativeUnit => 'minutes',                            # (optional) minutes, hours or days unit for custom template
+        TicketCustomRelativePointOfTime => 'beforestart',                 # (optional) Point of execute for custom templates
+                                                                          #            Possible "beforestart", "afterstart", "beforeend", "afterend"
+        TicketCustomDateTime => '2016-01-01 17:00:00',                    # (optional) Ticket date time for custom template
+        TicketQueueID => 1,                                               # (optional) Ticket queue
+        TicketCustomerID => 1,                                            # (optional) Ticket customer id
+        TicketCustomerUser => 'test@test.com',                            # (optional) Ticket customer user
+        TicketUserID => 1,                                                # (optional) Ticket user id
+        TicketOwnerID => 1,                                               # (optional) Ticket owner id
+        TicketLock => 'unlock',                                           # (optional) Ticket lock state
+        TicketPriority => '3 normal',                                     # (optional) Ticket priority
+        TicketState => 'new',                                             # (optional) Ticket state
 # EO AppointmentToTicket
     );
 
@@ -152,6 +168,34 @@ sub AppointmentCreate {
             return;
         }
     }
+
+# RotherOSS / AppointmentToTicket
+    # if AppointmentToTicket data is provided, create future task
+    if ( $Param{AppointmentToTicket} ) {
+        my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd(
+            ExecutionTime => $Param{StartTime},
+            Type => 'AppointmentTicket',
+            Data => {
+                TicketTime => $Param{TicketTime},
+                TicketTemplate => $Param{TicketTemplate},
+                TicketCustom => $Param{TicketCustom},
+                TicketCustomRelativeUnitCount => $Param{TicketCustomRelativeUnitCount},
+                TicketCustomRelativeUnit => $Param{TicketCustomRelativeUnit},
+                TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
+                TicketCustomDateTime => $Param{TicketCustomDateTime},
+                TicketQueueID => $Param{TicketQueueID},
+                TicketCustomerID => $Param{TicketCustomerID},
+                TicketCustomerUser => $Param{TicketCustomerUser},
+                TicketUserID => $Param{TicketUserID},
+                TicketOwnerID => $Param{TicketOwnerID},
+                TicketLock => $Param{TicketLock},
+                TicketPriority => $Param{TicketPriority},
+                TicketState => $Param{TicketState},
+            },
+        );
+        $Param{FutureTaskID} = $TaskID || undef;
+    }
+# EO AppointmentToTicket
 
     # prepare possible notification params
     $Self->_AppointmentNotificationPrepare(
@@ -411,6 +455,17 @@ sub AppointmentCreate {
         while ( my @Row = $DBObject->FetchrowArray() ) {
             $AppointmentID = $Row[0] || '';
         }
+
+# RotherOSS / AppointmentToTicket
+        if ( $Param{AppointmentToTicket} ) {
+            $Param{AppointmentToTicketData}->{AppointmentID} = $AppointmentID;
+            $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskUpdate(
+                TaskID => $Param{FutureTaskID},
+                ExecutionTime => $Param{StartTime},
+                Data => $Param{AppointmentToTicketData},
+            );
+        }
+# EO AppointmentToTicket
 
         # return if there is not appointment created
         if ( !$AppointmentID ) {
@@ -1148,7 +1203,23 @@ updates an existing appointment.
         TicketAppointmentRuleID    => '9bb20ea035e7a9930652a9d82d00c725', # (optional) Ticket appointment rule ID (for ticket appointments only!)
         UserID                     => 1,                                  # (required) UserID
 # RotherOSS / AppointmentToTicket
-        FutureTaskID               => 1,                                  # (optional) ID for fur future task which creates a ticket on appointment start time
+        TicketTime => '2016-01-10 00:00:00',                              # (optional) Point of time to execute the ticket creat event
+        TicketTemplate => 'Custom',                                       # (optional) Template to be used for ticket point of time
+        TicketCustom => 'relative',                                       # (optional) Type of the custom template ticket point of time
+                                                                          #            Possible "relative", "datetime"
+        TicketCustomRelativeUnitCount => '12',                            # (optional) minutes, hours or days count for custom template
+        TicketCustomRelativeUnit => 'minutes',                            # (optional) minutes, hours or days unit for custom template
+        TicketCustomRelativePointOfTime => 'beforestart',                 # (optional) Point of execute for custom templates
+                                                                          #            Possible "beforestart", "afterstart", "beforeend", "afterend"
+        TicketCustomDateTime => '2016-01-01 17:00:00',                    # (optional) Ticket date time for custom template
+        TicketQueueID => 1,                                               # (optional) Ticket queue
+        TicketCustomerID => 1,                                            # (optional) Ticket customer id
+        TicketCustomerUser => 'test@test.com',                            # (optional) Ticket customer user
+        TicketUserID => 1,                                                # (optional) Ticket user id
+        TicketOwnerID => 1,                                               # (optional) Ticket owner id
+        TicketLock => 'unlock',                                           # (optional) Ticket lock state
+        TicketPriority => '3 normal',                                     # (optional) Ticket priority
+        TicketState => 'new',                                             # (optional) Ticket state
 # EO AppointmentToTicket
     );
 
@@ -1361,13 +1432,38 @@ sub AppointmentUpdate {
     }
 
 # RotherOSS / AppointmentToTicket
-    # Set future task id to NULL and delete future task if needed
+    # Set future task id to NULL and delete future task if no id provided, else update existing future task
+    my %Appointment = $Self->AppointmentGet(
+        AppointmentID => $Param{AppointmentID},
+    );
     if ( !$Param{FutureTaskID} ) {
-        $Param{FutureTaskID} = 'NULL';
-        my $Appointment = $Self->AppointmentGet($Param{AppointmentID});
-        if($Appointment->{FutureTaskID}) {
-            $Kernel::OM->Get('Kernel::System::Scheduler')->FutureTaskDelete($Appointment->{FutureTaskID});
-        }
+        $Param{FutureTaskID} = undef;
+        if($Appointment{FutureTaskID}) {
+            $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete($Appointment{FutureTaskID});
+       }
+    }
+    else {
+        $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskUpdate(
+            FutureTaskID => $Param{FutureTaskID},
+            ExecutionTime => $Param{StartTime},
+            Type => 'AppointmentTicket',
+            Data => {
+                TicketTime => $Param{TicketTime},
+                TicketTemplate => $Param{TicketTemplate},
+                TicketCustom => $Param{TicketCustom},
+                TicketCustomRelativeUnitCount => $Param{TicketCustomRelativeUnitCount},
+                TicketCustomRelativeUnit => $Param{TicketCustomRelativeUnit},
+                TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
+                TicketCustomDateTime => $Param{TicketCustomDateTime},
+                TicketQueueID => $Param{TicketQueueID},
+                TicketCustomerID => $Param{TicketCustomerID},
+                TicketCustomerUser => $Param{TicketCustomerUser},
+                TicketUserID => $Param{TicketUserID},
+                TicketOwnerID => $Param{TicketOwnerID},
+                TicketLock => $Param{TicketLock},
+                TicketPriority => $Param{TicketPriority},
+                TicketState => $Param{TicketState},
+        );
     }
 
 #     # update appointment
@@ -1422,7 +1518,7 @@ sub AppointmentUpdate {
             \$Param{NotificationTemplate},                  \$Param{NotificationCustom},
             \$Param{NotificationCustomRelativeUnitCount},   \$Param{NotificationCustomRelativeUnit},
             \$Param{NotificationCustomRelativePointOfTime}, \$Param{NotificationCustomDateTime},
-            \$Param{TicketAppointmentRuleID},               \$Param{UserID}, \$Param{AppointmentID}, \$Param{FutureTaskID},
+            \$Param{TicketAppointmentRuleID},               \$Param{UserID}, \$Param{FutureTaskID}, \$Param{AppointmentID},
         ],
     );
 # EO AppointmentToTicket
@@ -1545,6 +1641,15 @@ sub AppointmentDelete {
         );
         return;
     }
+
+# RotherOSS / AppointmentToTicket
+    # delete future task if present
+    if ( $Appointment{FutureTaskID} ) {
+        $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete(
+            TaskID => $Appointment{FutureTaskID},
+        );
+    }
+# EO AppointmentToTicket
 
     # delete appointment
     my $SQL = '

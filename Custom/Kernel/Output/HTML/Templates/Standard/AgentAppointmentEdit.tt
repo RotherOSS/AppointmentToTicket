@@ -453,28 +453,58 @@
 [% END %]
         </fieldset>
 [% END %]
-### RotherOSS / AppointmentToTicket
+# RotherOSS / AppointmentToTicket
         <fieldset class="TableLike">
             <legend><span>[% Translate("Ticket Creation") | html %]</span></legend>
-            <label for="TicketCreateOnAppointment">[% Translate("Create Ticket") | html %]</label>
+            <label for="TicketTimeOffset">[% Translate("Ticket") | html %]:</label>
             <div class="Field">
-                <input type="checkbox" id="AppointmentToTicket" name="TicketCreate">
+[% IF Data.PermissionLevel < 2 %]
+                <p id="TicketTemplate" class="ReadOnlyValue">[% Data.TicketValue | html %]</p>
+[% ELSE %]
+                [% Data.TicketStrg %]
+[% END %]
             </div>
             <div class="Clear"></div>
-            <label for="TicketQueue">[% Translate('Select Queue') | html %]</label>
+
+            <div class="Field" id="TicketCustomStringDiv">
+
+                <label for="TicketCustomRelativeInput">[% Translate("Relative point of time") | html %]:</label>
+
+                <div class="FieldExplanation">
+
+                    <input type="radio" name="TicketCustomRelativeInput" value="" id="TicketCustomRelativeInput" [% Data.TicketCustomRelativeInputRadio %]>
+                    <div class="FieldInline">
+                        <div>
+                            <input type="text" id="TicketCustomRelativeUnitCount" name="TicketCustomRelativeUnitCount" value="[% Data.TicketCustomRelativeUnitCount | html %]" size="1" maxlength="2" />
+                        </div>
+                        <div class="SpacingTopSmall">
+                            [% Data.TicketCustomUnitsStrg %]
+                        </div>
+                        <div class="SpacingTopSmall">
+                            [% Data.TicketCustomUnitsPointOfTimeStrg %]
+                        </div>
+                    </div>
+
+                </div>
+
+                <label for="TicketCustomDateTimeInput">[% Translate("Date/Time") | html %]:</label>
+
+                <div class="FieldExplanation">
+                    <input type="radio" name="TicketCustomDateTimeInput" value="" id="TicketCustomDateTimeInput" [% Data.TicketCustomDateTimeInputRadio %]>
+                    [% Data.TicketCustomDateTimeStrg %]
+                </div>
+            </div>
+            <div class="Clear"></div>
+           <label for="TicketQueue">[% Translate('Select Queue') | html %]</label>
             <div class="Field">
                 <input type="text" id="TicketQueue" name="TicketQueue">
-            </div>
-            <label for="TicketTitle">[% Translate('Title') | html %]</label>
-            <div class="Field">
-                <input type="text" id="TicketTitle" name="TicketTitle">
             </div>
             <label for="TicketPriority">[% Translate('Priority') | html %]</label>
             <div class="Field">
                 <input type="text" id="TicketPriority" name="TicketPriority">
             </div>
-        </fieldset>
-### EO AppointmentToTicket
+       </fieldset>
+# EO AppointmentToTicket
     </form>
 </div>
 

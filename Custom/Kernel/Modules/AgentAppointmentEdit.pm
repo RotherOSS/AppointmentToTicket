@@ -980,6 +980,201 @@ sub Run {
             }
         }
 
+# RotherOSS / AppointmentToTicket
+        # ticket template
+        my @TicketTemplates = (
+            {
+                Key   => '0',
+                Value => $LayoutObject->{LanguageObject}->Translate('No notification'),
+            },
+            {
+                Key   => 'Start',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s minute(s) before', 0 ),
+            },
+            {
+                Key   => '300',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s minute(s) before', 5 ),
+            },
+            {
+                Key   => '900',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s minute(s) before', 15 ),
+            },
+            {
+                Key   => '1800',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s minute(s) before', 30 ),
+            },
+            {
+                Key   => '3600',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s hour(s) before', 1 ),
+            },
+            {
+                Key   => '7200',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s hour(s) before', 2 ),
+            },
+            {
+                Key   => '43200',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s hour(s) before', 12 ),
+            },
+            {
+                Key   => '86400',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s day(s) before', 1 ),
+            },
+            {
+                Key   => '172800',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s day(s) before', 2 ),
+            },
+            {
+                Key   => '604800',
+                Value => $LayoutObject->{LanguageObject}->Translate( '%s week before', 1 ),
+            },
+            {
+                Key   => 'Custom',
+                Value => $LayoutObject->{LanguageObject}->Translate('Custom'),
+            },
+        );
+        my %TicketTemplateLookup = map {
+            $_->{Key} => $_->{Value}
+        } @TicketTemplates;
+        my $SelectedTicketTemplate = $Appointment{TicketTemplate} || '0';
+        $Param{TicketValue} = $TicketTemplateLookup{$SelectedTicketTemplate};
+
+        # ticket selection
+        $Param{TicketStrg} = $LayoutObject->BuildSelection(
+            Data         => \@TicketTemplates,
+            SelectedID   => $SelectedTicketTemplate,
+            Name         => 'TicketTemplate',
+            Multiple     => 0,
+            Class        => 'Modernize',
+            PossibleNone => 0,
+        );
+
+        # ticket custom units
+        my @TicketCustomUnits = (
+            {
+                Key   => 'minutes',
+                Value => $LayoutObject->{LanguageObject}->Translate('minute(s)'),
+            },
+            {
+                Key   => 'hours',
+                Value => $LayoutObject->{LanguageObject}->Translate('hour(s)'),
+            },
+            {
+                Key   => 'days',
+                Value => $LayoutObject->{LanguageObject}->Translate('day(s)'),
+            },
+        );
+        my %TicketCustomUnitLookup = map {
+            $_->{Key} => $_->{Value}
+        } @TicketCustomUnits;
+        my $SelectedTicketCustomUnit = $Appointment{TicketCustomRelativeUnit} || 'minutes';
+
+        # ticket custom units selection
+        $Param{TicketCustomUnitsStrg} = $LayoutObject->BuildSelection(
+            Data         => \@TicketCustomUnits,
+            SelectedID   => $SelectedTicketCustomUnit,
+            Name         => 'TicketCustomRelativeUnit',
+            Multiple     => 0,
+            Class        => 'Modernize',
+            PossibleNone => 0,
+        );
+
+        # ticket custom units point of time
+        my @TicketCustomUnitsPointOfTime = (
+            {
+                Key   => 'beforestart',
+                Value => $LayoutObject->{LanguageObject}->Translate('before the appointment starts'),
+            },
+            {
+                Key   => 'afterstart',
+                Value => $LayoutObject->{LanguageObject}->Translate('after the appointment has been started'),
+            },
+            {
+                Key   => 'beforeend',
+                Value => $LayoutObject->{LanguageObject}->Translate('before the appointment ends'),
+            },
+            {
+                Key   => 'afterend',
+                Value => $LayoutObject->{LanguageObject}->Translate('after the appointment has been ended'),
+            },
+        );
+        my %TicketCustomUnitPointOfTimeLookup = map {
+            $_->{Key} => $_->{Value}
+        } @TicketCustomUnitsPointOfTime;
+        my $SelectedTicketCustomUnitPointOfTime = $Appointment{TicketCustomRelativePointOfTime}
+            || 'beforestart';
+
+        # ticket custom units point of time selection
+        $Param{TicketCustomUnitsPointOfTimeStrg} = $LayoutObject->BuildSelection(
+            Data         => \@TicketCustomUnitsPointOfTime,
+            SelectedID   => $SelectedTicketCustomUnitPointOfTime,
+            Name         => 'TicketCustomRelativePointOfTime',
+            Multiple     => 0,
+            Class        => 'Modernize',
+            PossibleNone => 0,
+        );
+
+        # Extract the date units for the custom date selection.
+        my $TicketCustomDateTimeSettings = {};
+        if ( $Appointment{TicketCustomDateTime} ) {
+            my $TicketCustomDateTimeObject = $Kernel::OM->Create(
+                'Kernel::System::DateTime',
+                ObjectParams => {
+                    String => $Appointment{TicketCustomDateTime},
+                },
+            );
+            $TicketCustomDateTimeSettings = $TicketCustomDateTimeObject->Get();
+        }
+
+        # ticket custom date selection
+        $Param{TicketCustomDateTimeStrg} = $LayoutObject->BuildDateSelection(
+            Prefix                           => 'TicketCustomDateTime',
+            NotificationCustomDateTimeYear   => $TicketCustomDateTimeSettings->{Year},
+            NotificationCustomDateTimeMonth  => $TicketCustomDateTimeSettings->{Month},
+            NotificationCustomDateTimeDay    => $TicketCustomDateTimeSettings->{Day},
+            NotificationCustomDateTimeHour   => $TicketCustomDateTimeSettings->{Hour},
+            NotificationCustomDateTimeMinute => $TicketCustomDateTimeSettings->{Minute},
+            Format                           => 'DateInputFormatLong',
+            YearPeriodPast                   => $YearPeriodPast{Start},
+            YearPeriodFuture                 => $YearPeriodFuture{Start},
+        );
+
+        # prepare radio button for custom date time and relative input
+        $Appointment{TicketCustom} ||= '';
+
+        if ( $Appointment{TicketCustom} eq 'datetime' ) {
+            $Param{TicketCustomDateTimeInputRadio} = 'checked="checked"';
+        }
+        elsif ( $Appointment{TicketCustom} eq 'relative' ) {
+            $Param{TicketCustomRelativeInputRadio} = 'checked="checked"';
+        }
+        else {
+            $Param{TicketCustomRelativeInputRadio} = 'checked="checked"';
+        }
+
+        # ticket custom string value
+        if ( $Appointment{TicketCustom} eq 'datetime' ) {
+            $Param{TicketValue} .= ', ' . $LayoutObject->{LanguageObject}->FormatTimeString(
+                $Appointment{TicketCustomDateTime},
+                'DateFormat'
+            );
+        }
+        elsif ( $Appointment{TicketCustom} eq 'relative' ) {
+            if (
+                $Appointment{TicketCustomRelativeUnit}
+                && $Appointment{TicketCustomRelativePointOfTime}
+                )
+            {
+                $Appointment{TicketCustomRelativeUnitCount} ||= 0;
+                $Param{TicketValue} .= ', '
+                    . $Appointment{TicketCustomRelativeUnitCount}
+                    . ' '
+                    . $TicketCustomUnitLookup{$SelectedTicketCustomUnit}
+                    . ' '
+                    . $TicketCustomUnitPointOfTimeLookup{$SelectedTicketCustomUnitPointOfTime};
+            }
+        }
+# EO AppointmentToTicket
+
         # get plugin list
         $Param{PluginList} = $PluginObject->PluginList();
 
@@ -1504,52 +1699,6 @@ sub Run {
             }
         }
 
-# RotherOSS / AppointmentToTicket
-        # Handle Ticket Creation on Appointment
-        $GetParam{AppointmentTicketData} = {
-            Title => 'Test',
-            Queue => 'Raw',
-            CustomerID => '1',
-            CustomerUser => 'sha@rother-oss.com',
-            UserID => 1
-        };
-        use Data::Dumper;
-        print STDERR "AgentAppointmentEdit.pm, L.1517: " . Dumper($GetParam{AppointmentTicketData}) . "\n";
-        if ( defined $GetParam{AppointmentToTicket} && $GetParam{AppointmentToTicket} ) {
-            # Check if scheduled task for appointment already exists
-            if (defined $Appointment{ScheduledTaskID} && $Appointment{ScheduledTaskID}) {
-                # Update scheduled task accordingly
-                $Kernel::OM->Get('Kernel::System::Scheduler')->FutureTaskUpdate(
-                    FutureTaskID => $Appointment{ScheduledTaskID},
-                    ExecutionTime => $GetParam{StartTime},
-                    Data => $GetParam{AppointmentTicketData},
-                );
-            }
-            else {
-                
-                # Create scheduled task
-                my $Success = $Kernel::OM->Get('Kernel::System::Scheduler')->TaskAdd(
-                    ExecutionTime => $GetParam{StartTime},
-                    Type => 'AppointmentTicket',
-                    Name => 'Test',
-                    Data => $GetParam{AppointmentTicketData},
-                );
-
-                if ( !$Success ) {
-                    $Kernel::OM->Get('Kernel::System::Log')->Log(
-                        Priority => 'error',
-                        Message => "Scheduled Task AppointmentTicket could not be created for appointment!"
-                    );
-                    return;
-                }
-                
-                # Set future task id on appointment object
-                $GetParam{FutureTaskID} = $Success;
-                
-            }
-
-        }
-# EO AppointmentToTicket
 
         my $Success;
 
@@ -1565,6 +1714,24 @@ sub Run {
 
         # Get passed plugin parameters.
         my @PluginParams = grep { $_ =~ /^Plugin_/ } keys %GetParam;
+
+# RotherOSS / AppointmentToTicket
+        # Handle Ticket Creation on Appointment
+        # Necessary to do after creation to save appointment id with future task
+        $GetParam{AppointmentToTicketData} = {
+            Title => 'TestTitle',
+            Subject => 'TestSubject',
+            Content => 'TestContent',
+            QueueID => 2,
+            CustomerID => 1,
+            CustomerUser => 'sha@rother-oss.com',
+            UserID => 1,
+            OwnerID => 1,
+            Lock => 'unlock',
+            Priority => '3 normal',
+            State => 'new',
+        };
+# EO AppointmentToTicket
 
         if (%Appointment) {
 
