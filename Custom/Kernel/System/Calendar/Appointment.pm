@@ -4,6 +4,8 @@
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
 # Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
 # --
+# $origin: otobo - e894aef610208fdc401a4df814ca59658292fbba - Kernel/System/Calendar/Appointment.pm
+# --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
 # Foundation, either version 3 of the License, or (at your option) any later version.
@@ -169,8 +171,6 @@ sub AppointmentCreate {
         }
     }
 
-    use Data::Dumper;
-    print STDERR "Appointment.pm, L.172: " . Dumper(\%Param) . "\n";
 # RotherOSS / AppointmentToTicket
     # if AppointmentToTicket data is provided, create future task
     if ( $Param{TicketTemplate} ) {
@@ -686,6 +686,9 @@ get a hash of Appointments.
         EndTime             => '2016-02-01 00:00:00',                   # (optional) Filter by end date
         TeamID              => 1,                                       # (optional) Filter by team
         ResourceID          => 2,                                       # (optional) Filter by resource
+# RotherOSS / AppointmentToTicket
+        ParentID            => 1,                                       # (optional) Filter by parent id, returns parent and children
+# EO AppointmentToTicket
         Result              => 'HASH',                                  # (optional), HASH|ARRAY
     );
 
@@ -776,6 +779,9 @@ sub AppointmentList {
     my $CacheKeyEnd      = $Param{EndTime}     || 'any';
     my $CacheKeyTeam     = $Param{TeamID}      || 'any';
     my $CacheKeyResource = $Param{ResourceID}  || 'any';
+# RotherOSS / AppointmentToTicket
+    my $CacheKeyParent   = $Param{ParentID}    || 'any';
+# EO AppointmentToTicket
 
     if ( defined $Param{Title} && $Param{Title} =~ /^[\*]+$/ ) {
         $CacheKeyTitle = 'any';
@@ -787,7 +793,10 @@ sub AppointmentList {
         $CacheKeyLocation = 'any';
     }
 
-    my $CacheKey = "$CacheKeyTitle-$CacheKeyDesc-$CacheKeyLocation-$CacheKeyStart-$CacheKeyEnd-$CacheKeyTeam-$CacheKeyResource-$Param{Result}";
+# RotherOSS / AppointmentToTicket
+#     my $CacheKey = "$CacheKeyTitle-$CacheKeyDesc-$CacheKeyLocation-$CacheKeyStart-$CacheKeyEnd-$CacheKeyTeam-$CacheKeyResource-$Param{Result}";
+    my $CacheKey = "$CacheKeyTitle-$CacheKeyDesc-$CacheKeyLocation-$CacheKeyStart-$CacheKeyEnd-$CacheKeyTeam-$CacheKeyResource-$CacheKeyParent-$Param{Result}";
+# EO AppointmentToTicket
 
     # check cache
     my $Data = $Kernel::OM->Get('Kernel::System::Cache')->Get(
@@ -906,6 +915,15 @@ sub AppointmentList {
         if ( $Param{ResourceID} ) {
             next ROW if !grep { $_ == $Param{ResourceID} } @ResourceID;
         }
+
+# RotherOSS / AppointmentToTicket
+        # parent id
+        $Row[1] = $Row[1] ? $Row[1] : 0;
+        my $ParentID = $Row[1];
+        if ( $Param{ParentID} ) {
+            next ROW if $Param{ParentID} != $ParentID;
+        }
+# EO AppointmentToTicket
 
         my %Appointment = (
             AppointmentID                         => $Row[0],

@@ -77,9 +77,6 @@ Returns:
 sub Run {
     my ( $Self, %Param ) = @_;
 
-    use Data::Dumper;
-    print STDERR "AppointmentTicket.pm, L.80: " . Dumper(\%Param) . "\n";
-
     # check task params
     my $CheckResult = $Self->_CheckTaskParams(
         %Param,

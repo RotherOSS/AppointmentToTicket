@@ -1715,13 +1715,6 @@ sub Run {
         # Get passed plugin parameters.
         my @PluginParams = grep { $_ =~ /^Plugin_/ } keys %GetParam;
 
-        use Data::Dumper;
-        my @FTL = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskList();
-        for my $elem (@FTL) {
-            print STDERR "AgentAppointmentEdit.pm, L.1720: " . Dumper($elem) . "\n";
-            my %FT = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(TaskID => $elem->{TaskID});
-            print STDERR "AgentAppointmentEdit.pm, L.1721: " . Dumper(\%FT) . "\n";
-        }
 # RotherOSS / AppointmentToTicket
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task

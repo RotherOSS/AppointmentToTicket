@@ -4,6 +4,8 @@
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
 # Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
 # --
+# $origin: otobo - d0090e827c1f06c22728dc6bf33f0f9d48ef3746 - Kernel/System/Daemon/SchedulerDB.pm
+# --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
 # Foundation, either version 3 of the License, or (at your option) any later version.
@@ -898,8 +900,6 @@ Returns:
 sub FutureTaskAdd {
     my ( $Self, %Param ) = @_;
 
-    use Data::Dumper;
-    print STDERR "SchedulerDB.pm, L.901: " . Dumper(\%Param) . "\n";
     # check needed stuff
     for my $Key (qw(ExecutionTime Type Data)) {
         if ( !$Param{$Key} ) {
