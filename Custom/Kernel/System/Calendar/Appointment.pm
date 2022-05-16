@@ -171,30 +171,191 @@ sub AppointmentCreate {
 
 # RotherOSS / AppointmentToTicket
     # if AppointmentToTicket data is provided, create future task
-    if ( $Param{AppointmentToTicket} ) {
+    if ( $Param{TicketTemplate} ) {
+
+        print STDERR "Appointment.pm, L.175: 1\n";
+        # compute execution time for task
+        # TODO If this is included into the standard, check if it makes sense to shift this code into a function
+        # prepare possible ticket params
+        for my $PossibleParam (
+            qw(
+                TicketTemplate TicketCustom TicketCustomRelativeUnit
+                TicketCustomRelativePointOfTime
+            )
+            )
+        {
+            $Param{$PossibleParam} ||= '';
+        }
+
+        print STDERR "Appointment.pm, L.189: 2\n";
+        # special check for relative unit count as it can be zero
+        # (empty and negative values will be treated as zero to avoid errors)
+        if (
+            !IsNumber( $Param{TicketCustomRelativeUnitCount} )
+            || $Param{TicketCustomRelativeUnitCount} <= 0
+            )
+        {
+            $Param{TicketCustomRelativeUnitCount} = 0;
+        }
+
+        print STDERR "Appointment.pm, L.200: 3\n";
+        # set empty datetime strings to undef
+        for my $PossibleParam (qw(TicketDate TicketCustomDateTime)) {
+            $Param{$PossibleParam} ||= undef;
+        }
+
+        return if !$Param{TicketTemplate};
+
+        #
+        # template Start
+        #
+        if ( $Param{TicketTemplate} eq 'Start' ) {
+
+            # setup the appointment start date as ticket date
+            $Param{TicketDate} = $Param{StartTime};
+        }
+
+        #
+        # template time before start
+        #
+        elsif (
+            $Param{TicketTemplate} ne 'Custom'
+            && IsNumber( $Param{TicketTemplate} )
+            && $Param{TicketTemplate} > 0
+            )
+        {
+
+            return if !IsNumber( $Param{TicketTemplate} );
+
+            # offset template (before start datetime) used
+            my $Offset = $Param{TicketTemplate};
+
+            # Get date time object of appointment start time.
+            my $StartTimeObject = $Kernel::OM->Create(
+                'Kernel::System::DateTime',
+                ObjectParams => {
+                    String => $Param{StartTime},
+                },
+            );
+
+            # Subtract offset in seconds for new notification date time.
+            $StartTimeObject->Subtract(
+                Seconds => $Offset,
+            );
+
+            $Param{TicketDate} = $StartTimeObject->ToString();
+        }
+
+        #
+        # template Custom
+        #
+        else {
+
+            # Compute date of custom relative input.
+            if ( $Param{TicketCustom} eq 'relative' ) {
+
+                my $CustomUnitCount = $Param{TicketCustomRelativeUnitCount};
+                my $CustomUnit      = $Param{TicketCustomRelativeUnit};
+                my $CustomUnitPoint = $Param{TicketCustomRelativePointOfTime};
+
+                # setup the count to compute for the offset
+                my %UnitOffsetCompute = (
+                    minutes => 60,
+                    hours   => 3600,
+                    days    => 86400,
+                );
+
+                my $TicketLocalTimeObject;
+
+                # Compute from start time.
+                if ( $CustomUnitPoint eq 'beforestart' || $CustomUnitPoint eq 'afterstart' ) {
+                    $TicketLocalTimeObject = $Kernel::OM->Create(
+                        'Kernel::System::DateTime',
+                        ObjectParams => {
+                            String => $Param{StartTime},
+                        },
+                    );
+                }
+
+                # Compute from end time.
+                elsif ( $CustomUnitPoint eq 'beforeend' || $CustomUnitPoint eq 'afterend' ) {
+                    $TicketLocalTimeObject = $Kernel::OM->Create(
+                        'Kernel::System::DateTime',
+                        ObjectParams => {
+                            String => $Param{EndTime},
+                        },
+                    );
+                }
+
+                # Not supported point of time.
+                else {
+                    return;
+                }
+
+                # compute the offset to be used
+                my $Offset = ( $CustomUnitCount * $UnitOffsetCompute{$CustomUnit} );
+
+                # save the newly computed ticket datetime string
+                if ( $CustomUnitPoint eq 'beforestart' || $CustomUnitPoint eq 'beforeend' ) {
+                    $TicketLocalTimeObject->Subtract(
+                        Seconds => $Offset,
+                    );
+                    $Param{TicketDate} = $TicketLocalTimeObject->ToString();
+                }
+                else {
+                    $TicketLocalTimeObject->Add(
+                        Seconds => $Offset,
+                    );
+                    $Param{TicketDate} = $TicketLocalTimeObject->ToString();
+                }
+            }
+
+            # Compute date of custom date/time input.
+            elsif ( $Param{TicketCustom} eq 'datetime' ) {
+
+                $Param{TicketCustom} = 'datetime';
+
+                # validation
+                if ( !IsStringWithData( $Param{TicketCustomDateTime} ) ) {
+                    return;
+                }
+
+                # save the given date time values as ticket datetime string (i.e. 2016-06-28 02:00:00)
+                $Param{TicketDate} = $Param{TicketCustomDateTime};
+            }
+        }
+
+        if ( !IsStringWithData( $Param{TicketDate} ) ) {
+            $Param{TicketDate} = undef;
+        }
+
+        if ( !IsStringWithData( $Param{TicketCustomDateTime} ) ) {
+            $Param{TicketCustomDateTime} = undef;
+        }
         my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd(
-            ExecutionTime => $Param{StartTime},
-            Type => 'AppointmentTicket',
-            Data => {
-                TicketTime => $Param{TicketTime},
-                TicketTemplate => $Param{TicketTemplate},
-                TicketCustom => $Param{TicketCustom},
-                TicketCustomRelativeUnitCount => $Param{TicketCustomRelativeUnitCount},
-                TicketCustomRelativeUnit => $Param{TicketCustomRelativeUnit},
+            ExecutionTime => $Param{TicketDate},
+            Type          => 'AppointmentTicket',
+            Data          => {
+                TicketTime                      => $Param{TicketTime},
+                TicketTemplate                  => $Param{TicketTemplate},
+                TicketCustom                    => $Param{TicketCustom},
+                TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
+                TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
                 TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                TicketCustomDateTime => $Param{TicketCustomDateTime},
-                TicketQueueID => $Param{TicketQueueID},
-                TicketCustomerID => $Param{TicketCustomerID},
-                TicketCustomerUser => $Param{TicketCustomerUser},
-                TicketUserID => $Param{TicketUserID},
-                TicketOwnerID => $Param{TicketOwnerID},
-                TicketLock => $Param{TicketLock},
-                TicketPriority => $Param{TicketPriority},
-                TicketState => $Param{TicketState},
+                TicketCustomDateTime            => $Param{TicketCustomDateTime},
+                TicketQueueID                   => $Param{TicketQueueID},
+                TicketCustomerID                => $Param{TicketCustomerID},
+                TicketCustomerUser              => $Param{TicketCustomerUser},
+                TicketUserID                    => $Param{TicketUserID},
+                TicketOwnerID                   => $Param{TicketOwnerID},
+                TicketLock                      => $Param{TicketLock},
+                TicketPriority                  => $Param{TicketPriority},
+                TicketState                     => $Param{TicketState},
             },
         );
         $Param{FutureTaskID} = $TaskID || undef;
     }
+
 # EO AppointmentToTicket
 
     # prepare possible notification params
@@ -392,13 +553,14 @@ sub AppointmentCreate {
     }
 
     push @Bind, \$Param{CalendarID}, \$Param{UniqueID}, \$Param{Title}, \$Param{Description},
-        \$Param{Location},                              \$Param{StartTime},            \$Param{EndTime},   \$Param{AllDay},
-        \$Arrays{TeamID},                               \$Arrays{ResourceID},          \$Param{Recurring}, \$Param{RecurrenceType},
-        \$Arrays{RecurrenceFrequency},                  \$Param{RecurrenceCount},      \$Param{RecurrenceInterval},
-        \$Param{RecurrenceUntil},                       \$Param{RecurrenceID},         \$Arrays{RecurrenceExclude},
-        \$Param{NotificationDate},                      \$Param{NotificationTemplate}, \$Param{NotificationCustom},
+        \$Param{Location},             \$Param{StartTime},            \$Param{EndTime},   \$Param{AllDay},
+        \$Arrays{TeamID},              \$Arrays{ResourceID},          \$Param{Recurring}, \$Param{RecurrenceType},
+        \$Arrays{RecurrenceFrequency}, \$Param{RecurrenceCount},      \$Param{RecurrenceInterval},
+        \$Param{RecurrenceUntil},      \$Param{RecurrenceID},         \$Arrays{RecurrenceExclude},
+        \$Param{NotificationDate},     \$Param{NotificationTemplate}, \$Param{NotificationCustom},
         \$Param{NotificationCustomRelativeUnitCount},   \$Param{NotificationCustomRelativeUnit},
         \$Param{NotificationCustomRelativePointOfTime}, \$Param{NotificationCustomDateTime},
+
 # RotherOSS / AppointmentToTicket
 #         \$Param{TicketAppointmentRuleID},               \$Param{UserID}, \$Param{UserID};
 #
@@ -413,7 +575,7 @@ sub AppointmentCreate {
 #         VALUES ($ParentIDVal ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 #             ?, ?, current_timestamp, ?, current_timestamp, ?)
 #     ";
-        \$Param{TicketAppointmentRuleID},               \$Param{UserID}, \$Param{UserID}, \$Param{FutureTaskID};
+        \$Param{TicketAppointmentRuleID}, \$Param{UserID}, \$Param{UserID}, \$Param{FutureTaskID};
 
     my $SQL = "
         INSERT INTO calendar_appointment
@@ -426,6 +588,7 @@ sub AppointmentCreate {
         VALUES ($ParentIDVal ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
             ?, ?, current_timestamp, ?, current_timestamp, ?, ?)
     ";
+
 # EO AppointmentToTicket
 
     # create db record
@@ -460,9 +623,9 @@ sub AppointmentCreate {
         if ( $Param{AppointmentToTicket} ) {
             $Param{AppointmentToTicketData}->{AppointmentID} = $AppointmentID;
             $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskUpdate(
-                TaskID => $Param{FutureTaskID},
+                TaskID        => $Param{FutureTaskID},
                 ExecutionTime => $Param{StartTime},
-                Data => $Param{AppointmentToTicketData},
+                Data          => $Param{AppointmentToTicketData},
             );
         }
 # EO AppointmentToTicket
@@ -1032,6 +1195,9 @@ Returns a hash:
         CreateBy                => 2,
         ChangeTime              => '2016-01-01 00:00:00',
         ChangeBy                => 2,
+# RotherOSS / AppointmentToTicket
+        FutureTaskID => 1,
+# EO AppointmentToTicket
     );
 
 =cut
@@ -1073,16 +1239,28 @@ sub AppointmentGet {
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
 
     my @Bind;
+# RotherOSS / AppointmentToTicket
+#     my $SQL = '
+#         SELECT id, parent_id, calendar_id, unique_id, title, description, location, start_time,
+#             end_time, all_day, team_id, resource_id, recurring, recur_type, recur_freq, recur_count,
+#             recur_interval, recur_until, recur_id, recur_exclude, notify_time, notify_template,
+#             notify_custom, notify_custom_unit_count, notify_custom_unit, notify_custom_unit_point,
+#             notify_custom_date, ticket_appointment_rule_id, create_time, create_by, change_time,
+#             change_by
+#         FROM calendar_appointment
+#        WHERE
+#     ';
     my $SQL = '
         SELECT id, parent_id, calendar_id, unique_id, title, description, location, start_time,
             end_time, all_day, team_id, resource_id, recurring, recur_type, recur_freq, recur_count,
             recur_interval, recur_until, recur_id, recur_exclude, notify_time, notify_template,
             notify_custom, notify_custom_unit_count, notify_custom_unit, notify_custom_unit_point,
             notify_custom_date, ticket_appointment_rule_id, create_time, create_by, change_time,
-            change_by
+            change_by, future_task_id
         FROM calendar_appointment
         WHERE
     ';
+# EO AppointmentToTicket
 
     if ( $Param{AppointmentID} ) {
         $SQL .= 'id=? ';
@@ -1148,6 +1326,9 @@ sub AppointmentGet {
         $Result{CreateBy}                              = $Row[29];
         $Result{ChangeTime}                            = $Row[30];
         $Result{ChangeBy}                              = $Row[31];
+# RotherOSS / AppointmentToTicket
+        $Result{FutureTaskID}                          = $Row[32];
+# EO AppointmentToTicket
     }
 
     if ( $Param{AppointmentID} ) {
@@ -1436,34 +1617,230 @@ sub AppointmentUpdate {
     my %Appointment = $Self->AppointmentGet(
         AppointmentID => $Param{AppointmentID},
     );
-    if ( !$Param{FutureTaskID} ) {
+    if ( !$Param{FutureTaskID} && !$Param{TicketTemplate} ) {
         $Param{FutureTaskID} = undef;
-        if($Appointment{FutureTaskID}) {
-            $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete($Appointment{FutureTaskID});
-       }
+        $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete( $Appointment{FutureTaskID} );
     }
     else {
-        $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskUpdate(
-            FutureTaskID => $Param{FutureTaskID},
-            ExecutionTime => $Param{StartTime},
-            Type => 'AppointmentTicket',
-            Data => {
-                TicketTime => $Param{TicketTime},
-                TicketTemplate => $Param{TicketTemplate},
-                TicketCustom => $Param{TicketCustom},
-                TicketCustomRelativeUnitCount => $Param{TicketCustomRelativeUnitCount},
-                TicketCustomRelativeUnit => $Param{TicketCustomRelativeUnit},
+        # compute execution time for task
+        # TODO If this is included into the standard, check if it makes sense to shift this code into a function
+        # reset ticket data if needed
+        if ( !$Param{TicketTemplate} ) {
+
+            for my $PossibleParam (
+                qw(
+                    TicketDate TicketTemplate TicketCustom TicketCustomRelativeUnitCount
+                    TicketCustomRelativeUnit TicketCustomRelativePointOfTime TicketCustomDateTime
+                )
+                )
+            {
+                $Param{$PossibleParam} = undef;
+            }
+        }
+
+        # prepare possible ticket params
+        for my $PossibleParam (
+            qw(
+                TicketTemplate TicketCustom TicketCustomRelativeUnit
+                TicketCustomRelativePointOfTime
+            )
+            )
+        {
+            $Param{$PossibleParam} ||= '';
+        }
+
+        # special check for relative unit count as it can be zero
+        # (empty and negative values will be treated as zero to avoid errors)
+        if (
+            !IsNumber( $Param{TicketCustomRelativeUnitCount} )
+            || $Param{TicketCustomRelativeUnitCount} <= 0
+            )
+        {
+            $Param{TicketCustomRelativeUnitCount} = 0;
+        }
+
+        # set empty datetime strings to undef
+        for my $PossibleParam (qw(TicketDate TicketCustomDateTime)) {
+            $Param{$PossibleParam} ||= undef;
+        }
+
+        return if !$Param{TicketTemplate};
+
+        #
+        # template Start
+        #
+        if ( $Param{TicketTemplate} eq 'Start' ) {
+
+            # setup the appointment start date as ticket date
+            $Param{TicketDate} = $Param{StartTime};
+        }
+
+        #
+        # template time before start
+        #
+        elsif (
+            $Param{TicketTemplate} ne 'Custom'
+            && IsNumber( $Param{TicketTemplate} )
+            && $Param{TicketTemplate} > 0
+            )
+        {
+
+            return if !IsNumber( $Param{TicketTemplate} );
+
+            # offset template (before start datetime) used
+            my $Offset = $Param{TicketTemplate};
+
+            # Get date time object of appointment start time.
+            my $StartTimeObject = $Kernel::OM->Create(
+                'Kernel::System::DateTime',
+                ObjectParams => {
+                    String => $Param{StartTime},
+                },
+            );
+
+            # Subtract offset in seconds for new notification date time.
+            $StartTimeObject->Subtract(
+                Seconds => $Offset,
+            );
+
+            $Param{TicketDate} = $StartTimeObject->ToString();
+        }
+
+        #
+        # template Custom
+        #
+        else {
+
+            # Compute date of custom relative input.
+            if ( $Param{TicketCustom} eq 'relative' ) {
+
+                my $CustomUnitCount = $Param{TicketCustomRelativeUnitCount};
+                my $CustomUnit      = $Param{TicketCustomRelativeUnit};
+                my $CustomUnitPoint = $Param{TicketCustomRelativePointOfTime};
+
+                # setup the count to compute for the offset
+                my %UnitOffsetCompute = (
+                    minutes => 60,
+                    hours   => 3600,
+                    days    => 86400,
+                );
+
+                my $TicketLocalTimeObject;
+
+                # Compute from start time.
+                if ( $CustomUnitPoint eq 'beforestart' || $CustomUnitPoint eq 'afterstart' ) {
+                    $TicketLocalTimeObject = $Kernel::OM->Create(
+                        'Kernel::System::DateTime',
+                        ObjectParams => {
+                            String => $Param{StartTime},
+                        },
+                    );
+                }
+
+                # Compute from end time.
+                elsif ( $CustomUnitPoint eq 'beforeend' || $CustomUnitPoint eq 'afterend' ) {
+                    $TicketLocalTimeObject = $Kernel::OM->Create(
+                        'Kernel::System::DateTime',
+                        ObjectParams => {
+                            String => $Param{EndTime},
+                        },
+                    );
+                }
+
+                # Not supported point of time.
+                else {
+                    return;
+                }
+
+                # compute the offset to be used
+                my $Offset = ( $CustomUnitCount * $UnitOffsetCompute{$CustomUnit} );
+
+                # save the newly computed ticket datetime string
+                if ( $CustomUnitPoint eq 'beforestart' || $CustomUnitPoint eq 'beforeend' ) {
+                    $TicketLocalTimeObject->Subtract(
+                        Seconds => $Offset,
+                    );
+                    $Param{TicketDate} = $TicketLocalTimeObject->ToString();
+                }
+                else {
+                    $TicketLocalTimeObject->Add(
+                        Seconds => $Offset,
+                    );
+                    $Param{TicketDate} = $TicketLocalTimeObject->ToString();
+                }
+            }
+
+            # Compute date of custom date/time input.
+            elsif ( $Param{TicketCustom} eq 'datetime' ) {
+
+                $Param{TicketCustom} = 'datetime';
+
+                # validation
+                if ( !IsStringWithData( $Param{TicketCustomDateTime} ) ) {
+                    return;
+                }
+
+                # save the given date time values as ticket datetime string (i.e. 2016-06-28 02:00:00)
+                $Param{TicketDate} = $Param{TicketCustomDateTime};
+            }
+        }
+
+        if ( !IsStringWithData( $Param{TicketDate} ) ) {
+            $Param{TicketDate} = undef;
+        }
+
+        if ( !IsStringWithData( $Param{TicketCustomDateTime} ) ) {
+            $Param{TicketCustomDateTime} = undef;
+        }
+        if ( $Param{TicketTemplate} ) {
+         my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd(
+            ExecutionTime => $Param{TicketDate},
+            Type          => 'AppointmentTicket',
+            Data          => {
+                TicketTime                      => $Param{TicketTime},
+                TicketTemplate                  => $Param{TicketTemplate},
+                TicketCustom                    => $Param{TicketCustom},
+                TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
+                TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
                 TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                TicketCustomDateTime => $Param{TicketCustomDateTime},
-                TicketQueueID => $Param{TicketQueueID},
-                TicketCustomerID => $Param{TicketCustomerID},
-                TicketCustomerUser => $Param{TicketCustomerUser},
-                TicketUserID => $Param{TicketUserID},
-                TicketOwnerID => $Param{TicketOwnerID},
-                TicketLock => $Param{TicketLock},
-                TicketPriority => $Param{TicketPriority},
-                TicketState => $Param{TicketState},
+                TicketCustomDateTime            => $Param{TicketCustomDateTime},
+                TicketQueueID                   => $Param{TicketQueueID},
+                TicketCustomerID                => $Param{TicketCustomerID},
+                TicketCustomerUser              => $Param{TicketCustomerUser},
+                TicketUserID                    => $Param{TicketUserID},
+                TicketOwnerID                   => $Param{TicketOwnerID},
+                TicketLock                      => $Param{TicketLock},
+                TicketPriority                  => $Param{TicketPriority},
+                TicketState                     => $Param{TicketState},
+            },
         );
+        $Param{FutureTaskID} = $TaskID || undef;
+           
+        }
+        else {
+       $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskUpdate(
+            FutureTaskID  => $Param{FutureTaskID},
+            ExecutionTime => $Param{TicketDate},
+            Type          => 'AppointmentTicket',
+            Data          => {
+                TicketTime                      => $Param{TicketTime},
+                TicketTemplate                  => $Param{TicketTemplate},
+                TicketCustom                    => $Param{TicketCustom},
+                TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
+                TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
+                TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
+                TicketCustomDateTime            => $Param{TicketCustomDateTime},
+                TicketQueueID                   => $Param{TicketQueueID},
+                TicketCustomerID                => $Param{TicketCustomerID},
+                TicketCustomerUser              => $Param{TicketCustomerUser},
+                TicketUserID                    => $Param{TicketUserID},
+                TicketOwnerID                   => $Param{TicketOwnerID},
+                TicketLock                      => $Param{TicketLock},
+                TicketPriority                  => $Param{TicketPriority},
+                TicketState                     => $Param{TicketState},
+            },
+        );
+        }
     }
 
 #     # update appointment
@@ -1521,6 +1898,7 @@ sub AppointmentUpdate {
             \$Param{TicketAppointmentRuleID},               \$Param{UserID}, \$Param{FutureTaskID}, \$Param{AppointmentID},
         ],
     );
+
 # EO AppointmentToTicket
 
     # add recurred appointments again
@@ -1644,6 +2022,7 @@ sub AppointmentDelete {
 
 # RotherOSS / AppointmentToTicket
     # delete future task if present
+    print STDERR "Appointment.pm, L.2006: " . $Appointment{FutureTaskID} . "\n";
     if ( $Appointment{FutureTaskID} ) {
         $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete(
             TaskID => $Appointment{FutureTaskID},

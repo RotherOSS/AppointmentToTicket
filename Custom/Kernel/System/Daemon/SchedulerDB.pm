@@ -1021,6 +1021,7 @@ sub FutureTaskAdd {
 }
 
 # RotherOSS / AppointmentToTicket
+
 =head2 FutureTaskUpdate()
 
 updates an existing task in the scheduler future task list
@@ -1044,29 +1045,29 @@ sub FutureTaskUpdate {
             $Kernel::OM->Get('Kernel::System::Log')->Log(
                 Priority => 'error',
                 Message  => "Need $Key!",
-            );   
+            );
 
             return;
-        }    
-    }    
+        }
+    }
 
     # check valid ExecutionTime
 
     my $SystemTime = $Kernel::OM->Create(
         'Kernel::System::DateTime',
-        ObjectParams => { 
+        ObjectParams => {
             String => $Param{ExecutionTime},
-        },   
-    );   
+        },
+    );
 
     if ( !$SystemTime ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'error',
             Message  => "ExecutionTime is invalid!",
-        );   
+        );
 
         return;
-    }    
+    }
     $SystemTime = $SystemTime->ToEpoch();
 
     if ( $Param{MaximumParallelInstances} && $Param{MaximumParallelInstances} =~ m{\A \d+ \z}msx ) {
@@ -1074,14 +1075,14 @@ sub FutureTaskUpdate {
         # get the list of all future tasks for the specified task type
         my @List = $Self->FutureTaskList(
             Type => $Param{Type},
-        );   
+        );
 
         my @FilteredList = @List;
         if ( $Param{Name} && @List ) {
 
             # remove all tasks that does not match specified task name
             @FilteredList = grep { ( $_->{Name} || '' ) eq $Param{Name} } @List;
-        }    
+        }
 
         # compare the number of task with the maximum parallel limit
         return -1 if scalar @FilteredList >= $Param{MaximumParallelInstances};
@@ -1128,6 +1129,7 @@ sub FutureTaskUpdate {
 
     return 1;
 }
+
 # EO AppointmentToTicket
 
 =head2 FutureTaskGet()
