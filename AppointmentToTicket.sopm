@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <otobo_package version="1.0">
-    <Name>appointmenttoticket.sopm</Name>
-    <Version>10.0.0</Version>
-    <Framework>10.0.x</Framework>
+    <Name>AppointmentToTicket</Name>
+    <Version>10.1.0</Version>
+    <Framework>10.1.x</Framework>
     <Vendor>Rother OSS GmbH</Vendor>
     <URL>https://rother-oss.com/</URL>
     <License>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</License>
