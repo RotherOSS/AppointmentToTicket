@@ -425,23 +425,65 @@ sub AppointmentCreate {
         }
     }
 
-# RotherOSS / AppointmentToTicket
-    my $FutureTaskAppointmentID;
-    my $ExecutionTime;
-    my $CurrentTimeObject = $Kernel::OM->Create(
-        'Kernel::System::DateTime',
-    );
-   if ( $Param{ParentID} || $Param{Recurring} ) {
-        # Get nearest upcoming event
-        # If all events are in the past, no future task is created
-        my @AppointmentList = $Self->AppointmentList(
-            CalendarID => $Param{CalendarID},
-            ParentID => $Param{ParentID} || $AppointmentID,
+    # add recurring appointments
+    if ( $Param{Recurring} && !$Param{RecurringRaw} ) {
+        return if !$Self->_AppointmentRecurringCreate(
+            ParentID    => $AppointmentID,
+            Appointment => \%Param,
         );
-        my $TimeDistance;
-        for my $Appointment (@AppointmentList) {
-            # Take smallest positive distance from current time
-            # Take execution time of future task as reference
+    }
+
+# RotherOSS / AppointmentToTicket
+    if ( !$Param{ParentID} ) {
+        my $FutureTaskAppointmentID = 0;
+        my $ExecutionTime;
+        my $CurrentTimeObject = $Kernel::OM->Create(
+            'Kernel::System::DateTime',
+        );
+        if ( $Param{Recurring} ) {
+            # Get nearest upcoming event
+            # If all events are in the past, no future task is created
+            my @AppointmentList = $Self->AppointmentList(
+                CalendarID => $Param{CalendarID},
+                ParentID => $AppointmentID,
+            );
+            my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $AppointmentID );
+            push @AppointmentList, \%ParentAppointment;
+
+            my $TimeDistance;
+            for my $Appointment (@AppointmentList) {
+                # Take smallest positive distance from current time
+                # Take execution time of future task as reference
+                my $AppointmentTimeObject = $Kernel::OM->Create(
+                    'Kernel::System::DateTime',
+                    ObjectParams => {
+                        String => $Self->AppointmentToTicketExecutionTime(
+                            Data => {
+                                TicketTime                      => $Param{TicketTime},
+                                TicketTemplate                  => $Param{TicketTemplate},
+                                TicketCustom                    => $Param{TicketCustom},
+                                TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
+                                TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
+                                TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
+                                TicketCustomDateTime            => $Param{TicketCustomDateTime},                       
+                            },
+                            StartTime => $Appointment->{StartTime},
+                            EndTime => $Appointment->{EndTime},
+                        ),
+                    },
+                );
+                if ( $AppointmentTimeObject->Compare( DateTimeObject => $CurrentTimeObject ) > 0 )
+                {
+                    if ( !$TimeDistance || $AppointmentTimeObject->Delta( DateTimeObject => $CurrentTimeObject ) < $TimeDistance ) {
+                        $TimeDistance = $AppointmentTimeObject->Delta( DateTimeObject => $CurrentTimeObject );
+                        $FutureTaskAppointmentID = $Appointment->{AppointmentID};
+                        $ExecutionTime = $AppointmentTimeObject->ToString();
+                    }
+                }
+            }
+
+        }
+        else {
             my $AppointmentTimeObject = $Kernel::OM->Create(
                 'Kernel::System::DateTime',
                 ObjectParams => {
@@ -455,105 +497,69 @@ sub AppointmentCreate {
                             TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
                             TicketCustomDateTime            => $Param{TicketCustomDateTime},                       
                         },
-                        StartTime => $Appointment->{StartTime},
-                        EndTime => $Appointment->{EndTime},
+                        StartTime => $Param{StartTime},
+                        EndTime => $Param{EndTime},
                     ),
                 },
             );
-            if ( $AppointmentTimeObject->Compare( DateTimeObject => $CurrentTimeObject ) )
-            {
-                if ( $AppointmentTimeObject->Delta( DateTimeObject => $CurrentTimeObject ) < $TimeDistance ) {
-                    $TimeDistance = $AppointmentTimeObject->Delta( DateTimeObject => $CurrentTimeObject );
-                    $FutureTaskAppointmentID = $Appointment->{AppointmentID};
-                    $ExecutionTime = $AppointmentTimeObject->ToString();
-                }
+            
+            if ( $AppointmentTimeObject->Compare( DateTimeObject => $CurrentTimeObject ) > 0 ) {
+                $FutureTaskAppointmentID = $AppointmentID;
+                $ExecutionTime = $AppointmentTimeObject->ToString();
             }
         }
 
-    }
-    else {
-        my $AppointmentTimeObject = $Kernel::OM->Create(
-            'Kernel::System::DateTime',
-            ObjectParams => {
-                String => $Self->AppointmentToTicketExecutionTime(
-                    Data => {
-                        TicketTime                      => $Param{TicketTime},
-                        TicketTemplate                  => $Param{TicketTemplate},
-                        TicketCustom                    => $Param{TicketCustom},
-                        TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
-                        TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
-                        TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                        TicketCustomDateTime            => $Param{TicketCustomDateTime},                       
-                    },
-                    StartTime => $Param{StartTime},
-                    EndTime => $Param{EndTime},
-                ),
-            },
-       );
-        if ( $AppointmentTimeObject->Compare( DateTimeObject => $CurrentTimeObject ) ) {
-            $FutureTaskAppointmentID = $AppointmentID;
-            $ExecutionTime = $AppointmentTimeObject->ToString();
-        }
-    }
+        if ($FutureTaskAppointmentID) {
+            my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd(
+                ExecutionTime => $ExecutionTime,
+                Type          => 'AppointmentTicket',
+                Data          => {
+                    Time                      => $Param{TicketTime},
+                    Template                  => $Param{TicketTemplate},
+                    Custom                    => $Param{TicketCustom},
+                    CustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
+                    CustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
+                    CustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
+                    CustomDateTime            => $Param{TicketCustomDateTime},
+                    QueueID                   => $Param{TicketQueueID},
+                    CustomerID                => $Param{TicketCustomerID},
+                    CustomerUser              => $Param{TicketCustomerUser},
+                    UserID                    => $Param{TicketUserID},
+                    OwnerID                   => $Param{TicketOwnerID},
+                    Lock                      => $Param{TicketLock},
+                    Priority                  => $Param{TicketPriority},
+                    State                     => $Param{TicketState},
+                    Title                     => $Param{Title},
+                    Subject                   => $Param{Title},
+                    Content                   => $Param{Description},
+                    AppointmentID             => $FutureTaskAppointmentID,
+                },
+            );
+            if ($TaskID) {
+                $Param{FutureTaskID} = $TaskID;
+            }
+            else {
+                $Kernel::OM->Get('Kernel::System::Log')->Log(
+                    Priority => 'error',
+                    Message => "Ticket task for appointment $AppointmentID could not be created!",
+                );
+            }
 
-    if ($FutureTaskAppointmentID) {
-        my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd(
-            ExecutionTime => $ExecutionTime,
-            Type          => 'AppointmentTicket',
-            Data          => {
-                Time                      => $Param{TicketTime},
-                Template                  => $Param{TicketTemplate},
-                Custom                    => $Param{TicketCustom},
-                CustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
-                CustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
-                CustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                CustomDateTime            => $Param{TicketCustomDateTime},
-                QueueID                   => $Param{TicketQueueID},
-                CustomerID                => $Param{TicketCustomerID},
-                CustomerUser              => $Param{TicketCustomerUser},
-                UserID                    => $Param{TicketUserID},
-                OwnerID                   => $Param{TicketOwnerID},
-                Lock                      => $Param{TicketLock},
-                Priority                  => $Param{TicketPriority},
-                State                     => $Param{TicketState},
-                Title                     => $Param{Title},
-                Subject                   => $Param{Title},
-                Content                   => $Param{Description},
-                AppointmentID             => $FutureTaskAppointmentID,
-            },
-        );
-        if ($TaskID) {
-            $Param{FutureTaskID} = $TaskID;
-        }
-        else {
-            $Kernel::OM->Get('Kernel::System::Log')->Log(
-                Priority => 'error',
-                Message => "Ticket task for appointment $AppointmentID could not be created!",
+            $SQL = "
+                UPDATE calendar_appointment
+                SET future_task_id = ?
+                WHERE id = ?
+            ";
+            @Bind = (\$TaskID, \$FutureTaskAppointmentID);
+        
+            # update db record
+            return if !$DBObject->Do(
+                SQL  => $SQL,
+                Bind => \@Bind,
             );
         }
-
-        $SQL = "
-            UPDATE calendar_appointment
-            SET future_task_id = ?
-            WHERE id = ?
-        ";
-        @Bind = (\$TaskID, \$AppointmentID);
-    
-        # update db record
-        return if !$DBObject->Do(
-            SQL  => $SQL,
-            Bind => \@Bind,
-        );
     }
 # EO AppointmentToTicket
-
-    # add recurring appointments
-    if ( $Param{Recurring} && !$Param{RecurringRaw} ) {
-        return if !$Self->_AppointmentRecurringCreate(
-            ParentID    => $AppointmentID,
-            Appointment => \%Param,
-        );
-    }
 
     my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
 
@@ -747,14 +753,24 @@ sub AppointmentList {
         }
     }
 
+# RotherOSS / AppointmentToTicket
+#     my $SQL = '
+#         SELECT id, parent_id, calendar_id, unique_id, title, description, location, start_time,
+#             end_time, team_id, resource_id, all_day, recurring, notify_time, notify_template,
+#             notify_custom, notify_custom_unit_count, notify_custom_unit, notify_custom_unit_point,
+#             notify_custom_date, ticket_appointment_rule_id
+#         FROM calendar_appointment
+#         WHERE calendar_id=?
+#     ';
     my $SQL = '
         SELECT id, parent_id, calendar_id, unique_id, title, description, location, start_time,
             end_time, team_id, resource_id, all_day, recurring, notify_time, notify_template,
             notify_custom, notify_custom_unit_count, notify_custom_unit, notify_custom_unit_point,
-            notify_custom_date, ticket_appointment_rule_id
+            notify_custom_date, ticket_appointment_rule_id, future_task_id
         FROM calendar_appointment
         WHERE calendar_id=?
     ';
+# EO AppointmentToTicket
 
     my @Bind;
 
@@ -827,7 +843,7 @@ sub AppointmentList {
         $Row[1] = $Row[1] ? $Row[1] : 0;
         my $ParentID = $Row[1];
         if ( $Param{ParentID} ) {
-            next ROW if ( !($Param{ParentID} == $ParentID && $Param{ParentID} == $Row[0]) );
+            next ROW if ( $Param{ParentID} != $ParentID );
         }
 # EO AppointmentToTicket
 
@@ -853,6 +869,9 @@ sub AppointmentList {
             NotificationCustomRelativePointOfTime => $Row[18],
             NotificationCustomDateTime            => $Row[19] || '',
             TicketAppointmentRuleID               => $Row[20],
+# RotherOSS / AppointmentToTicket
+            FutureTaskID                          => $Row[21],
+# EO AppointmentToTicket
         );
         push @Result, \%Appointment;
     }
@@ -1957,9 +1976,15 @@ sub AppointmentDelete {
 # RotherOSS / AppointmentToTicket
     # delete future task if present
     if ( $Appointment{FutureTaskID} ) {
-        $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete(
+        my $Success = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete(
             TaskID => $Appointment{FutureTaskID},
         );
+        if (!$Success) {
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'error',
+                Message => 'Future task AppointmentTicket couln\'t be deleted!',
+            );
+        }
     }
 # EO AppointmentToTicket
 
@@ -3019,6 +3044,29 @@ sub _AppointmentRecurringDelete {
             return;
         }
     }
+
+# RotherOSS / AppointmentToTicket
+    my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $Param{ParentID} );
+    my @AppointmentList = $Self->AppointmentList(
+        CalendarID => $ParentAppointment{CalendarID},
+        ParentID => $Param{ParentID},
+    );
+    
+    # delete future task if present
+    for my $Appointment (@AppointmentList) {
+        if ( $Appointment->{FutureTaskID} ) {
+            my $Success = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete(
+                TaskID => $Appointment->{FutureTaskID},
+            );
+            if (!$Success) {
+                $Kernel::OM->Get('Kernel::System::Log')->Log(
+                    Priority => 'error',
+                    Message => 'Future task AppointmentTicket couln\'t be deleted!',
+                );
+            }
+        }
+    }
+# EO AppointmentToTicket
 
     # delete recurring appointments
     my $SQL = '
