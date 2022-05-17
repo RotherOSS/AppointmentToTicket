@@ -171,13 +171,6 @@ sub AppointmentCreate {
         }
     }
 
-# RotherOSS / AppointmentToTicket
-    # if AppointmentToTicket data is provided, create future task
-    if ( $Param{TicketTemplate} ) {
-
-    }
-# EO AppointmentToTicket
-
     # prepare possible notification params
     $Self->_AppointmentNotificationPrepare(
         Data => \%Param,
@@ -822,11 +815,12 @@ sub AppointmentList {
         }
 
 # RotherOSS / AppointmentToTicket
+# TODO Put ParentID into SQL
         # parent id
         $Row[1] = $Row[1] ? $Row[1] : 0;
         my $ParentID = $Row[1];
         if ( $Param{ParentID} ) {
-            next ROW if $Param{ParentID} != $ParentID;
+            next ROW if ( !($Param{ParentID} == $ParentID && $Param{ParentID} == $Row[0]) );
         }
 # EO AppointmentToTicket
 
@@ -2786,8 +2780,6 @@ sub _AppointmentFutureTaskComputeExecutionTime {
         if ( !IsStringWithData( $Param{TicketCustomDateTime} ) ) {
             $Param{TicketCustomDateTime} = undef;
         }
-    }
-
     return $Param{TicketDate};
    
 

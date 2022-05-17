@@ -90,21 +90,32 @@ sub Run {
         print "    $Self->{WorkerName} executes task: $Param{TaskName}\n";
     }
 
-    # trigger the ticket appointment
-    my $Success = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate( %{ $Param{Data} } );
+    # create the appointment ticket
+    my $TicketID = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate( %Param );
 
-    if ( !$Success ) {
+    if ( !$TicketID ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'error',
             Message  => "Could not trigger ticket appointment for AppointmentID $Param{Data}->{AppointmentID}!",
         );
     }
 
-    # Check if appointment is recurring and if so, create a new appointment ticket task
     my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( 
-        AppointmentID => $Param{AppointmentID},
+        AppointmentID => $Param{Data}->{AppointmentID},
     );
-    
+ 
+    # link the tickets
+    $Kernel::OM->Get('Kernel::System::LinkObject')->LinkAdd(
+        SourceObject => 'Appointment',
+        SourceKey    => $Appointment{AppointmentID},
+        TargetObject => 'Ticket',
+        TargetKey    => $TicketID,
+        Type         => 'Normal',
+        State        => 'Valid',
+        UserID       => $Param{UserID},
+    ); 
+
+   # Check if appointment is recurring and if so, create next future task
     if( $Appointment{Recurring} ) {
         # Appointment is child
         if( $Appointment{ParentID} ) {
@@ -145,6 +156,7 @@ sub Run {
                         CustomerID => $Param{CustomerID},
                         CustomerUser => $Param{CustomerUser},
                         UserID => $Param{UserID},
+                        AppointmentID => $NextAppointment{AppointmentID},
                     }
                 );
             }
@@ -169,20 +181,19 @@ sub Run {
                     Type => 'AppointmentTicket',
                     Name => 'Test',
                     Data => {
-                        # TODO Correction
-                        TicketTitle => $Param{TicketTitle},
-                        TicketQueueID => $Param{TicketQueueID},
-                        TicketSubject => $Param{TicketSubject},
-                        TicketLock => 'unlock',
-                        TicketTypeID => $Param{TicketTypeID},
-                        TicketServiceID => $Param{TicketServiceID},
-                        TicketSLAID => $Param{TicketSLAID},
-                        TicketStateID => $Param{TicketStateID},
-                        TicketPriorityID => $Param{TicketPriorityID},
-                        TicketOwnerID => $Param{TicketOwnerID},
-                        TicketCustomerID => $Param{TicketCustomerID},
-                        TicketCustomerUser => $Param{TicketCustomerUser},
-                        TicketUserID => $Param{TicketUserID},
+                        Title => $Param{Title},
+                        QueueID => $Param{QueueID},
+                        Subject => $Param{Subject},
+                        Lock => 'unlock',
+                        TypeID => $Param{TypeID},
+                        ServiceID => $Param{ServiceID},
+                        SLAID => $Param{SLAID},
+                        StateID => $Param{StateID},
+                        PriorityID => $Param{PriorityID},
+                        OwnerID => $Param{OwnerID},
+                        CustomerID => $Param{CustomerID},
+                        CustomerUser => $Param{CustomerUser},
+                        UserID => $Param{UserID},
                         AppointmentID => $NextAppointment{AppointmentID},
                     }
                 );
