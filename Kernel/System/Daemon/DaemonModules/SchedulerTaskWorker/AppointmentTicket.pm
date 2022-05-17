@@ -22,8 +22,10 @@ use warnings;
 use parent qw(Kernel::System::Daemon::DaemonModules::BaseTaskWorker);
 
 our @ObjectDependencies = (
+    'Kernel::System::LinkObject',
     'Kernel::System::Log',
     'Kernel::System::Calendar::Appointment',
+    'Kernel::System::Ticket',
 );
 
 =head1 NAME
@@ -80,7 +82,7 @@ sub Run {
     # check task params
     my $CheckResult = $Self->_CheckTaskParams(
         %Param,
-        NeededDataAttributes => ['AppointmentID', 'CustomerUser', 'CustomerID', 'UserID', 'QueueID', 'Subject', 'Content'],
+        NeededDataAttributes => [ 'AppointmentID', 'CustomerUser', 'CustomerID', 'UserID', 'QueueID', 'OwnerID', 'Subject', 'Content' ],
     );
 
     # stop execution if an error in params is detected
@@ -91,7 +93,19 @@ sub Run {
     }
 
     # create the appointment ticket
-    my $TicketID = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate( %Param );
+    my $TicketID = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate(
+        QueueID => $Param{Data}->{QueueID},
+        CustomerID => $Param{Data}->{CustomerID},
+        CustomerUser => $Param{Data}->{CustomerUser},
+        UserID => $Param{Data}->{UserID},
+        OwnerID => $Param{Data}->{OwnerID},
+        Lock => $Param{Data}->{Lock},
+        Priority => $Param{Data}->{Priority},
+        State => $Param{Data}->{State},
+        Title => $Param{Data}->{Title},
+        Subject => $Param{Data}->{Subject},
+        Content => $Param{Data}->{Content},
+    );
 
     if ( !$TicketID ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
@@ -100,10 +114,10 @@ sub Run {
         );
     }
 
-    my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( 
+    my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
         AppointmentID => $Param{Data}->{AppointmentID},
     );
- 
+
     # link the tickets
     $Kernel::OM->Get('Kernel::System::LinkObject')->LinkAdd(
         SourceObject => 'Appointment',
@@ -112,88 +126,92 @@ sub Run {
         TargetKey    => $TicketID,
         Type         => 'Normal',
         State        => 'Valid',
-        UserID       => $Param{UserID},
-    ); 
+        UserID       => $Param{Data}->{UserID},
+    );
 
-   # Check if appointment is recurring and if so, create next future task
-    if( $Appointment{Recurring} ) {
+    # Check if appointment is recurring and if so, create next future task
+    if ( $Appointment{Recurring} ) {
+
         # Appointment is child
-        if( $Appointment{ParentID} ) {
+        if ( $Appointment{ParentID} ) {
+
             # Get all related appointments
             my @Appointments = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
                 CalendarID => $Appointment{CalendarID},
-                ParentID => $Appointment{ParentID},
+                ParentID   => $Appointment{ParentID},
             );
 
             # filter for parent id
-            my @FilteredAppointments = grep( $_->{ParentID} == $Appointment{ParentID}, @Appointments );
+            my @FilteredAppointments = grep { $_->{ParentID} == $Appointment{ParentID} } @Appointments;
 
-            my @SortedFilteredAppointments = sort {$a->{AppointmentID} <=> $b->{AppointmentID}} @FilteredAppointments;
+            my @SortedFilteredAppointments = sort { $a->{AppointmentID} <=> $b->{AppointmentID} } @FilteredAppointments;
             my %NextAppointment;
+            NEXTAPPOINTMENT:
             for my $AppointmentRef (@SortedFilteredAppointments) {
                 my %CurrentAppointment = %{$AppointmentRef};
-                if( $Appointment{AppointmentID} < $CurrentAppointment{AppointmentID} ) {
+                if ( $Appointment{AppointmentID} < $CurrentAppointment{AppointmentID} ) {
                     %NextAppointment = %CurrentAppointment;
-                    last;
-                }                
+                    last NEXTAPPOINTMENT;
+                }
             }
-            if( %NextAppointment ) {
+            if (%NextAppointment) {
                 $Kernel::OM->Get()->TaskAdd(
                     ExecutionTime => $NextAppointment{StartTime},
-                    Type => 'AppointmentTicket',
-                    Name => 'Test',
-                    Data => {
-                        Title => $Param{Title},
-                        QueueID => $Param{QueueID},
-                        Subject => $Param{Subject},
-                        Lock => 'unlock',
-                        TypeID => $Param{TypeID},
-                        ServiceID => $Param{ServiceID},
-                        SLAID => $Param{SLAID},
-                        StateID => $Param{StateID},
-                        PriorityID => $Param{PriorityID},
-                        OwnerID => $Param{OwnerID},
-                        CustomerID => $Param{CustomerID},
-                        CustomerUser => $Param{CustomerUser},
-                        UserID => $Param{UserID},
+                    Type          => 'AppointmentTicket',
+                    Name          => 'Test',
+                    Data          => {
+                        Title         => $Param{Title},
+                        QueueID       => $Param{QueueID},
+                        Subject       => $Param{Subject},
+                        Lock          => 'unlock',
+                        TypeID        => $Param{TypeID},
+                        ServiceID     => $Param{ServiceID},
+                        SLAID         => $Param{SLAID},
+                        StateID       => $Param{StateID},
+                        PriorityID    => $Param{PriorityID},
+                        OwnerID       => $Param{OwnerID},
+                        CustomerID    => $Param{CustomerID},
+                        CustomerUser  => $Param{CustomerUser},
+                        UserID        => $Param{UserID},
                         AppointmentID => $NextAppointment{AppointmentID},
                     }
                 );
             }
         }
+
         # Appointment is parent
         else {
             # Get all appointments with same title
             my @Appointments = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
                 CalendarID => $Appointment{CalendarID},
-                Title => $Appointment{Title}
-            );  
+                Title      => $Appointment{Title}
+            );
 
             # filter for parent id
-            my @FilteredAppointments = grep( $_->{ParentID} == $Appointment{ParentID}, @Appointments );
+            my @FilteredAppointments = grep { $_->{ParentID} == $Appointment{ParentID} } @Appointments;
 
-            my @SortedFilteredAppointments = sort {$a->{AppointmentID} <=> $b->{AppointmentID}} @FilteredAppointments;
-            my %NextAppointment = shift @SortedFilteredAppointments;
-            
-            if( %NextAppointment ) {
+            my @SortedFilteredAppointments = sort { $a->{AppointmentID} <=> $b->{AppointmentID} } @FilteredAppointments;
+            my %NextAppointment            = shift @SortedFilteredAppointments;
+
+            if (%NextAppointment) {
                 $Kernel::OM->Get()->TaskAdd(
                     ExecutionTime => $NextAppointment{StartTime},
-                    Type => 'AppointmentTicket',
-                    Name => 'Test',
-                    Data => {
-                        Title => $Param{Title},
-                        QueueID => $Param{QueueID},
-                        Subject => $Param{Subject},
-                        Lock => 'unlock',
-                        TypeID => $Param{TypeID},
-                        ServiceID => $Param{ServiceID},
-                        SLAID => $Param{SLAID},
-                        StateID => $Param{StateID},
-                        PriorityID => $Param{PriorityID},
-                        OwnerID => $Param{OwnerID},
-                        CustomerID => $Param{CustomerID},
-                        CustomerUser => $Param{CustomerUser},
-                        UserID => $Param{UserID},
+                    Type          => 'AppointmentTicket',
+                    Name          => 'Test',
+                    Data          => {
+                        Title         => $Param{Title},
+                        QueueID       => $Param{QueueID},
+                        Subject       => $Param{Subject},
+                        Lock          => 'unlock',
+                        TypeID        => $Param{TypeID},
+                        ServiceID     => $Param{ServiceID},
+                        SLAID         => $Param{SLAID},
+                        StateID       => $Param{StateID},
+                        PriorityID    => $Param{PriorityID},
+                        OwnerID       => $Param{OwnerID},
+                        CustomerID    => $Param{CustomerID},
+                        CustomerUser  => $Param{CustomerUser},
+                        UserID        => $Param{UserID},
                         AppointmentID => $NextAppointment{AppointmentID},
                     }
                 );
@@ -201,7 +219,7 @@ sub Run {
         }
     }
 
-    return $Success;
+    return $TicketID;
 }
 
 1;
