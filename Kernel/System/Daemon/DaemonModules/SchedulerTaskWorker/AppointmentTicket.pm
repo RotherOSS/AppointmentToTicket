@@ -122,17 +122,17 @@ sub Run {
 
     # TODO DynamicFields: No getting and processing, just storing existing values
     # set ticket dynamic fields
-    my %DynamicFields = %{ $Param{Data}->{DynamicFields} };
-    for my $DynamicField ( keys %DynamicFields ) {
+    # my %DynamicFields = %{ $Param{Data}->{DynamicFields} };
+    # for my $DynamicField ( keys %DynamicFields ) {
 
-        # set the value
-        my $Success = $DynamicFieldBackendObject->ValueSet(
-            DynamicFieldConfig => $DynamicFields{$DynamicField}->{DynamicFieldConfig},
-            ObjectID           => $TicketID,
-            Value              => $DynamicFields{$DynamicField}->{Value},
-            UserID             => $Param{Data}->{UserID},
-        );
-    }
+    # set the value
+    #     my $Success = $DynamicFieldBackendObject->ValueSet(
+    #         DynamicFieldConfig => $DynamicFields{$DynamicField}->{DynamicFieldConfig},
+    #         ObjectID           => $TicketID,
+    #         Value              => $DynamicFields{$DynamicField}->{Value},
+    #         UserID             => $Param{Data}->{UserID},
+    #     );
+    # }
 
     my $ArticleObject        = $Kernel::OM->Get('Kernel::System::Ticket::Article');
     my $ArticleBackendObject = $ArticleObject->BackendForChannel( ChannelName => 'Internal' );
@@ -161,6 +161,7 @@ sub Run {
         # },
         Queue => $Param{Data}->{QueueID},
     );
+    
     if ( !$ArticleID ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'error',
@@ -170,18 +171,18 @@ sub Run {
 
     # set article dynamic fields
     # cycle through the activated Dynamic Fields for this screen
-    DYNAMICFIELD:
-    for my $DynamicField ( keys %DynamicFields ) {
-        next DYNAMICFIELD if $DynamicFields{$DynamicField}->{DynamicFieldConfig}->{ObjectType} ne 'Article';
+    # DYNAMICFIELD:
+    # for my $DynamicField ( keys %DynamicFields ) {
+    #     next DYNAMICFIELD if $DynamicFields{$DynamicField}->{DynamicFieldConfig}->{ObjectType} ne 'Article';
 
-        # set the value
-        my $Success = $DynamicFieldBackendObject->ValueSet(
-            DynamicFieldConfig => $DynamicFields{$DynamicField}->{DynamicFieldConfig},
-            ObjectID           => $ArticleID,
-            Value              => $DynamicFields{$DynamicField}->{Value},
-            UserID             => $Param{Data}->{UserID},
-        );
-    }
+    # set the value
+    #     my $Success = $DynamicFieldBackendObject->ValueSet(
+    #         DynamicFieldConfig => $DynamicFields{$DynamicField}->{DynamicFieldConfig},
+    #         ObjectID           => $ArticleID,
+    #         Value              => $DynamicFields{$DynamicField}->{Value},
+    #         UserID             => $Param{Data}->{UserID},
+    #     );
+    # }
 
     my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
         AppointmentID => $Param{Data}->{AppointmentID},

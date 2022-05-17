@@ -1719,17 +1719,17 @@ sub Run {
         # TODO Add DynamicField Stuff similar to AgentTicketPhone
         # TODO Find out if this goes via DynamicFieldScreens or not
     # cycle through the activated Dynamic Fields for this screen
-    DYNAMICFIELD:
-    for my $DynamicFieldConfig ( @{ $Self->{DynamicField} } ) {
-        next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+    # DYNAMICFIELD:
+    # for my $DynamicFieldConfig ( @{ $Self->{DynamicField} } ) {
+    #     next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
 
         # extract the dynamic field value from the web request
-        $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
-            DynamicFieldConfig => $DynamicFieldConfig,
-            ParamObject        => $ParamObject,
-            LayoutObject       => $LayoutObject,
-        );   
-    } 
+    #     $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+    #         DynamicFieldConfig => $DynamicFieldConfig,
+    #         ParamObject        => $ParamObject,
+    #         LayoutObject       => $LayoutObject,
+    #     );   
+    # } 
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task
         $GetParam{TicketSubject} = 'TestSubject';
@@ -1742,7 +1742,7 @@ sub Run {
         $GetParam{TicketLock} = 'unlock';
         $GetParam{TicketPriority} = '3 normal';
         $GetParam{TicketState} = 'new';
-        $GetParam{TicketDynamicFields} = \%DynamicFields;
+        # $GetParam{TicketDynamicFields} = \%DynamicFields;
 # EO AppointmentToTicket
 
         if (%Appointment) {
