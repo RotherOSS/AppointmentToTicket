@@ -198,96 +198,84 @@ sub Run {
         UserID       => $Param{Data}->{UserID},
     );
 
-    # Check if appointment is recurring and if so, create next future task
+    # Check if appointment is recurring and if so, create next future task for appointment which is in the future and closest to now
     if ( $Appointment{Recurring} ) {
 
-        # Appointment is child
-        if ( $Appointment{ParentID} ) {
+        # Get all related appointments
+        my @Appointments = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
+            CalendarID => $Appointment{CalendarID},
+            ParentID   => $Appointment{ParentID},
+        );
 
-            # Get all related appointments
-            my @Appointments = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
-                CalendarID => $Appointment{CalendarID},
-                ParentID   => $Appointment{ParentID},
+        # Push parent into list since AppointmentList with filter ParentID does not include the parent itself
+        # TODO Discuss wanted behaviour
+        push @Appointments,
+            $Kernel::OM->Get('Kernel::System::Calendar::Appointment')
+            ->AppointmentGet( AppointmentID => ( $Appointment{ParentID} ? $Appointment{ParentID} : $Appointment{AppointmentID} ) );
+
+        my $CurrentTimeObject = $Kernel::OM->Create(
+            'Kernel::System::DateTime'
+        );
+
+        my %NextAppointment;
+        my $TimeDiff;
+        my $ExecutionTime;
+        for my $AppointmentRef (@Appointments) {
+
+            # TODO Change to check recurring id -> don't, because recurring id is not updated
+            # TODO Somehow compute execution time
+            my $AppointmentExecutionTimeObject = $Kernel::OM->Create(
+                'Kernel::System::DateTime',
+                ObjectParams => {
+                    String => $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentToTicketExecutionTime(
+                        Data => {
+                            TicketTime                      => $Param{Data}->{TicketTime},
+                            TicketTemplate                  => $Param{Data}->{TicketTemplate},
+                            TicketCustom                    => $Param{Data}->{TicketCustom},
+                            TicketCustomRelativeUnitCount   => $Param{Data}->{TicketCustomRelativeUnitCount},
+                            TicketCustomRelativeUnit        => $Param{Data}->{TicketCustomRelativeUnit},
+                            TicketCustomRelativePointOfTime => $Param{Data}->{TicketCustomRelativePointOfTime},
+                            TicketCustomDateTime            => $Param{Data}->{TicketCustomDateTime},
+                        },
+                        StartTime => $AppointmentRef->{StartTime},
+                        EndTime   => $AppointmentRef->{EndTime},
+                    ),
+                },
             );
-
-            # filter for parent id
-            my @FilteredAppointments = grep { $_->{ParentID} == $Appointment{ParentID} } @Appointments;
-
-            my @SortedFilteredAppointments = sort { $a->{AppointmentID} <=> $b->{AppointmentID} } @FilteredAppointments;
-            my %NextAppointment;
-            NEXTAPPOINTMENT:
-            for my $AppointmentRef (@SortedFilteredAppointments) {
-                my %CurrentAppointment = %{$AppointmentRef};
-                if ( $Appointment{AppointmentID} < $CurrentAppointment{AppointmentID} ) {
-                    %NextAppointment = %CurrentAppointment;
-                    last NEXTAPPOINTMENT;
+            if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentTimeObject ) ) {
+                if ( !defined $TimeDiff || $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentTimeObject ) < $TimeDiff ) {
+                    %NextAppointment = %{$AppointmentRef};
+                    $TimeDiff        = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentTimeObject );
+                    my $ExecutionTime = $AppointmentExecutionTimeObject->ToString();
                 }
             }
-            if (%NextAppointment) {
-                $Kernel::OM->Get()->TaskAdd(
-
-                    # TODO Compute ExecutionTime correctly
-                    ExecutionTime => $NextAppointment{StartTime},
-                    Type          => 'AppointmentTicket',
-                    Name          => 'Test',
-                    Data          => {
-                        Title         => $Param{Title},
-                        QueueID       => $Param{QueueID},
-                        Subject       => $Param{Subject},
-                        Lock          => 'unlock',
-                        TypeID        => $Param{TypeID},
-                        ServiceID     => $Param{ServiceID},
-                        SLAID         => $Param{SLAID},
-                        StateID       => $Param{StateID},
-                        PriorityID    => $Param{PriorityID},
-                        OwnerID       => $Param{OwnerID},
-                        CustomerID    => $Param{CustomerID},
-                        CustomerUser  => $Param{CustomerUser},
-                        UserID        => $Param{UserID},
-                        AppointmentID => $NextAppointment{AppointmentID},
-                    }
-                );
-            }
         }
+        if (%NextAppointment) {
+            $Kernel::OM->Get()->FutureTaskAdd(
 
-        # Appointment is parent
-        else {
-            # Get all appointments with same title
-            my @Appointments = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
-                CalendarID => $Appointment{CalendarID},
-                Title      => $Appointment{Title}
+                # TODO Compute ExecutionTime correctly
+                ExecutionTime => $ExecutionTime,
+                Type          => 'AppointmentTicket',
+                Name          => 'Test',
+                Data          => {
+                    Title         => $Param{Title},
+                    QueueID       => $Param{QueueID},
+                    Subject       => $Param{Subject},
+                    Lock          => 'unlock',
+                    TypeID        => $Param{TypeID},
+                    ServiceID     => $Param{ServiceID},
+                    SLAID         => $Param{SLAID},
+                    StateID       => $Param{StateID},
+                    PriorityID    => $Param{PriorityID},
+                    OwnerID       => $Param{OwnerID},
+                    CustomerID    => $Param{CustomerID},
+                    CustomerUser  => $Param{CustomerUser},
+                    UserID        => $Param{UserID},
+                    AppointmentID => $NextAppointment{AppointmentID},
+                }
             );
-
-            # filter for parent id
-            my @FilteredAppointments = grep { $_->{ParentID} == $Appointment{ParentID} } @Appointments;
-
-            my @SortedFilteredAppointments = sort { $a->{AppointmentID} <=> $b->{AppointmentID} } @FilteredAppointments;
-            my %NextAppointment            = shift @SortedFilteredAppointments;
-
-            if (%NextAppointment) {
-                $Kernel::OM->Get()->TaskAdd(
-                    ExecutionTime => $NextAppointment{StartTime},
-                    Type          => 'AppointmentTicket',
-                    Name          => 'Test',
-                    Data          => {
-                        Title         => $Param{Title},
-                        QueueID       => $Param{QueueID},
-                        Subject       => $Param{Subject},
-                        Lock          => 'unlock',
-                        TypeID        => $Param{TypeID},
-                        ServiceID     => $Param{ServiceID},
-                        SLAID         => $Param{SLAID},
-                        StateID       => $Param{StateID},
-                        PriorityID    => $Param{PriorityID},
-                        OwnerID       => $Param{OwnerID},
-                        CustomerID    => $Param{CustomerID},
-                        CustomerUser  => $Param{CustomerUser},
-                        UserID        => $Param{UserID},
-                        AppointmentID => $NextAppointment{AppointmentID},
-                    }
-                );
-            }
         }
+
     }
 
     return $TicketID;
