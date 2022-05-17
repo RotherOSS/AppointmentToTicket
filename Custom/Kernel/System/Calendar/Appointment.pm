@@ -1739,7 +1739,7 @@ sub AppointmentUpdate {
         }
         if ( $Appointment{FutureTaskID} ) {
            $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskUpdate(
-                FutureTaskID  => $Param{FutureTaskID},
+                TaskID  => $Param{FutureTaskID},
                 ExecutionTime => $Param{TicketDate},
                 Type          => 'AppointmentTicket',
                 Data          => {
