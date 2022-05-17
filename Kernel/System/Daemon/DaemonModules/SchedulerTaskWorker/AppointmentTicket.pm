@@ -22,10 +22,13 @@ use warnings;
 use parent qw(Kernel::System::Daemon::DaemonModules::BaseTaskWorker);
 
 our @ObjectDependencies = (
+    'Kernel::Config',
+    'Kernel::System::DynamicField::Backend',
     'Kernel::System::LinkObject',
     'Kernel::System::Log',
     'Kernel::System::Calendar::Appointment',
     'Kernel::System::Ticket',
+    'Kernel::System::Ticket::Article',
 );
 
 =head1 NAME
@@ -88,29 +91,95 @@ sub Run {
     # stop execution if an error in params is detected
     return if !$CheckResult;
 
+    my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
+    my $ConfigObject              = $Kernel::OM->Get('Kernel::Config');
+
     if ( $Self->{Debug} ) {
         print "    $Self->{WorkerName} executes task: $Param{TaskName}\n";
     }
 
     # create the appointment ticket
     my $TicketID = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate(
-        QueueID => $Param{Data}->{QueueID},
-        CustomerID => $Param{Data}->{CustomerID},
+        QueueID      => $Param{Data}->{QueueID},
+        CustomerID   => $Param{Data}->{CustomerID},
         CustomerUser => $Param{Data}->{CustomerUser},
-        UserID => $Param{Data}->{UserID},
-        OwnerID => $Param{Data}->{OwnerID},
-        Lock => $Param{Data}->{Lock},
-        Priority => $Param{Data}->{Priority},
-        State => $Param{Data}->{State},
-        Title => $Param{Data}->{Title},
-        Subject => $Param{Data}->{Subject},
-        Content => $Param{Data}->{Content},
+        UserID       => $Param{Data}->{UserID},
+        OwnerID      => $Param{Data}->{OwnerID},
+        Lock         => $Param{Data}->{Lock},
+        Priority     => $Param{Data}->{Priority},
+        State        => $Param{Data}->{State},
+        Title        => $Param{Data}->{Title},
+        Subject      => $Param{Data}->{Subject},
+        Content      => $Param{Data}->{Content},
     );
 
     if ( !$TicketID ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'error',
             Message  => "Could not trigger ticket appointment for AppointmentID $Param{Data}->{AppointmentID}!",
+        );
+    }
+
+    # TODO DynamicFields: No getting and processing, just storing existing values
+    # set ticket dynamic fields
+    my %DynamicFields = %{ $Param{Data}->{DynamicFields} };
+    for my $DynamicField ( keys %DynamicFields ) {
+
+        # set the value
+        my $Success = $DynamicFieldBackendObject->ValueSet(
+            DynamicFieldConfig => $DynamicFields{$DynamicField}->{DynamicFieldConfig},
+            ObjectID           => $TicketID,
+            Value              => $DynamicFields{$DynamicField}->{Value},
+            UserID             => $Param{Data}->{UserID},
+        );
+    }
+
+    my $ArticleObject        = $Kernel::OM->Get('Kernel::System::Ticket::Article');
+    my $ArticleBackendObject = $ArticleObject->BackendForChannel( ChannelName => 'Internal' );
+    my $ArticleID            = $ArticleBackendObject->ArticleCreate(
+        TicketID             => $TicketID,
+        SenderType           => 'system',
+        IsVisibleForCustomer => 0,
+        From                 => $Param{Data}->{User},
+        To                   => $Param{Data}->{CustomerUser},
+        Subject              => $Param{Data}->{Subject},
+        Body                 => $Param{Data}->{Content},
+        MimeType             => 'text/html',
+        Charset              => 'utf-8',
+        UserID               => $Param{Data}->{UserID},
+        HistoryType          => 'EmailCustomer',
+        HistoryComment       => 'Automatically created ticket from appointment',
+        AutoResponseType     => ( $ConfigObject->Get('AutoResponseForWebTickets') )
+        ? 'auto reply'
+        : '',
+
+        # OrigHeader => {
+        #     From    => $GetParam{From},
+        #     To      => $GetParam{To},
+        #     Subject => $GetParam{Subject},
+        #     Body    => $PlainBody,
+        # },
+        Queue => $Param{Data}->{QueueID},
+    );
+    if ( !$ArticleID ) {
+        $Kernel::OM->Get('Kernel::System::Log')->Log(
+            Priority => 'error',
+            Message  => "Could not create article for ticket $TicketID from appointment $Param{Data}->{AppointmentID}!",
+        );
+    }
+
+    # set article dynamic fields
+    # cycle through the activated Dynamic Fields for this screen
+    DYNAMICFIELD:
+    for my $DynamicField ( keys %DynamicFields ) {
+        next DYNAMICFIELD if $DynamicFields{$DynamicField}->{DynamicFieldConfig}->{ObjectType} ne 'Article';
+
+        # set the value
+        my $Success = $DynamicFieldBackendObject->ValueSet(
+            DynamicFieldConfig => $DynamicFields{$DynamicField}->{DynamicFieldConfig},
+            ObjectID           => $ArticleID,
+            Value              => $DynamicFields{$DynamicField}->{Value},
+            UserID             => $Param{Data}->{UserID},
         );
     }
 
@@ -156,6 +225,8 @@ sub Run {
             }
             if (%NextAppointment) {
                 $Kernel::OM->Get()->TaskAdd(
+
+                    # TODO Compute ExecutionTime correctly
                     ExecutionTime => $NextAppointment{StartTime},
                     Type          => 'AppointmentTicket',
                     Name          => 'Test',
