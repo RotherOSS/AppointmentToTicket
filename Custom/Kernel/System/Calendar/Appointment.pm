@@ -445,7 +445,7 @@ sub AppointmentCreate {
             my $AppointmentTimeObject = $Kernel::OM->Create(
                 'Kernel::System::DateTime',
                 ObjectParams => {
-                    String => $Self->_AppointmentFutureTaskComputeExecutionTime(
+                    String => $Self->AppointmentToTicketExecutionTime(
                         Data => {
                             TicketTime                      => $Param{TicketTime},
                             TicketTemplate                  => $Param{TicketTemplate},
@@ -475,7 +475,7 @@ sub AppointmentCreate {
         my $AppointmentTimeObject = $Kernel::OM->Create(
             'Kernel::System::DateTime',
             ObjectParams => {
-                String => $Self->_AppointmentFutureTaskComputeExecutionTime(
+                String => $Self->AppointmentToTicketExecutionTime(
                     Data => {
                         TicketTime                      => $Param{TicketTime},
                         TicketTemplate                  => $Param{TicketTemplate},
@@ -2600,11 +2600,13 @@ sub _AppointmentNotificationPrepare {
 
 # RotherOSS / AppointmentToTicket
 # TODO Consider merging this function with the one above if possible
-=head2 _AppointmentFutureTaskComputeTime()
+=head2 AppointmentToTicketExecutionTime()
+
+computes execution time for future tasks of type AppointmentToTicket based on start time and offset params
 
 =cut
 
-sub _AppointmentFutureTaskComputeExecutionTime {
+sub AppointmentToTicketExecutionTime {
     my ( $Self, %Param ) = @_;
 
     # check needed stuff
