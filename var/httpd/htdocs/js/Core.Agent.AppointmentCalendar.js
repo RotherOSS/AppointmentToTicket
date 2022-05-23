@@ -1396,6 +1396,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      */
     TargetNS.TicketInit = function (Fields) {
         var TicketCustomStringDiv = Fields.$TicketCustomStringDiv.attr('id');
+        var TicketCustomCreationDiv = Fields.$TicketCustomCreationDiv.attr('id');
 
         if (Fields.$TicketTemplate.val() !== 'Custom') {
 
@@ -1445,6 +1446,17 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             Fields.$TicketCustomRelativeUnitCount.prop('disabled', true).prop('readonly', true);
             Fields.$TicketCustomRelativeUnit.prop('disabled', true);
             Fields.$TicketCustomRelativePointOfTime.prop('disabled', true);
+        }
+
+        if (Fields.$TicketTemplate.val() !== '0') {
+            
+            Fields.$TicketCustomCreationDiv.show();
+
+        }
+        else {
+            
+            Fields.$TicketCustomCreationDiv.hide();
+
         }
 
         // TODO: Workaround for InputFields bug in the framework (disabled attribute not checked after initialization)
@@ -2096,6 +2108,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         TargetNS.TicketInit({
             $TicketTemplate: $('#TicketTemplate'),
             $TicketCustomStringDiv: $('#TicketCustomStringDiv'),
+            $TicketCustomCreationDiv: $('#TicketCustomCreationDiv'),
             $TicketCustomRelativeInput: $('#TicketCustomRelativeInput'),
             $TicketCustomRelativeUnitCount: $('#TicketCustomRelativeUnitCount'),
             $TicketCustomRelativeUnit: $('#TicketCustomRelativeUnit'),

@@ -494,14 +494,16 @@
                     [% Data.TicketCustomDateTimeStrg %]
                 </div>
             </div>
-            <div class="Clear"></div>
-           <label for="TicketQueue">[% Translate('Select Queue') | html %]</label>
-            <div class="Field">
-                <input type="text" id="TicketQueue" name="TicketQueue">
-            </div>
-            <label for="TicketPriority">[% Translate('Priority') | html %]</label>
-            <div class="Field">
-                <input type="text" id="TicketPriority" name="TicketPriority">
+            <div class="Field" id="TicketCustomCreationDiv">
+                <div class="Clear"></div>
+                <label for="TicketQueue">[% Translate('Select Queue') | html %]</label>
+                <div class="Field">
+                    <input type="text" id="TicketQueue" name="TicketQueue">
+                </div>
+                <label for="TicketPriority">[% Translate('Priority') | html %]</label>
+                <div class="Field">
+                    <input type="text" id="TicketPriority" name="TicketPriority">
+                </div>
             </div>
        </fieldset>
 # EO AppointmentToTicket
