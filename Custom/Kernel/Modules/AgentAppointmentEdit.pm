@@ -981,6 +981,35 @@ sub Run {
         }
 
 # RotherOSS / AppointmentToTicket
+        my %FutureTask;
+        if ( %Appointment ) {
+            my $TaskID;
+            if ( $Appointment{FutureTaskID} ) {
+                $TaskID = $Appointment{FutureTaskID};
+            }
+            # Only for parent appointments 
+            elsif ( $Appointment{Recurring} ) {
+                # Check all appointments of series for future task id
+                my @AppointmentList = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
+                    CalendarID => $Appointment{CalendarID},
+                    ParentID => $Appointment{ParentID} || $Appointment{AppointmentID},
+                );
+                push @AppointmentList, $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( AppointmentID => $Appointment{ParentID} || $Appointment{AppointmentID} );
+
+                APPOINTMENTLIST:
+                for my $RecurringAppointment (@AppointmentList) {
+                    if ( $RecurringAppointment->{FutureTaskID} ) {
+                        $TaskID = $RecurringAppointment->{FutureTaskID};
+                        last APPOINTMENTLIST;
+                    }
+                }
+            }
+            if ( $TaskID ) {
+                %FutureTask = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(
+                    TaskID => $TaskID,
+                );
+            }
+        }
         # ticket template
         my @TicketTemplates = (
             {
@@ -1035,7 +1064,7 @@ sub Run {
         my %TicketTemplateLookup = map {
             $_->{Key} => $_->{Value}
         } @TicketTemplates;
-        my $SelectedTicketTemplate = $Appointment{TicketTemplate} || '0';
+        my $SelectedTicketTemplate = defined $FutureTask{Data} ? $FutureTask{Data}->{TicketTemplate} : '0';
         $Param{TicketValue} = $TicketTemplateLookup{$SelectedTicketTemplate};
 
         # ticket selection
@@ -1066,7 +1095,7 @@ sub Run {
         my %TicketCustomUnitLookup = map {
             $_->{Key} => $_->{Value}
         } @TicketCustomUnits;
-        my $SelectedTicketCustomUnit = $Appointment{TicketCustomRelativeUnit} || 'minutes';
+        my $SelectedTicketCustomUnit = ( $FutureTask{Data} ? $FutureTask{Data}->{TicketCustomRelativeUnit} : '' ) || 'minutes';
 
         # ticket custom units selection
         $Param{TicketCustomUnitsStrg} = $LayoutObject->BuildSelection(
@@ -1100,7 +1129,7 @@ sub Run {
         my %TicketCustomUnitPointOfTimeLookup = map {
             $_->{Key} => $_->{Value}
         } @TicketCustomUnitsPointOfTime;
-        my $SelectedTicketCustomUnitPointOfTime = $Appointment{TicketCustomRelativePointOfTime}
+        my $SelectedTicketCustomUnitPointOfTime = ( $FutureTask{Data} ? $FutureTask{Data}->{TicketCustomRelativePointOfTime} : '' )
             || 'beforestart';
 
         # ticket custom units point of time selection
@@ -1115,11 +1144,11 @@ sub Run {
 
         # Extract the date units for the custom date selection.
         my $TicketCustomDateTimeSettings = {};
-        if ( $Appointment{TicketCustomDateTime} ) {
+        if ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustomDateTime} ) {
             my $TicketCustomDateTimeObject = $Kernel::OM->Create(
                 'Kernel::System::DateTime',
                 ObjectParams => {
-                    String => $Appointment{TicketCustomDateTime},
+                    String => $FutureTask{Data}->{TicketCustomDateTime},
                 },
             );
             $TicketCustomDateTimeSettings = $TicketCustomDateTimeObject->Get();
@@ -1139,12 +1168,14 @@ sub Run {
         );
 
         # prepare radio button for custom date time and relative input
-        $Appointment{TicketCustom} ||= '';
+        if ( $FutureTask{Data} ) {
+            $FutureTask{Data}->{TicketCustom} ||= '';
+        }
 
-        if ( $Appointment{TicketCustom} eq 'datetime' ) {
+        if ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustom} eq 'datetime' ) {
             $Param{TicketCustomDateTimeInputRadio} = 'checked="checked"';
         }
-        elsif ( $Appointment{TicketCustom} eq 'relative' ) {
+        elsif ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustom} eq 'relative' ) {
             $Param{TicketCustomRelativeInputRadio} = 'checked="checked"';
         }
         else {
@@ -1152,21 +1183,21 @@ sub Run {
         }
 
         # ticket custom string value
-        if ( $Appointment{TicketCustom} eq 'datetime' ) {
+        if ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustom} eq 'datetime' ) {
             $Param{TicketValue} .= ', ' . $LayoutObject->{LanguageObject}->FormatTimeString(
-                $Appointment{TicketCustomDateTime},
+                $FutureTask{Data}->{TicketCustomDateTime},
                 'DateFormat'
             );
         }
-        elsif ( $Appointment{TicketCustom} eq 'relative' ) {
+        elsif ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustom} eq 'relative' ) {
             if (
-                $Appointment{TicketCustomRelativeUnit}
-                && $Appointment{TicketCustomRelativePointOfTime}
+                $FutureTask{Data}->{TicketCustomRelativeUnit}
+                && $FutureTask{Data}->{TicketCustomRelativePointOfTime}
                 )
             {
-                $Appointment{TicketCustomRelativeUnitCount} ||= 0;
+                $FutureTask{Data}->{TicketCustomRelativeUnitCount} ||= 0;
                 $Param{TicketValue} .= ', '
-                    . $Appointment{TicketCustomRelativeUnitCount}
+                    . $FutureTask{Data}->{TicketCustomRelativeUnitCount}
                     . ' '
                     . $TicketCustomUnitLookup{$SelectedTicketCustomUnit}
                     . ' '
@@ -1237,6 +1268,7 @@ sub Run {
         $LayoutObject->Block(
             Name => 'EditMask',
             Data => {
+                %{$FutureTask{Data}},
                 %Param,
                 %GetParam,
                 %Appointment,
@@ -1645,6 +1677,44 @@ sub Run {
                 $GetParam{NotificationCustomDateTime} = $NotificationCustomDateTimeObject->ToString();
             }
         }
+
+# RotherOSS / AppointmentToTicket
+        # Determine notification custom type, if supplied.
+        if ( defined $GetParam{TicketTemplate} ) {
+            if ( $GetParam{TicketTemplate} ne 'Custom' ) {
+                $GetParam{TicketCustom} = '';
+            }
+            elsif ( $GetParam{TicketCustomRelativeInput} ) {
+                $GetParam{TicketCustom} = 'relative';
+            }
+            elsif ( $GetParam{TicketCustomDateTimeInput} ) {
+                $GetParam{TicketCustom} = 'datetime';
+
+                $GetParam{TicketCustomDateTime} = sprintf(
+                    "%04d-%02d-%02d %02d:%02d:00",
+                    $GetParam{TicketCustomDateTimeYear},
+                    $GetParam{TicketCustomDateTimeMonth},
+                    $GetParam{TicketCustomDateTimeDay},
+                    $GetParam{TicketCustomDateTimeHour},
+                    $GetParam{TicketCustomDateTimeMinute}
+                );
+
+                my $TicketCustomDateTimeObject = $Kernel::OM->Create(
+                    'Kernel::System::DateTime',
+                    ObjectParams => {
+                        String   => $GetParam{TicketCustomDateTime},
+                        TimeZone => $Self->{UserTimeZone},
+                    },
+                );
+
+                if ( $Self->{UserTimeZone} ) {
+                    $TicketCustomDateTimeObject->ToOTOBOTimeZone();
+                }
+
+                $GetParam{TicketCustomDateTime} = $TicketCustomDateTimeObject->ToString();
+            }
+        }
+# EO AppointmentToTicket
 
         # team
         if ( $GetParam{'TeamID[]'} ) {

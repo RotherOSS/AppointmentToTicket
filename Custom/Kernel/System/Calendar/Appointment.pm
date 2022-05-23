@@ -1650,7 +1650,6 @@ sub AppointmentUpdate {
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
    my $CurrentDateTimeObject = $Kernel::OM->Create('Kernel::System::DateTime');
    # Set future task id to NULL and delete future task if no id provided, else update existing future task
-    print STDERR "Appointment.pm, L.1585: " . $Param{TicketTemplate} . "\n";
     if ( !$Param{TicketTemplate} ) {
 
         for my $PossibleParam (
@@ -1723,8 +1722,8 @@ sub AppointmentUpdate {
                     }
                 );
                 if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) > 0 ) {
-                    if ( !defined $TimeDiff || $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject ) < $TimeDiff ) {
-                        $TimeDiff = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject );
+                    if ( !defined $TimeDiff || $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject )->{AbsouluteSeconds} < $TimeDiff ) {
+                        $TimeDiff = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject )->{AbsoluteSeconds};
                         $FutureTaskData{Data}{AppointmentID} = $Appointment->{AppointmentID};
                         $FutureTaskData{ExecutionTime} = $AppointmentExecutionTime;
                     }
@@ -1755,7 +1754,7 @@ sub AppointmentUpdate {
             );
             if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) ) {
                 $FutureTaskData{Data}{AppointmentID} = $Param{AppointmentID};
-                $FutureTaskData{ExecutionTime} = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject );
+                $FutureTaskData{ExecutionTime} = $AppointmentExecutionTimeObject->ToString();
             }
        }
        if ( $FutureTaskData{TaskID}  ) {
@@ -1781,8 +1780,6 @@ sub AppointmentUpdate {
         else {
             if ( $FutureTaskData{Data}{AppointmentID} ) {
                 my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd( %FutureTaskData );
-                print STDERR "Appointment.pm, L.1717: " . $TaskID . "\n";
-                print STDERR "Appointment.pm, L.1718: " . $FutureTaskData{Data}{AppointmentID} . "\n";
                 if ( $TaskID ) {
                     my $SQL = "
                         UPDATE calendar_appointment
@@ -1921,6 +1918,7 @@ sub AppointmentDelete {
 
 # RotherOSS / AppointmentToTicket
     # delete future task if present
+    # TODO Handle deletion of a recurring child event and shift future task
     if ( $Appointment{FutureTaskID} ) {
         my $Success = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete(
             TaskID => $Appointment{FutureTaskID},
