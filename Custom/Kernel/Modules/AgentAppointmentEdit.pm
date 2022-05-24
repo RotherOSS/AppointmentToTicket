@@ -994,7 +994,8 @@ sub Run {
                     CalendarID => $Appointment{CalendarID},
                     ParentID => $Appointment{ParentID} || $Appointment{AppointmentID},
                 );
-                push @AppointmentList, $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( AppointmentID => $Appointment{ParentID} || $Appointment{AppointmentID} );
+                my %ParentAppointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( AppointmentID => $Appointment{ParentID} || $Appointment{AppointmentID} );
+                push @AppointmentList, \%ParentAppointment;
 
                 APPOINTMENTLIST:
                 for my $RecurringAppointment (@AppointmentList) {
@@ -1064,6 +1065,7 @@ sub Run {
         my %TicketTemplateLookup = map {
             $_->{Key} => $_->{Value}
         } @TicketTemplates;
+        
         my $SelectedTicketTemplate = defined $FutureTask{Data} ? $FutureTask{Data}->{TicketTemplate} : '0';
         $Param{TicketValue} = $TicketTemplateLookup{$SelectedTicketTemplate};
 
@@ -1264,17 +1266,44 @@ sub Run {
             }
         }
 
-        # html mask output
-        $LayoutObject->Block(
-            Name => 'EditMask',
-            Data => {
-                %{$FutureTask{Data}},
-                %Param,
-                %GetParam,
-                %Appointment,
-                PermissionLevel => $PermissionLevel{$Permissions},
-            },
-        );
+# RotherOSS / AppointmentToTicket
+#         # html mask output
+#         $LayoutObject->Block(
+#             Name => 'EditMask',
+#             Data => {
+#                 %Param,
+#                 %GetParam,
+#                 %Appointment,
+#                 PermissionLevel => $PermissionLevel{$Permissions},
+#             },
+#         );
+        
+        if ( %FutureTask ) {
+            # html mask output
+            $LayoutObject->Block(
+                Name => 'EditMask',
+                Data => {
+                    %{$FutureTask{Data} || \{}},
+                    %Param,
+                    %GetParam,
+                    %Appointment,
+                    PermissionLevel => $PermissionLevel{$Permissions},
+                },
+            );
+        }
+        else {
+            # html mask output
+            $LayoutObject->Block(
+                Name => 'EditMask',
+                Data => {
+                    %Param,
+                    %GetParam,
+                    %Appointment,
+                    PermissionLevel => $PermissionLevel{$Permissions},
+                },
+            );
+        }
+# EO AppointmentToTicket
 
         $LayoutObject->AddJSData(
             Key   => 'CalendarPermissionLevel',
@@ -1679,42 +1708,7 @@ sub Run {
         }
 
 # RotherOSS / AppointmentToTicket
-        # Determine notification custom type, if supplied.
-        if ( defined $GetParam{TicketTemplate} ) {
-            if ( $GetParam{TicketTemplate} ne 'Custom' ) {
-                $GetParam{TicketCustom} = '';
-            }
-            elsif ( $GetParam{TicketCustomRelativeInput} ) {
-                $GetParam{TicketCustom} = 'relative';
-            }
-            elsif ( $GetParam{TicketCustomDateTimeInput} ) {
-                $GetParam{TicketCustom} = 'datetime';
-
-                $GetParam{TicketCustomDateTime} = sprintf(
-                    "%04d-%02d-%02d %02d:%02d:00",
-                    $GetParam{TicketCustomDateTimeYear},
-                    $GetParam{TicketCustomDateTimeMonth},
-                    $GetParam{TicketCustomDateTimeDay},
-                    $GetParam{TicketCustomDateTimeHour},
-                    $GetParam{TicketCustomDateTimeMinute}
-                );
-
-                my $TicketCustomDateTimeObject = $Kernel::OM->Create(
-                    'Kernel::System::DateTime',
-                    ObjectParams => {
-                        String   => $GetParam{TicketCustomDateTime},
-                        TimeZone => $Self->{UserTimeZone},
-                    },
-                );
-
-                if ( $Self->{UserTimeZone} ) {
-                    $TicketCustomDateTimeObject->ToOTOBOTimeZone();
-                }
-
-                $GetParam{TicketCustomDateTime} = $TicketCustomDateTimeObject->ToString();
-            }
-        }
-# EO AppointmentToTicket
+        # EO AppointmentToTicket
 
         # team
         if ( $GetParam{'TeamID[]'} ) {
@@ -1786,7 +1780,95 @@ sub Run {
         my @PluginParams = grep { $_ =~ /^Plugin_/ } keys %GetParam;
 
 # RotherOSS / AppointmentToTicket
-        # TODO Add DynamicField Stuff similar to AgentTicketPhone
+        if ( !@PluginParams ) {
+            # Coming from either drag and drop or resize, filling params with existing data if present
+            if ( $GetParam{AppointmentID} ) {
+                my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
+                    AppointmentID => $GetParam{AppointmentID},
+                );
+                
+                my $FutureTaskID;
+                if ( $Appointment{FutureTaskID} ) {
+                    $FutureTaskID = $Appointment{FutureTaskID};
+                } 
+                elsif ( $Appointment{Recurring} || $Appointment{ParentID} ) {
+                    my @AppointmentList = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
+                        CalendarID => $Appointment{CalendarID},
+                        ParentID => $Appointment{ParentID} || $Appointment{AppointmentID},
+                    );
+                    my %ParentAppointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
+                        AppointmentID => $Appointment{ParentID} || $Appointment{AppointmentID},
+                    );
+                    push @AppointmentList, \%ParentAppointment;
+                    APPOINTMENTRECURRING:
+                    for my $RecurringAppointment (@AppointmentList) {
+                        if ( $RecurringAppointment->{FutureTaskID} ) {
+                            $FutureTaskID = $RecurringAppointment->{FutureTaskID};
+                            last APPOINTMENTRECURRING;
+                        }
+                    }
+                }
+
+                if ( $FutureTaskID ) {
+                    my %FutureTask = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(
+                        TaskID => $FutureTaskID,
+                    );
+                    $GetParam{TicketTemplate} = $FutureTask{Data}->{TicketTemplate};
+                    $GetParam{TicketTime} = $FutureTask{Data}->{TicketTime};
+                    $GetParam{TicketCustom} = $FutureTask{Data}->{TicketCustom};
+                    $GetParam{TicketCustomRelativeUnitCount} = $FutureTask{Data}->{TicketCustomRelativeUnitCount};
+                    $GetParam{TicketCustomRelativeUnit} = $FutureTask{Data}->{TicketCustomRelativeUnit};
+                    $GetParam{TicketCustomRelativePointOfTime} = $FutureTask{Data}->{TicketCustomRelativePointOfTime};
+                    $GetParam{TicketCustomDateTime} = $FutureTask{Data}->{TicketCustomDateTime};
+                    $GetParam{TicketQueueID} = $FutureTask{Data}->{TicketQueueID};
+                    $GetParam{TicketCustomerID} = $FutureTask{Data}->{TicketQueueID};
+                    $GetParam{TicketCustomerUser} = $FutureTask{Data}->{TicketCustomerUser};
+                    $GetParam{TicketUserID} = $FutureTask{Data}->{TicketUserID};
+                    $GetParam{TicketOwnerID} = $FutureTask{Data}->{TicketOwnerID};
+                    $GetParam{TicketLock} = $FutureTask{Data}->{TicketLock};
+                    $GetParam{TicketPriority} = $FutureTask{Data}->{TicketPriority};
+                    $GetParam{TicketState} = $FutureTask{Data}->{TicketState};
+                }
+            }
+        }
+        
+        # Determine notification custom type, if supplied.
+        if ( defined $GetParam{TicketTemplate} ) {
+            if ( $GetParam{TicketTemplate} ne 'Custom' ) {
+                $GetParam{TicketCustom} = '';
+            }
+            elsif ( $GetParam{TicketCustomRelativeInput} ) {
+                $GetParam{TicketCustom} = 'relative';
+            }
+            elsif ( $GetParam{TicketCustomDateTimeInput} ) {
+                $GetParam{TicketCustom} = 'datetime';
+
+                $GetParam{TicketCustomDateTime} = sprintf(
+                    "%04d-%02d-%02d %02d:%02d:00",
+                    $GetParam{TicketCustomDateTimeYear},
+                    $GetParam{TicketCustomDateTimeMonth},
+                    $GetParam{TicketCustomDateTimeDay},
+                    $GetParam{TicketCustomDateTimeHour},
+                    $GetParam{TicketCustomDateTimeMinute}
+                );
+
+                my $TicketCustomDateTimeObject = $Kernel::OM->Create(
+                    'Kernel::System::DateTime',
+                    ObjectParams => {
+                        String   => $GetParam{TicketCustomDateTime},
+                        TimeZone => $Self->{UserTimeZone},
+                    },
+                );
+
+                if ( $Self->{UserTimeZone} ) {
+                    $TicketCustomDateTimeObject->ToOTOBOTimeZone();
+                }
+
+                $GetParam{TicketCustomDateTime} = $TicketCustomDateTimeObject->ToString();
+            }
+        }
+
+       # TODO Add DynamicField Stuff similar to AgentTicketPhone
         # TODO Find out if this goes via DynamicFieldScreens or not
     # cycle through the activated Dynamic Fields for this screen
     # DYNAMICFIELD:
@@ -1814,7 +1896,6 @@ sub Run {
         $GetParam{TicketState} = 'new';
         # $GetParam{TicketDynamicFields} = \%DynamicFields;
 # EO AppointmentToTicket
-
         if (%Appointment) {
 
             # Continue only if coming from edit screen

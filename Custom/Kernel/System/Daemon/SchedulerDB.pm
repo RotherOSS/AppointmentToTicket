@@ -1239,6 +1239,7 @@ delete a task from scheduler future task list
 sub FutureTaskDelete {
     my ( $Self, %Param ) = @_;
 
+    print STDERR "SchedulerDB.pm, L.1241: Should get here somehow\n";
     # check needed stuff
     if ( !$Param{TaskID} ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
