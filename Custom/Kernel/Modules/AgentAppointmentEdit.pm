@@ -74,6 +74,7 @@ sub Run {
     }
 
     my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
+    my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
     my $LayoutObject      = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
     my $CalendarObject    = $Kernel::OM->Get('Kernel::System::Calendar');
     my $AppointmentObject = $Kernel::OM->Get('Kernel::System::Calendar::Appointment');
@@ -1277,6 +1278,278 @@ sub Run {
 #                 PermissionLevel => $PermissionLevel{$Permissions},
 #             },
 #         );
+    
+        # frontend specific config
+        my $Config = $ConfigObject->Get("AgentAppointmentEdit");
+        my %UserPreferences = $Kernel::OM->Get('Kernel::System::User')->GetUserData(
+            UserID => $Self->{UserID},
+        );
+
+        # Fetch dynamic field configs
+        my @DynamicFieldConfigs = @{ $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+            Valid       => 1,
+            ObjectType  => [ 'Ticket', 'Article' ],
+            FieldFilter => $Config->{DynamicField} || {},
+        ) }; 
+        my %DynamicFieldValues;
+        my %StdFieldValues;
+
+        # cycle through the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+
+            # extract the dynamic field value from the web request
+            $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+                DynamicFieldConfig => $DynamicFieldConfig,
+                ParamObject        => $ParamObject,
+                LayoutObject       => $LayoutObject,
+            );   
+        }
+
+        if ( $GetParam{TicketQueue} ) {
+            my @QueueParts = split( /\|\|/, $GetParam{TicketQueue} );
+            $GetParam{TicketQueueID} = $QueueParts[0];
+        }
+        elsif ( %FutureTask ) {
+            $GetParam{TicketQueueID} = $FutureTask{Data}->{TicketQueueID};
+            $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
+        }
+        else {
+            my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
+
+            # TODO Check if $UserDefaultQueue is an ID or a queue name
+            if ($UserDefaultQueue) {
+                $GetParam{TicketQueueID} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( Queue => $UserDefaultQueue );
+                if ( $GetParam{TicketQueueID} ) {
+                    $GetParam{TicketQueue} = "$GetParam{TicketQueueID}||$UserDefaultQueue";
+                }
+            }
+        }
+
+        # cycle trough the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+            next DYNAMICFIELD if !IsHashRefWithData( $DynamicFieldConfig->{Config} );
+            next DYNAMICFIELD if !$DynamicFieldConfig->{Name};
+
+            # to store dynamic field value from database (or undefined)
+            my $Value;
+
+            # Check if the user has a user specific default value for
+            # the dynamic field, otherwise will use Dynamic Field default value
+            # get default value from dynamic field config (if any)
+            $Value = $DynamicFieldConfig->{Config}->{DefaultValue} || '';
+
+            # override the value from user preferences if is set
+            if ( $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} } ) {
+                $Value = $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} };
+            }
+
+            if ( $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
+                $Value = $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}};
+            }
+
+            $GetParam{DynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
+        }
+
+        # which standard fields to check - FieldID => GetParamValue (neccessary for Dest)
+        my %Check = (
+            QueueID            => 'QueueID',
+            UserID          => 'UserID',
+            StateID        => 'StateID',
+            PriorityID         => 'PriorityID',
+            ServiceID          => 'ServiceID',
+            SLAID              => 'SLAID',
+            StandardTemplateID => 'StandardTemplateID',
+            TypeID             => 'TypeID',
+        );
+
+        # for each standard field which has to be checked, run the defined method
+
+        my $QueueValues = $Self->_GetTos(
+            %GetParam,
+        );
+        my $UserValues = $Self->_GetUsers(
+            %GetParam,
+        );
+        my $PriorityValues = $Self->_GetPriorities(
+            %GetParam,
+        );
+        # my $StateValues = $Self->_GetStates(
+        #     %GetParam,
+        # );
+
+        # create html strings for all dynamic fields
+        my %DynamicFieldHTML;
+        DYNAMICFIELD:
+        for my $i ( 0 .. $#DynamicFieldConfigs ) {
+            next DYNAMICFIELD if !IsHashRefWithData( $DynamicFieldConfigs[$i] );
+
+            my $DynamicFieldConfig = $DynamicFieldConfigs[$i];
+
+            # get field html
+            $DynamicFieldHTML{ $DynamicFieldConfig->{FieldOrder} } = $DynamicFieldBackendObject->EditFieldRender(
+                DynamicFieldConfig   => $DynamicFieldConfig,
+                Value           => $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
+                LayoutObject    => $LayoutObject,
+                ParamObject     => $ParamObject,
+                AJAXUpdate      => 1,
+                Mandatory       => $Config->{DynamicField}->{ $DynamicFieldConfig->{Name} } == 2,
+            );
+        }
+
+        # get and format default subject and body
+        my $Subject = $GetParam{TicketSubject};
+        if ( !$Subject ) {
+            $Subject = $LayoutObject->Output(
+                Template => $Config->{Subject} || '',
+            );
+        }
+
+        my $Body = $GetParam{Content} || '';
+        if ( !$Body ) {
+            $Body = $LayoutObject->Output(
+                Template => $Config->{Body} || '',
+            );
+        }
+
+        # get list type
+        my $TreeView = 0;               
+        if ( $ConfigObject->Get('Ticket::Frontend::ListType') eq 'tree' ) {
+            $TreeView = 1;
+        }
+
+        # TODO Where does NextStates come from?
+        # build next states string
+        # $Param{NextStatesStrg} = $LayoutObject->BuildSelection(
+        #     Data          => $Param{NextStates},
+        #     Name          => 'NextStateID',
+        #     Class         => 'Modernize',
+        #     Translation   => 1,
+        #     SelectedValue => $Param{NextState} || $Config->{StateDefault},
+        # );
+
+        # TODO Check $Param{To}
+        # build to string
+        my $QueueData = $Self->_GetTos(
+            %GetParam,
+        );
+        
+        if ( !$GetParam{Queue} ) {
+            my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
+
+            if ($UserDefaultQueue) {
+                my $QueueID = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( Queue => $UserDefaultQueue );
+                if ($QueueID) {
+                    $GetParam{Queue} = "$QueueID||$UserDefaultQueue";
+                }
+            }
+        }
+
+        my $QueueHTMLString;
+        if ( $ConfigObject->Get('Ticket::Frontend::NewQueueSelectionType') eq 'Queue' ) {
+            $QueueHTMLString = $LayoutObject->AgentQueueListOption(
+                Class          => 'Validate_Required Modernize',
+                Data           => $QueueData,
+                Multiple       => 0,
+                Size           => 0,
+                Name           => 'TicketQueue',
+                TreeView       => $TreeView,
+                SelectedID     => $GetParam{QueueID},
+                OnChangeSubmit => 0,
+            );
+        }
+        else {
+            $QueueHTMLString = $LayoutObject->BuildSelection(
+                Class       => 'Validate_Required Modernize',
+                Data        => $QueueData,
+                Name        => 'TicketQueue',
+                TreeView    => $TreeView,
+                SelectedID  => $GetParam{QueueID},
+                Translation => 0,
+            );
+        }
+
+        # TODO fetch Types
+        # build type string
+        if ( $ConfigObject->Get('Ticket::Type') ) {
+            $Param{TypeStrg} = $LayoutObject->BuildSelection(
+                Class        => 'Modernize Validate_Required' . ( $Param{Errors}->{TypeIDInvalid} || ' ' ),
+                Data         => $Param{Types},
+                Name         => 'TypeID',
+                SelectedID   => $GetParam{TicketType},
+                PossibleNone => 1,
+                Sort         => 'AlphanumericValue',
+                Translation  => 0,
+            );
+            $LayoutObject->Block(
+                Name => 'TicketType',
+                Data => {%Param},
+            );
+        }
+
+        # build priority string
+        if ( !$GetParam{TicketPriority} ) {
+            $GetParam{TicketPriority} = $Config->{Priority};
+        }
+        # TODO fetch Priorities
+        my $PriorityHTMLString = $Param{PriorityStrg} = $LayoutObject->BuildSelection(
+            Class         => 'Modernize',
+            Data          => $PriorityValues,
+            Name          => 'PriorityID',
+            SelectedID    => $GetParam{TicketPriority},
+            SelectedValue => $GetParam{TicketPriority},
+            Translation   => 1,
+        );
+
+        # show owner selection
+        if ( $ConfigObject->Get('Ticket::Frontend::NewOwnerSelection') ) {
+            $LayoutObject->Block(
+                Name => 'OwnerSelection',
+                Data => \%Param,
+            );
+        }
+
+        # Dynamic fields
+        # cycle through the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+
+            # TODO Find out how this works
+            # skip fields that HTML could not be retrieved
+            next DYNAMICFIELD if !IsHashRefWithData(
+                $Param{DynamicFieldHTML}->{ $DynamicFieldConfig->{Name} }
+            );
+
+            # get the html strings form $Param
+            my $DynamicFieldHTML = $Param{DynamicFieldHTML}->{ $DynamicFieldConfig->{Name} };
+
+            $LayoutObject->Block(
+                Name => 'DynamicField',
+                Data => {
+                    Name  => $DynamicFieldConfig->{Name},
+                    Label => $DynamicFieldHTML->{Label},
+                    Field => $DynamicFieldHTML->{Field},
+                },
+            );
+            # example of dynamic fields order customization
+            $LayoutObject->Block(
+                Name => 'DynamicField_' . $DynamicFieldConfig->{Name},
+                Data => {
+                    Name  => $DynamicFieldConfig->{Name},
+                    Label => $DynamicFieldHTML->{Label},
+                    Field => $DynamicFieldHTML->{Field},
+                },
+            );
+        }
+        my $TicketHTMLString;
+        # my $QueueSelection = $LayoutObject->AgentQueueListOption(
+        #     Class => 'Validate_Required_Modernize',
+        #     Data => \%
+        # );
         
         if ( %FutureTask ) {
             # html mask output
@@ -1288,6 +1561,12 @@ sub Run {
                     %GetParam,
                     %Appointment,
                     PermissionLevel => $PermissionLevel{$Permissions},
+                    QueueHTMLString => $QueueHTMLString,
+                    PriorityHTMLString => $PriorityHTMLString,
+                    # CustomerUserHTMLString => $CustomerUserHTMLString,
+                    # SubjectHTMLString => $SubjectHTMLString,
+                    # BodyHTMLString => $BodyHTMLString,
+                    DynamicFieldHTML => \%DynamicFieldHTML,
                 },
             );
         }
@@ -1300,7 +1579,12 @@ sub Run {
                     %GetParam,
                     %Appointment,
                     PermissionLevel => $PermissionLevel{$Permissions},
-                },
+                    PriorityHTMLString => $PriorityHTMLString,
+                    # CustomerUserHTMLString => $CustomerUserHTMLString,
+                    # SubjectHTMLString => $SubjectHTMLString,
+                    # BodyHTMLString => $BodyHTMLString,
+                    DynamicFieldHTML => \%DynamicFieldHTML,
+               },
             );
         }
 # EO AppointmentToTicket
@@ -1763,7 +2047,6 @@ sub Run {
             }
         }
 
-
         my $Success;
 
         # reset empty parameters
@@ -1884,9 +2167,8 @@ sub Run {
     # } 
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task
-        $GetParam{TicketSubject} = 'TestSubject';
+        $GetParam{TicketSubject} = $GetParam{Title};
         $GetParam{TicketContent} = $GetParam{Description};
-        $GetParam{TicketQueueID} = 2;
         $GetParam{TicketCustomerID} = 1;
         $GetParam{TicketCustomerUser} = 'sha@rother-oss.com';
         $GetParam{TicketUserID} = 1;
@@ -1896,6 +2178,7 @@ sub Run {
         $GetParam{TicketState} = 'new';
         # $GetParam{TicketDynamicFields} = \%DynamicFields;
 # EO AppointmentToTicket
+
         if (%Appointment) {
 
             # Continue only if coming from edit screen
@@ -1946,7 +2229,6 @@ sub Run {
         }
 
         my $AppointmentID = $GetParam{AppointmentID} ? $GetParam{AppointmentID} : $Success;
-
 
         if ($AppointmentID) {
 
@@ -2242,5 +2524,254 @@ sub _DayOffsetGet {
 
     return 1;
 }
+
+# RotherOSS / AppointmentToTicket
+sub _GetStates {
+    my ( $Self, %Param ) = @_;
+
+    # use default Queue if none is provided
+    $Param{TicketQueueID} = $Param{TicketQueueID} || 1;
+    $Param{QueueID} = $Param{TicketQueueID};
+
+    my %States;
+    if ( $Param{TicketQueueID} ) {
+        %States = $Kernel::OM->Get('Kernel::System::Ticket')->TicketStateList(
+            %Param,
+            Action => $Self->{Action},
+            UserID => $Self->{UserID},
+        );
+    }
+    return \%States;
+}
+
+sub _GetUsers {
+    my ( $Self, %Param ) = @_;
+
+    # get users
+    my %ShownUsers;
+    my %AllGroupsMembers = $Kernel::OM->Get('Kernel::System::User')->UserList(
+        Type  => 'Long',
+        Valid => 1,
+    );
+
+    # get ticket object
+    my $TicketObject = $Kernel::OM->Get('Kernel::System::Ticket');
+
+    # just show only users with selected custom queue
+    if ( $Param{TicketQueueID} && !$Param{OwnerAll} ) {
+        $Param{QueueID} = $Param{TicketQueueID};
+        my @UserIDs = $TicketObject->GetSubscribedUserIDsByQueueID(%Param);
+        for my $KeyGroupMember ( sort keys %AllGroupsMembers ) {
+            my $Hit = 0;
+            for my $UID (@UserIDs) {
+                if ( $UID eq $KeyGroupMember ) {
+                    $Hit = 1;
+                }
+            }
+            if ( !$Hit ) {
+                delete $AllGroupsMembers{$KeyGroupMember};
+            }
+        }
+    }
+
+    # show all system users
+    if ( $Kernel::OM->Get('Kernel::Config')->Get('Ticket::ChangeOwnerToEveryone') ) {
+        %ShownUsers = %AllGroupsMembers;
+    }
+
+    # show all users who are owner or rw in the queue group
+    elsif ( $Param{TicketQueueID} ) {
+        my $GID        = $Kernel::OM->Get('Kernel::System::Queue')->GetQueueGroupID( QueueID => $Param{QueueID} );
+        my %MemberList = $Kernel::OM->Get('Kernel::System::Group')->PermissionGroupGet(
+            GroupID => $GID,
+            Type    => 'owner',
+        );
+        for my $KeyMember ( sort keys %MemberList ) {
+            if ( $AllGroupsMembers{$KeyMember} ) {
+                $ShownUsers{$KeyMember} = $AllGroupsMembers{$KeyMember};
+            }
+        }
+    }
+
+    return \%ShownUsers;
+}
+
+sub _GetPriorities {
+    my ( $Self, %Param ) = @_;
+
+    # use default Queue if none is provided
+    $Param{TicketQueueID} = $Param{TicketQueueID} || 1;
+
+    # get priority
+    my %Priorities;
+    if ( $Param{TicketQueueID} ) {
+        %Priorities = $Kernel::OM->Get('Kernel::System::Ticket')->TicketPriorityList(
+            %Param,
+            Action => $Self->{Action},
+            UserID => $Self->{UserID},
+        );
+    }
+    return \%Priorities;
+}
+
+sub _GetTypes {
+    my ( $Self, %Param ) = @_;
+
+    # use default Queue if none is provided
+    $Param{TicketQueueID} = $Param{TicketQueueID} || 1;
+
+    # get type
+    my %Type;
+    if ( $Param{TicketQueueID} ) {
+        %Type = $Kernel::OM->Get('Kernel::System::Ticket')->TicketTypeList(
+            %Param,
+            Action => $Self->{Action},
+            UserID => $Self->{UserID},
+        );
+    }
+    return \%Type;
+}
+
+sub _GetSLAs {
+    my ( $Self, %Param ) = @_;
+
+    # use default Queue if none is provided
+    $Param{QueueID} = $Param{QueueID} || 1;
+
+    # get services if they were not determined in an AJAX call
+    if ( !defined $Param{Services} ) {
+        $Param{Services} = $Self->_GetServices(%Param);
+    }
+
+    # get sla
+    my %SLA;
+    if ( $Param{ServiceID} && $Param{Services} && %{ $Param{Services} } ) {
+        if ( $Param{Services}->{ $Param{ServiceID} } ) {
+            %SLA = $Kernel::OM->Get('Kernel::System::Ticket')->TicketSLAList(
+                %Param,
+                Action => $Self->{Action},
+                UserID => $Self->{UserID},
+            );
+        }
+    }
+    return \%SLA;
+}
+
+sub _GetTos {
+    my ( $Self, %Param ) = @_;
+
+    # get config object
+    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
+
+    # check own selection
+    my %NewTos;
+    if ( $ConfigObject->Get('Ticket::Frontend::NewQueueOwnSelection') ) {
+        %NewTos = %{ $ConfigObject->Get('Ticket::Frontend::NewQueueOwnSelection') };
+    }
+    else {
+
+        # SelectionType Queue or SystemAddress?
+        my %Tos;
+        if ( $ConfigObject->Get('Ticket::Frontend::NewQueueSelectionType') eq 'Queue' ) {
+            %Tos = $Kernel::OM->Get('Kernel::System::Ticket')->MoveList(
+                %Param,
+                Type    => 'create',
+                Action  => $Self->{Action},
+                QueueID => $Self->{QueueID},
+                UserID  => $Self->{UserID},
+            );
+        }
+        else {
+            %Tos = $Kernel::OM->Get('Kernel::System::SystemAddress')->SystemAddressQueueList();
+        }
+
+        # get create permission queues
+        my %UserGroups = $Kernel::OM->Get('Kernel::System::Group')->PermissionUserGet(
+            UserID => $Self->{UserID},
+            Type   => 'create',
+        );
+        my $SystemAddressObject = $Kernel::OM->Get('Kernel::System::SystemAddress');
+        my $QueueObject         = $Kernel::OM->Get('Kernel::System::Queue');
+
+        # build selection string
+        QUEUEID:
+        for my $QueueID ( sort keys %Tos ) {
+
+            my %QueueData = $QueueObject->QueueGet( ID => $QueueID );
+
+            # permission check, can we create new tickets in queue
+            next QUEUEID if !$UserGroups{ $QueueData{GroupID} };
+
+            my $String = $ConfigObject->Get('Ticket::Frontend::NewQueueSelectionString')
+                || '<Realname> <<Email>> - Queue: <Queue>';
+            $String =~ s/<Queue>/$QueueData{Name}/g;
+            $String =~ s/<QueueComment>/$QueueData{Comment}/g;
+
+            # remove trailing spaces
+            if ( !$QueueData{Comment} ) {
+                $String =~ s{\s+\z}{};
+            }
+
+            if ( $ConfigObject->Get('Ticket::Frontend::NewQueueSelectionType') ne 'Queue' ) {
+                my %SystemAddressData = $SystemAddressObject->SystemAddressGet(
+                    ID => $Tos{$QueueID},
+                );
+                $String =~ s/<Realname>/$SystemAddressData{Realname}/g;
+                $String =~ s/<Email>/$SystemAddressData{Name}/g;
+            }
+            $NewTos{$QueueID} = $String;
+        }
+    }
+
+    # add empty selection
+    $NewTos{''} = '-';
+
+    return \%NewTos;
+}
+
+sub _GetStandardTemplates {
+    my ( $Self, %Param ) = @_;
+
+    my %Templates;
+    my $QueueID = $Param{QueueID} || '';
+
+    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
+    my $QueueObject  = $Kernel::OM->Get('Kernel::System::Queue');
+
+    if ( !$QueueID ) {
+        my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
+
+        if ($UserDefaultQueue) {
+            $QueueID = $QueueObject->QueueLookup( Queue => $UserDefaultQueue );
+        }
+    }
+
+    # check needed
+    return \%Templates if !$QueueID && !$Param{TicketID};
+
+    if ( !$QueueID && $Param{TicketID} ) {
+
+        # get QueueID from the ticket
+        my %Ticket = $Kernel::OM->Get('Kernel::System::Ticket')->TicketGet(
+            TicketID      => $Param{TicketID},
+            DynamicFields => 0,
+            UserID        => $Self->{UserID},
+        );
+        $QueueID = $Ticket{QueueID} || '';
+    }
+
+    # fetch all std. templates
+    my %StandardTemplates = $QueueObject->QueueStandardTemplateMemberList(
+        QueueID       => $QueueID,
+        TemplateTypes => 1,
+    );
+
+    # return empty hash if there are no templates for this screen
+    return \%Templates if !IsHashRefWithData( $StandardTemplates{Create} );
+
+    # return just the templates for this screen
+    return $StandardTemplates{Create};
+}
+# EO AppointmentToTicket
 
 1;

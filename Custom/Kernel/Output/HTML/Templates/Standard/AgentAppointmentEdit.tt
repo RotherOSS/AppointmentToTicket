@@ -498,12 +498,19 @@
                 <div class="Clear"></div>
                 <label for="TicketQueue">[% Translate('Select Queue') | html %]</label>
                 <div class="Field">
-                    <input type="text" id="TicketQueue" name="TicketQueue">
+                    [% Data.QueueHTMLString %]
                 </div>
                 <label for="TicketPriority">[% Translate('Priority') | html %]</label>
                 <div class="Field">
-                    <input type="text" id="TicketPriority" name="TicketPriority">
+                    [% Data.PriorityHTMLString %]
                 </div>
+                [% FOREACH DynamicFieldKey IN Data.DynamicFieldHTML.nsort %]
+                <div class="Clear"></div>
+                <div class="Field">
+                    [% Data.DynamicFieldHTML.$DynamicFieldKey.Label %]
+                    [% Data.DynamicFieldHTML.$DynamicFieldKey.Field %]
+                </div>
+                [% END %]
             </div>
        </fieldset>
 # EO AppointmentToTicket
