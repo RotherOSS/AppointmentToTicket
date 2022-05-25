@@ -74,6 +74,7 @@ sub Run {
     }
 
     my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
+    my $Config = $ConfigObject->Get("AgentAppointmentEdit");
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
     my $LayoutObject      = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
     my $CalendarObject    = $Kernel::OM->Get('Kernel::System::Calendar');
@@ -1278,9 +1279,9 @@ sub Run {
 #                 PermissionLevel => $PermissionLevel{$Permissions},
 #             },
 #         );
-    
+
+        # Build ticket fields    
         # frontend specific config
-        my $Config = $ConfigObject->Get("AgentAppointmentEdit");
         my %UserPreferences = $Kernel::OM->Get('Kernel::System::User')->GetUserData(
             UserID => $Self->{UserID},
         );
@@ -1291,21 +1292,6 @@ sub Run {
             ObjectType  => [ 'Ticket', 'Article' ],
             FieldFilter => $Config->{DynamicField} || {},
         ) }; 
-        my %DynamicFieldValues;
-        my %StdFieldValues;
-
-        # cycle through the activated Dynamic Fields for this screen
-        DYNAMICFIELD:
-        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
-            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
-
-            # extract the dynamic field value from the web request
-            $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
-                DynamicFieldConfig => $DynamicFieldConfig,
-                ParamObject        => $ParamObject,
-                LayoutObject       => $LayoutObject,
-            );   
-        }
 
         if ( $GetParam{TicketQueue} ) {
             my @QueueParts = split( /\|\|/, $GetParam{TicketQueue} );
@@ -1325,33 +1311,6 @@ sub Run {
                     $GetParam{TicketQueue} = "$GetParam{TicketQueueID}||$UserDefaultQueue";
                 }
             }
-        }
-
-        # cycle trough the activated Dynamic Fields for this screen
-        DYNAMICFIELD:
-        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
-            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
-            next DYNAMICFIELD if !IsHashRefWithData( $DynamicFieldConfig->{Config} );
-            next DYNAMICFIELD if !$DynamicFieldConfig->{Name};
-
-            # to store dynamic field value from database (or undefined)
-            my $Value;
-
-            # Check if the user has a user specific default value for
-            # the dynamic field, otherwise will use Dynamic Field default value
-            # get default value from dynamic field config (if any)
-            $Value = $DynamicFieldConfig->{Config}->{DefaultValue} || '';
-
-            # override the value from user preferences if is set
-            if ( $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} } ) {
-                $Value = $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} };
-            }
-
-            if ( $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
-                $Value = $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}};
-            }
-
-            $GetParam{DynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
         }
 
         # which standard fields to check - FieldID => GetParamValue (neccessary for Dest)
@@ -1381,6 +1340,48 @@ sub Run {
         #     %GetParam,
         # );
 
+        # TODO Retrieve Dynamic Field Values from FutureTask
+        my %DynamicFieldValues;
+        # cycle through the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+
+            # extract the dynamic field value from the web request
+            $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+                DynamicFieldConfig => $DynamicFieldConfig,
+                ParamObject        => $ParamObject,
+                LayoutObject       => $LayoutObject,
+            );   
+        }
+
+        # cycle trough the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+            next DYNAMICFIELD if !IsHashRefWithData( $DynamicFieldConfig->{Config} );
+            next DYNAMICFIELD if !$DynamicFieldConfig->{Name};
+
+            # to store dynamic field value from database (or undefined)
+            my $Value;
+
+            # Check if the user has a user specific default value for
+            # the dynamic field, otherwise will use Dynamic Field default value
+            # get default value from dynamic field config (if any)
+            $Value = $DynamicFieldConfig->{Config}->{DefaultValue} || '';
+
+            # override the value from user preferences if is set
+            if ( $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} } ) {
+                $Value = $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} };
+            }
+
+            if ( $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
+                $Value = $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}};
+            }
+
+            $GetParam{DynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
+        }
+
         # create html strings for all dynamic fields
         my %DynamicFieldHTML;
         DYNAMICFIELD:
@@ -1392,7 +1393,7 @@ sub Run {
             # get field html
             $DynamicFieldHTML{ $DynamicFieldConfig->{FieldOrder} } = $DynamicFieldBackendObject->EditFieldRender(
                 DynamicFieldConfig   => $DynamicFieldConfig,
-                Value           => $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
+                # Value           => $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
                 LayoutObject    => $LayoutObject,
                 ParamObject     => $ParamObject,
                 AJAXUpdate      => 1,
@@ -1431,8 +1432,7 @@ sub Run {
         #     SelectedValue => $Param{NextState} || $Config->{StateDefault},
         # );
 
-        # TODO Check $Param{To}
-        # build to string
+        # get queue data
         my $QueueData = $Self->_GetTos(
             %GetParam,
         );
@@ -1448,6 +1448,7 @@ sub Run {
             }
         }
 
+        # Build queue html string
         my $QueueHTMLString;
         if ( $ConfigObject->Get('Ticket::Frontend::NewQueueSelectionType') eq 'Queue' ) {
             $QueueHTMLString = $LayoutObject->AgentQueueListOption(
@@ -1475,7 +1476,7 @@ sub Run {
         # TODO fetch Types
         # build type string
         if ( $ConfigObject->Get('Ticket::Type') ) {
-            $Param{TypeStrg} = $LayoutObject->BuildSelection(
+            my $TypeHTMLString = $LayoutObject->BuildSelection(
                 Class        => 'Modernize Validate_Required' . ( $Param{Errors}->{TypeIDInvalid} || ' ' ),
                 Data         => $Param{Types},
                 Name         => 'TypeID',
@@ -1484,17 +1485,13 @@ sub Run {
                 Sort         => 'AlphanumericValue',
                 Translation  => 0,
             );
-            $LayoutObject->Block(
-                Name => 'TicketType',
-                Data => {%Param},
-            );
         }
 
-        # build priority string
+        # get priority data
         if ( !$GetParam{TicketPriority} ) {
             $GetParam{TicketPriority} = $Config->{Priority};
         }
-        # TODO fetch Priorities
+        # build priority html string
         my $PriorityHTMLString = $Param{PriorityStrg} = $LayoutObject->BuildSelection(
             Class         => 'Modernize',
             Data          => $PriorityValues,
@@ -1504,6 +1501,7 @@ sub Run {
             Translation   => 1,
         );
 
+        # TODO Check and maybe rebuild
         # show owner selection
         if ( $ConfigObject->Get('Ticket::Frontend::NewOwnerSelection') ) {
             $LayoutObject->Block(
@@ -1512,39 +1510,6 @@ sub Run {
             );
         }
 
-        # Dynamic fields
-        # cycle through the activated Dynamic Fields for this screen
-        DYNAMICFIELD:
-        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
-            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
-
-            # TODO Find out how this works
-            # skip fields that HTML could not be retrieved
-            next DYNAMICFIELD if !IsHashRefWithData(
-                $Param{DynamicFieldHTML}->{ $DynamicFieldConfig->{Name} }
-            );
-
-            # get the html strings form $Param
-            my $DynamicFieldHTML = $Param{DynamicFieldHTML}->{ $DynamicFieldConfig->{Name} };
-
-            $LayoutObject->Block(
-                Name => 'DynamicField',
-                Data => {
-                    Name  => $DynamicFieldConfig->{Name},
-                    Label => $DynamicFieldHTML->{Label},
-                    Field => $DynamicFieldHTML->{Field},
-                },
-            );
-            # example of dynamic fields order customization
-            $LayoutObject->Block(
-                Name => 'DynamicField_' . $DynamicFieldConfig->{Name},
-                Data => {
-                    Name  => $DynamicFieldConfig->{Name},
-                    Label => $DynamicFieldHTML->{Label},
-                    Field => $DynamicFieldHTML->{Field},
-                },
-            );
-        }
         my $TicketHTMLString;
         # my $QueueSelection = $LayoutObject->AgentQueueListOption(
         #     Class => 'Validate_Required_Modernize',
@@ -1992,7 +1957,88 @@ sub Run {
         }
 
 # RotherOSS / AppointmentToTicket
-        # EO AppointmentToTicket
+        my %FutureTask;
+        if ( %Appointment ) {
+            my $TaskID;
+            if ( $Appointment{FutureTaskID} ) {
+                $TaskID = $Appointment{FutureTaskID};
+            }
+            # Only for parent appointments 
+            elsif ( $Appointment{Recurring} ) {
+                # Check all appointments of series for future task id
+                my @AppointmentList = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
+                    CalendarID => $Appointment{CalendarID},
+                    ParentID => $Appointment{ParentID} || $Appointment{AppointmentID},
+                );
+                my %ParentAppointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( AppointmentID => $Appointment{ParentID} || $Appointment{AppointmentID} );
+                push @AppointmentList, \%ParentAppointment;
+
+                APPOINTMENTLIST:
+                for my $RecurringAppointment (@AppointmentList) {
+                    if ( $RecurringAppointment->{FutureTaskID} ) {
+                        $TaskID = $RecurringAppointment->{FutureTaskID};
+                        last APPOINTMENTLIST;
+                    }
+                }
+            }
+            if ( $TaskID ) {
+                %FutureTask = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(
+                    TaskID => $TaskID,
+                );
+            }
+        }
+        
+        my @DynamicFieldConfigs = @{ $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+            Valid       => 1,
+            ObjectType  => [ 'Ticket', 'Article' ],
+            FieldFilter => $Config->{DynamicField} || {},
+        ) };
+
+        my %UserPreferences = $Kernel::OM->Get('Kernel::System::User')->GetUserData(
+            UserID => $Self->{UserID},
+        );
+
+        my %DynamicFieldValues;
+        # cycle through the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+
+            # extract the dynamic field value from the web request
+            $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+                DynamicFieldConfig => $DynamicFieldConfig,
+                ParamObject        => $ParamObject,
+                LayoutObject       => $LayoutObject,
+            );   
+        }
+
+        # cycle trough the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+            next DYNAMICFIELD if !IsHashRefWithData( $DynamicFieldConfig->{Config} );
+            next DYNAMICFIELD if !$DynamicFieldConfig->{Name};
+
+            # to store dynamic field value from database (or undefined)
+            my $Value;
+
+            # Check if the user has a user specific default value for
+            # the dynamic field, otherwise will use Dynamic Field default value
+            # get default value from dynamic field config (if any)
+            $Value = $DynamicFieldConfig->{Config}->{DefaultValue} || '';
+
+            # override the value from user preferences if is set
+            if ( $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} } ) {
+                $Value = $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} };
+            }
+
+            if ( $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
+                $Value = $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}};
+            }
+
+            $GetParam{DynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
+        }
+# EO AppointmentToTicket
 
         # team
         if ( $GetParam{'TeamID[]'} ) {
