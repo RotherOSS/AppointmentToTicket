@@ -583,7 +583,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         ticketCustomDateTime: AppointmentData.TicketCustomDateTime,
                         ticketQueueId: AppointmentData.TicketQueueID,
                         ticketCustomerId: AppointmentData.TicketCustomerID,
-                        // TODO Check if this is correct
                         ticketCustomerUser: AppointmentData.TicketCustomerUser,
                         ticketCustomerUserSelected: AppointmentData.TicketCustomerUserSelected,
                         ticketUserId: AppointmentData.TicketUserID,
@@ -1400,18 +1399,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         var TicketCustomStringDiv = Fields.$TicketCustomStringDiv.attr('id');
         var TicketCustomCreationDiv = Fields.$TicketCustomCreationDiv.attr('id');
 
-        // Bind event to customer radio button.
-        /*$('.CustomerTicketRadio').on('change', function () {
-            var CustomerKey;
-            if ($(this).prop('checked')){
-
-                CustomerKey = $('#CustomerKey_' +$(this).val()).val();
-                // get customer tickets
-                Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
-            }   
-            return false;
-        });*/ 
-
         if (Fields.$TicketTemplate.val() !== 'Custom') {
 
             // hide the custom fields
@@ -1464,7 +1451,19 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
 
         if (Fields.$TicketTemplate.val() !== '0') {
 
-            // Bind event to customer remove button.
+            // Bind event to customer radio button.
+            $('.CustomerTicketRadio').on('change', function () {
+                var CustomerKey;
+                if ($(this).prop('checked')){
+
+                    CustomerKey = $('#CustomerKey_' +$(this).val()).val();
+                    // get customer tickets
+                    Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
+                }   
+                return false;
+            }); 
+
+           // Bind event to customer remove button.
             $('.CustomerTicketRemove').on('click', function () {
                 Core.Agent.CustomerSearch.RemoveCustomerTicket($(this));
                 return false;

@@ -159,7 +159,7 @@ sub Run {
     my $ArticleID            = $ArticleBackendObject->ArticleCreate(
         TicketID             => $TicketID,
         SenderType           => 'system',
-        IsVisibleForCustomer => 0,
+        IsVisibleForCustomer => $Param{Data}->{TicketArticleVisibleForCustomer} || 0,
         From                 => $ArticleFrom,
         To                   => $Param{Data}->{TicketUser},
         Subject              => $Param{Data}->{TicketSubject},
@@ -167,7 +167,7 @@ sub Run {
         MimeType             => 'text/html',
         Charset              => 'utf-8',
         UserID               => $Param{Data}->{TicketUserID},
-        HistoryType          => 'EmailCustomer',
+        HistoryType          => 'Misc',
         HistoryComment       => 'Automatically created ticket from appointment',
         AutoResponseType     => ( $ConfigObject->Get('AutoResponseForWebTickets') )
         ? 'auto reply'

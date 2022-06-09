@@ -575,7 +575,10 @@
                 <div class="Field">
                     [% Data.PriorityHTMLString %]
                 </div>
-                [% FOREACH DynamicFieldKey IN Data.DynamicFieldHTML.nsort %]
+                <div class="Clear"></div>
+                <label for="TicketArticleVisibleToCustomer">[% Translate('Article Visible To Customer') | html %]</label>
+                <input name="TicketArticleVisibleToCustomer" id="TicketArticleVisibleToCustomer" value="" [% Data.ArticleVisibleToCustomer | html %] type="checkbox" />
+               [% FOREACH DynamicFieldKey IN Data.DynamicFieldHTML.nsort %]
                 <div class="Clear"></div>
                 <div class="Field">
                     [% Data.DynamicFieldHTML.$DynamicFieldKey.Label %]

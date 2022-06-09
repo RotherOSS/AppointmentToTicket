@@ -1375,7 +1375,6 @@ sub Run {
         else {
             my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
 
-            # TODO Check if $UserDefaultQueue is an ID or a queue name
             if ($UserDefaultQueue) {
                 $GetParam{TicketQueueID} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( Queue => $UserDefaultQueue );
                 if ( $GetParam{TicketQueueID} ) {
@@ -1442,7 +1441,7 @@ sub Run {
                 $Value = $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} };
             }
 
-            if ( $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
+            if ( %FutureTask && $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
                 $Value = $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}};
             }
 
@@ -1465,21 +1464,6 @@ sub Run {
                 ParamObject     => $ParamObject,
                 AJAXUpdate      => 1,
                 Mandatory       => $Config->{DynamicField}->{ $DynamicFieldConfig->{Name} } == 2,
-            );
-        }
-
-        # get and format default subject and body
-        my $Subject = $GetParam{TicketSubject};
-        if ( !$Subject ) {
-            $Subject = $LayoutObject->Output(
-                Template => $Config->{Subject} || '',
-            );
-        }
-
-        my $Body = $GetParam{Content} || '';
-        if ( !$Body ) {
-            $Body = $LayoutObject->Output(
-                Template => $Config->{Body} || '',
             );
         }
 
@@ -1520,7 +1504,7 @@ sub Run {
         my $QueueHTMLString;
         if ( $ConfigObject->Get('Ticket::Frontend::NewQueueSelectionType') eq 'Queue' ) {
             $QueueHTMLString = $LayoutObject->AgentQueueListOption(
-                Class          => 'Validate_Required Modernize',
+                Class          => 'Modernize',
                 Data           => $QueueData,
                 Multiple       => 0,
                 Size           => 0,
@@ -1557,11 +1541,16 @@ sub Run {
 
         # get priority data
         if ( !$GetParam{TicketPriorityID} ) {
-            $GetParam{TicketPriorityID} = $Config->{Priority};
+            if ( %FutureTask ) {
+                $GetParam{TicketPriorityID} = $FutureTask{Data}->{TicketPriorityID};
+            }
+            else {
+                $GetParam{TicketPriorityID} = $Config->{Priority};
+            }
         }
         # build priority html string
         my $PriorityHTMLString = $Param{PriorityStrg} = $LayoutObject->BuildSelection(
-            Class         => 'Modernize',
+            Class         => 'Validate_Required Modernize',
             Data          => $PriorityValues,
             Name          => 'TicketPriorityID',
             SelectedID    => $GetParam{TicketPriorityID},
@@ -1577,6 +1566,9 @@ sub Run {
                 Data => \%Param,
             );
         }
+
+        $Param{CustomerHiddenContainer} = $#MultipleCustomer > 0 ? '' : 'Hidden';
+        $Param{ArticleVisibleToCustomer} = ($Param{TicketArticleVisibleToCustomer} || $FutureTask{Data}->{TicketArticleVisibleToCustomer}) ? 'checked=checked' : '';
 
         if ( %FutureTask ) {
             # html mask output
@@ -1603,6 +1595,7 @@ sub Run {
                     %GetParam,
                     %Appointment,
                     PermissionLevel => $PermissionLevel{$Permissions},
+                    QueueHTMLString => $QueueHTMLString,
                     PriorityHTMLString => $PriorityHTMLString,
                     DynamicFieldHTML => \%DynamicFieldHTML,
                },
@@ -2124,7 +2117,7 @@ sub Run {
                 $Value = $UserPreferences{ 'UserDynamicField_' . $DynamicFieldConfig->{Name} };
             }
 
-            if ( $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
+            if ( %FutureTask && $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
                 $Value = $FutureTask{Data}->{DynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}};
             }
 
@@ -2266,6 +2259,7 @@ sub Run {
                     $GetParam{TicketLock} = $FutureTask{Data}->{TicketLock};
                     $GetParam{TicketPriorityID} = $FutureTask{Data}->{TicketPriorityID};
                     $GetParam{TicketState} = $FutureTask{Data}->{TicketState};
+                    $GetParam{TicketArticleVisibleToCustomer} = $FutureTask{Data}->{TicketArticleVisibleToCustomer};
                 }
             }
         }

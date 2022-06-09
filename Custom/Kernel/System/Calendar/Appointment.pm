@@ -534,6 +534,7 @@ sub AppointmentCreate {
                     TicketSubject                   => $Param{Title},
                     TicketContent                   => $Param{Description},
                     TicketAppointmentID             => $FutureTaskAppointmentID,
+                    TicketArticleVisibleToCustomer  => $Param{TicketArticleVisibleToCustomer},
                 },
             );
             if ($TaskID) {
@@ -1669,6 +1670,7 @@ sub AppointmentUpdate {
                 TicketLock                      => $Param{TicketLock},
                 TicketPriorityID                => $Param{TicketPriorityID},
                 TicketState                     => $Param{TicketState},
+                TicketArticleVisibleToCustomer  => $Param{TicketArticleVisibleToCustomer},
             },
         );
         # Check for recurring and if execution time is in future
