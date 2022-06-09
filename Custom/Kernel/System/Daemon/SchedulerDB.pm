@@ -1093,6 +1093,7 @@ sub FutureTaskUpdate {
     # set default of attempts parameter
     $Param{Attempts} ||= 1;
 
+
     # serialize data as string
     my $Data = $Kernel::OM->Get('Kernel::System::Storable')->Serialize(
         Data => $Param{Data},

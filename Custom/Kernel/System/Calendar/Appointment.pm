@@ -145,7 +145,7 @@ creates a new appointment.
         TicketUserID => 1,                                                # (optional) Ticket user id
         TicketOwnerID => 1,                                               # (optional) Ticket owner id
         TicketLock => 'unlock',                                           # (optional) Ticket lock state
-        TicketPriority => '3 normal',                                     # (optional) Ticket priority
+        TicketPriorityID => '3',                                          # (optional) Ticket priority
         TicketState => 'new',                                             # (optional) Ticket state
 # EO AppointmentToTicket
     );
@@ -524,10 +524,11 @@ sub AppointmentCreate {
                     TicketQueueID                   => $Param{TicketQueueID},
                     TicketCustomerID                => $Param{TicketCustomerID},
                     TicketCustomerUser              => $Param{TicketCustomerUser},
+                    TicketSelectedCustomerUser      => $Param{TIcketSelectedCustomerUser},
                     TicketUserID                    => $Param{TicketUserID},
                     TicketOwnerID                   => $Param{TicketOwnerID},
                     TicketLock                      => $Param{TicketLock},
-                    TicketPriority                  => $Param{TicketPriority},
+                    TicketPriorityID                => $Param{TicketPriorityID},
                     TicketState                     => $Param{TicketState},
                     TicketTitle                     => $Param{Title},
                     TicketSubject                   => $Param{Title},
@@ -1344,7 +1345,7 @@ updates an existing appointment.
         TicketUserID => 1,                                                # (optional) Ticket user id
         TicketOwnerID => 1,                                               # (optional) Ticket owner id
         TicketLock => 'unlock',                                           # (optional) Ticket lock state
-        TicketPriority => '3 normal',                                     # (optional) Ticket priority
+        TicketPriorityID => '3',                                          # (optional) Ticket priority
         TicketState => 'new',                                             # (optional) Ticket state
 # EO AppointmentToTicket
     );
@@ -1662,10 +1663,11 @@ sub AppointmentUpdate {
                 TicketQueueID                   => $Param{TicketQueueID},
                 TicketCustomerID                => $Param{TicketCustomerID},
                 TicketCustomerUser              => $Param{TicketCustomerUser},
+                TicketSelectedCustomerUser      => $Param{TicketSelectedCustomerUser},
                 TicketUserID                    => $Param{TicketUserID},
                 TicketOwnerID                   => $Param{TicketOwnerID},
                 TicketLock                      => $Param{TicketLock},
-                TicketPriority                  => $Param{TicketPriority},
+                TicketPriorityID                => $Param{TicketPriorityID},
                 TicketState                     => $Param{TicketState},
             },
         );

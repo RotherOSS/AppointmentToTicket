@@ -73,9 +73,81 @@ sub Run {
         $GetParam{$Key} = $SafeGetParam{String};
     }
 
+# RotherOSS / AppointmentToTicket
+    # hash for check duplicated entries
+    my %AddressesList;
+
+    # MultipleCustomer From-field
+    my @MultipleCustomer;
+    my $CustomersNumber = $GetParam{'CustomerTicketCounterFromCustomer'} || 0;
+    # Contains user name
+    my $Selected = $GetParam{'SelectedCustomerUser'} || '';
+
+    # get check item object
+    my $CheckItemObject = $Kernel::OM->Get('Kernel::System::CheckItem');
+ 
+    if ($CustomersNumber) {
+        my $CustomerCounter = 1;
+        for my $Count ( 0 ... $CustomersNumber ) {
+            my $CustomerElement  = $GetParam{'CustomerTicketText_' . $Count};
+            my $CustomerSelected = ( $Selected eq $GetParam{'CustomerKey_' . $Count} ? 'checked="checked"' : '' );
+            my $CustomerKey      = $GetParam{'CustomerKey_' . $Count} || '';
+
+            if ($CustomerElement) {
+
+                my $CountAux         = $CustomerCounter++;
+                my $CustomerError    = '';
+                my $CustomerErrorMsg = 'CustomerGenericServerErrorMsg';
+                my $CustomerDisabled = '';
+
+                if ( $GetParam{From} ) {
+                    $GetParam{From} .= ', ' . $CustomerElement;
+                }
+                else {
+                    $GetParam{From} = $CustomerElement;
+                }
+
+                # check email address
+                for my $Email ( Mail::Address->parse($CustomerElement) ) {
+                    if ( !$CheckItemObject->CheckEmail( Address => $Email->address() ) )
+                    {
+                        $CustomerErrorMsg = $CheckItemObject->CheckErrorType()
+                            . 'ServerErrorMsg';
+                        $CustomerError = 'ServerError';
+                    }
+                }
+
+                # check for duplicated entries
+                if ( defined $AddressesList{$CustomerElement} && $CustomerError eq '' ) {
+                    $CustomerErrorMsg = 'IsDuplicatedServerErrorMsg';
+                    $CustomerError    = 'ServerError';
+                }
+
+                if ( $CustomerError ne '' ) {
+                    $CustomerDisabled = 'disabled="disabled"';
+                    $CountAux         = $Count . 'Error';
+                }
+                push @MultipleCustomer, {
+                    Count            => $CountAux,
+                    CustomerElement  => $CustomerElement,
+                    CustomerSelected => $CustomerSelected,
+                    CustomerKey      => $CustomerKey,
+                    CustomerError    => $CustomerError,
+                    CustomerErrorMsg => $CustomerErrorMsg,
+                    CustomerDisabled => $CustomerDisabled,
+                };
+                $AddressesList{$CustomerElement} = 1;
+            }
+        }
+    }
+# EO AppointmentToTicket
+
     my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
+# RotherOSS / AppointmentToTicket
     my $Config = $ConfigObject->Get("AgentAppointmentEdit");
+    my $CustomerUserObject = $Kernel::OM->Get('Kernel::System::CustomerUser');
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
+# EO AppointmentToTicket
     my $LayoutObject      = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
     my $CalendarObject    = $Kernel::OM->Get('Kernel::System::Calendar');
     my $AppointmentObject = $Kernel::OM->Get('Kernel::System::Calendar::Appointment');
@@ -1293,9 +1365,8 @@ sub Run {
             FieldFilter => $Config->{DynamicField} || {},
         ) }; 
 
-        if ( $GetParam{TicketQueue} ) {
-            my @QueueParts = split( /\|\|/, $GetParam{TicketQueue} );
-            $GetParam{TicketQueueID} = $QueueParts[0];
+        if ( $GetParam{TicketQueueID} ) {
+            $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
         }
         elsif ( %FutureTask ) {
             $GetParam{TicketQueueID} = $FutureTask{Data}->{TicketQueueID};
@@ -1326,7 +1397,6 @@ sub Run {
         );
 
         # for each standard field which has to be checked, run the defined method
-
         my $QueueValues = $Self->_GetTos(
             %GetParam,
         );
@@ -1336,9 +1406,6 @@ sub Run {
         my $PriorityValues = $Self->_GetPriorities(
             %GetParam,
         );
-        # my $StateValues = $Self->_GetStates(
-        #     %GetParam,
-        # );
 
         # TODO Retrieve Dynamic Field Values from FutureTask
         my %DynamicFieldValues;
@@ -1422,28 +1489,29 @@ sub Run {
             $TreeView = 1;
         }
 
-        # TODO Where does NextStates come from?
-        # build next states string
-        # $Param{NextStatesStrg} = $LayoutObject->BuildSelection(
-        #     Data          => $Param{NextStates},
-        #     Name          => 'NextStateID',
-        #     Class         => 'Modernize',
-        #     Translation   => 1,
-        #     SelectedValue => $Param{NextState} || $Config->{StateDefault},
-        # );
-
         # get queue data
         my $QueueData = $Self->_GetTos(
             %GetParam,
         );
-        
-        if ( !$GetParam{Queue} ) {
-            my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
 
-            if ($UserDefaultQueue) {
-                my $QueueID = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( Queue => $UserDefaultQueue );
-                if ($QueueID) {
-                    $GetParam{Queue} = "$QueueID||$UserDefaultQueue";
+        # if future task exists, transform existing data into neede structure
+        if (%FutureTask) {
+            my @CustomerUserIDs = split(',', $FutureTask{Data}->{TicketCustomerUser});
+            if ( scalar @CustomerUserIDs ) {
+                my $Count = 0;
+                for my $CustomerUserID ( @CustomerUserIDs ) {
+                    my %CustomerUser = $CustomerUserObject->CustomerUserDataGet(
+                        User => $CustomerUserID,
+                    );
+                    push @MultipleCustomer, {
+                        Count => $Count++,
+                        CustomerElement => '"' . $CustomerUser{UserFirstname} . ' ' . $CustomerUser{UserLastname} . '" <' . $CustomerUser{UserEmail} . '>',
+                        CustomerSelected => ( $FutureTask{Data}->{TicketSelectedCustomerUser} eq $CustomerUserID ? 'checked="checked"' : '' ),
+                        CustomerKey => $CustomerUser{UserLogin},
+                        CustomerError => '',
+                        CustomerErrorMsg => 'CustomerGenericServerErrorMsg',
+                        CustomerDisabled => '',
+                    }
                 }
             }
         }
@@ -1456,9 +1524,9 @@ sub Run {
                 Data           => $QueueData,
                 Multiple       => 0,
                 Size           => 0,
-                Name           => 'TicketQueue',
+                Name           => 'TicketQueueID',
                 TreeView       => $TreeView,
-                SelectedID     => $GetParam{QueueID},
+                SelectedID     => $GetParam{TicketQueueID},
                 OnChangeSubmit => 0,
             );
         }
@@ -1479,7 +1547,7 @@ sub Run {
             my $TypeHTMLString = $LayoutObject->BuildSelection(
                 Class        => 'Modernize Validate_Required' . ( $Param{Errors}->{TypeIDInvalid} || ' ' ),
                 Data         => $Param{Types},
-                Name         => 'TypeID',
+                Name         => 'TicketTypeID',
                 SelectedID   => $GetParam{TicketType},
                 PossibleNone => 1,
                 Sort         => 'AlphanumericValue',
@@ -1488,16 +1556,16 @@ sub Run {
         }
 
         # get priority data
-        if ( !$GetParam{TicketPriority} ) {
-            $GetParam{TicketPriority} = $Config->{Priority};
+        if ( !$GetParam{TicketPriorityID} ) {
+            $GetParam{TicketPriorityID} = $Config->{Priority};
         }
         # build priority html string
         my $PriorityHTMLString = $Param{PriorityStrg} = $LayoutObject->BuildSelection(
             Class         => 'Modernize',
             Data          => $PriorityValues,
-            Name          => 'PriorityID',
-            SelectedID    => $GetParam{TicketPriority},
-            SelectedValue => $GetParam{TicketPriority},
+            Name          => 'TicketPriorityID',
+            SelectedID    => $GetParam{TicketPriorityID},
+            SelectedValue => $GetParam{TicketPriorityID},
             Translation   => 1,
         );
 
@@ -1510,12 +1578,6 @@ sub Run {
             );
         }
 
-        my $TicketHTMLString;
-        # my $QueueSelection = $LayoutObject->AgentQueueListOption(
-        #     Class => 'Validate_Required_Modernize',
-        #     Data => \%
-        # );
-        
         if ( %FutureTask ) {
             # html mask output
             $LayoutObject->Block(
@@ -1528,9 +1590,6 @@ sub Run {
                     PermissionLevel => $PermissionLevel{$Permissions},
                     QueueHTMLString => $QueueHTMLString,
                     PriorityHTMLString => $PriorityHTMLString,
-                    # CustomerUserHTMLString => $CustomerUserHTMLString,
-                    # SubjectHTMLString => $SubjectHTMLString,
-                    # BodyHTMLString => $BodyHTMLString,
                     DynamicFieldHTML => \%DynamicFieldHTML,
                 },
             );
@@ -1545,13 +1604,46 @@ sub Run {
                     %Appointment,
                     PermissionLevel => $PermissionLevel{$Permissions},
                     PriorityHTMLString => $PriorityHTMLString,
-                    # CustomerUserHTMLString => $CustomerUserHTMLString,
-                    # SubjectHTMLString => $SubjectHTMLString,
-                    # BodyHTMLString => $BodyHTMLString,
                     DynamicFieldHTML => \%DynamicFieldHTML,
                },
             );
         }
+
+        my $CustomerCounter = 0;
+        if ( @MultipleCustomer ) {
+            for my $Item ( @MultipleCustomer ) {
+                # set empty values for errors
+                $Item->{CustomerError}    = '';
+                $Item->{CustomerDisabled} = '';
+                $Item->{CustomerErrorMsg} = 'CustomerGenericServerErrorMsg';
+                
+                $LayoutObject->Block(
+                    Name => 'MultipleCustomer',
+                    Data => $Item,
+                );
+                $LayoutObject->Block(
+                    Name => $Item->{CustomerErrorMsg},
+                    Data => $Item,
+                );
+                if ( $Item->{CustomerError} ) {
+                    $LayoutObject->Block(
+                        Name => 'CustomerErrorExplantion',
+                    );
+                }
+                $CustomerCounter++;
+            }
+        }
+
+        if ( !$CustomerCounter ) {
+            $Param{CustomerHiddenContainer} = 'Hidden';
+        }
+        
+        $LayoutObject->Block(
+            Name => 'MultipleCustomerCounter',
+            Data => {
+                CustomerCounter => $CustomerCounter++,
+            },
+        );
 # EO AppointmentToTicket
 
         $LayoutObject->AddJSData(
@@ -2038,6 +2130,22 @@ sub Run {
 
             $GetParam{DynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
         }
+
+        # Parse possibly multiple customer users
+        if ( @MultipleCustomer ) {
+            for my $CustomerUser (@MultipleCustomer) {
+                if ( $GetParam{TicketCustomerUser} ) {
+                    $GetParam{TicketCustomerUser} .= ",$CustomerUser->{CustomerKey}";
+                }
+                else {
+                    $GetParam{TicketCustomerUser} = $CustomerUser->{CustomerKey};
+                }
+            }
+        }
+        else {
+            $GetParam{TicketCustomerUser} = $GetParam{SelectedCustomerUser};
+        }
+        $GetParam{TicketSelectedCustomerUser} = $GetParam{SelectedCustomerUser};
 # EO AppointmentToTicket
 
         # team
@@ -2152,10 +2260,11 @@ sub Run {
                     $GetParam{TicketQueueID} = $FutureTask{Data}->{TicketQueueID};
                     $GetParam{TicketCustomerID} = $FutureTask{Data}->{TicketQueueID};
                     $GetParam{TicketCustomerUser} = $FutureTask{Data}->{TicketCustomerUser};
+                    $GetParam{TicketSelectedCustomerUser} = $FutureTask{Data}->{TicketSelectedCustomerUser},
                     $GetParam{TicketUserID} = $FutureTask{Data}->{TicketUserID};
                     $GetParam{TicketOwnerID} = $FutureTask{Data}->{TicketOwnerID};
                     $GetParam{TicketLock} = $FutureTask{Data}->{TicketLock};
-                    $GetParam{TicketPriority} = $FutureTask{Data}->{TicketPriority};
+                    $GetParam{TicketPriorityID} = $FutureTask{Data}->{TicketPriorityID};
                     $GetParam{TicketState} = $FutureTask{Data}->{TicketState};
                 }
             }
@@ -2198,7 +2307,6 @@ sub Run {
         }
 
        # TODO Add DynamicField Stuff similar to AgentTicketPhone
-        # TODO Find out if this goes via DynamicFieldScreens or not
     # cycle through the activated Dynamic Fields for this screen
     # DYNAMICFIELD:
     # for my $DynamicFieldConfig ( @{ $Self->{DynamicField} } ) {
@@ -2216,11 +2324,9 @@ sub Run {
         $GetParam{TicketSubject} = $GetParam{Title};
         $GetParam{TicketContent} = $GetParam{Description};
         $GetParam{TicketCustomerID} = 1;
-        $GetParam{TicketCustomerUser} = 'sha@rother-oss.com';
         $GetParam{TicketUserID} = 1;
         $GetParam{TicketOwnerID} = 1;
         $GetParam{TicketLock} = 'unlock';
-        $GetParam{TicketPriority} = '3 normal';
         $GetParam{TicketState} = 'new';
         # $GetParam{TicketDynamicFields} = \%DynamicFields;
 # EO AppointmentToTicket
@@ -2572,24 +2678,6 @@ sub _DayOffsetGet {
 }
 
 # RotherOSS / AppointmentToTicket
-sub _GetStates {
-    my ( $Self, %Param ) = @_;
-
-    # use default Queue if none is provided
-    $Param{TicketQueueID} = $Param{TicketQueueID} || 1;
-    $Param{QueueID} = $Param{TicketQueueID};
-
-    my %States;
-    if ( $Param{TicketQueueID} ) {
-        %States = $Kernel::OM->Get('Kernel::System::Ticket')->TicketStateList(
-            %Param,
-            Action => $Self->{Action},
-            UserID => $Self->{UserID},
-        );
-    }
-    return \%States;
-}
-
 sub _GetUsers {
     my ( $Self, %Param ) = @_;
 
@@ -2658,49 +2746,6 @@ sub _GetPriorities {
         );
     }
     return \%Priorities;
-}
-
-sub _GetTypes {
-    my ( $Self, %Param ) = @_;
-
-    # use default Queue if none is provided
-    $Param{TicketQueueID} = $Param{TicketQueueID} || 1;
-
-    # get type
-    my %Type;
-    if ( $Param{TicketQueueID} ) {
-        %Type = $Kernel::OM->Get('Kernel::System::Ticket')->TicketTypeList(
-            %Param,
-            Action => $Self->{Action},
-            UserID => $Self->{UserID},
-        );
-    }
-    return \%Type;
-}
-
-sub _GetSLAs {
-    my ( $Self, %Param ) = @_;
-
-    # use default Queue if none is provided
-    $Param{QueueID} = $Param{QueueID} || 1;
-
-    # get services if they were not determined in an AJAX call
-    if ( !defined $Param{Services} ) {
-        $Param{Services} = $Self->_GetServices(%Param);
-    }
-
-    # get sla
-    my %SLA;
-    if ( $Param{ServiceID} && $Param{Services} && %{ $Param{Services} } ) {
-        if ( $Param{Services}->{ $Param{ServiceID} } ) {
-            %SLA = $Kernel::OM->Get('Kernel::System::Ticket')->TicketSLAList(
-                %Param,
-                Action => $Self->{Action},
-                UserID => $Self->{UserID},
-            );
-        }
-    }
-    return \%SLA;
 }
 
 sub _GetTos {
@@ -2773,50 +2818,6 @@ sub _GetTos {
     $NewTos{''} = '-';
 
     return \%NewTos;
-}
-
-sub _GetStandardTemplates {
-    my ( $Self, %Param ) = @_;
-
-    my %Templates;
-    my $QueueID = $Param{QueueID} || '';
-
-    my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
-    my $QueueObject  = $Kernel::OM->Get('Kernel::System::Queue');
-
-    if ( !$QueueID ) {
-        my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
-
-        if ($UserDefaultQueue) {
-            $QueueID = $QueueObject->QueueLookup( Queue => $UserDefaultQueue );
-        }
-    }
-
-    # check needed
-    return \%Templates if !$QueueID && !$Param{TicketID};
-
-    if ( !$QueueID && $Param{TicketID} ) {
-
-        # get QueueID from the ticket
-        my %Ticket = $Kernel::OM->Get('Kernel::System::Ticket')->TicketGet(
-            TicketID      => $Param{TicketID},
-            DynamicFields => 0,
-            UserID        => $Self->{UserID},
-        );
-        $QueueID = $Ticket{QueueID} || '';
-    }
-
-    # fetch all std. templates
-    my %StandardTemplates = $QueueObject->QueueStandardTemplateMemberList(
-        QueueID       => $QueueID,
-        TemplateTypes => 1,
-    );
-
-    # return empty hash if there are no templates for this screen
-    return \%Templates if !IsHashRefWithData( $StandardTemplates{Create} );
-
-    # return just the templates for this screen
-    return $StandardTemplates{Create};
 }
 # EO AppointmentToTicket
 

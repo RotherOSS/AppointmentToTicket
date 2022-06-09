@@ -23,6 +23,7 @@ use parent qw(Kernel::System::Daemon::DaemonModules::BaseTaskWorker);
 
 our @ObjectDependencies = (
     'Kernel::Config',
+    'Kernel::System::CustomerUser',
     'Kernel::System::DynamicField::Backend',
     'Kernel::System::LinkObject',
     'Kernel::System::Log',
@@ -85,7 +86,8 @@ sub Run {
     # check task params
     my $CheckResult = $Self->_CheckTaskParams(
         %Param,
-        NeededDataAttributes => [ 'AppointmentID', 'CustomerUser', 'CustomerID', 'UserID', 'QueueID', 'OwnerID', 'Subject', 'Content' ],
+        NeededDataAttributes =>
+            [ 'TicketAppointmentID', 'TicketCustomerUser', 'TicketCustomerID', 'TicketUserID', 'TicketQueueID', 'TicketOwnerID', 'TicketSubject', 'TicketContent' ],
     );
 
     # stop execution if an error in params is detected
@@ -95,22 +97,25 @@ sub Run {
     my $ConfigObject              = $Kernel::OM->Get('Kernel::Config');
 
     if ( $Self->{Debug} ) {
-        print "    $Self->{WorkerName} executes task: $Param{TaskName}\n";
     }
+
+    # fetching customer user from selectedcustomeruser
+    my %CustomerUser = $Kernel::OM->Get('Kernel::System::CustomerUser')->CustomerUserDataGet(
+        User => $Param{Data}->{TicketSelectedCustomerUser},
+    );
 
     # create the appointment ticket
     my $TicketID = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate(
-        QueueID      => $Param{Data}->{QueueID},
-        CustomerID   => $Param{Data}->{CustomerID},
-        CustomerUser => $Param{Data}->{CustomerUser},
-        UserID       => $Param{Data}->{UserID},
-        OwnerID      => $Param{Data}->{OwnerID},
-        Lock         => $Param{Data}->{Lock},
-        Priority     => $Param{Data}->{Priority},
-        State        => $Param{Data}->{State},
-        Title        => $Param{Data}->{Title},
-        Subject      => $Param{Data}->{Subject},
-        Content      => $Param{Data}->{Content},
+        QueueID      => $Param{Data}->{TicketQueueID},
+        CustomerID   => $Param{Data}->{TicketCustomerID},
+        CustomerUser => $CustomerUser{UserEmail},
+        UserID       => $Param{Data}->{TicketUserID},
+        OwnerID      => $Param{Data}->{TicketOwnerID},
+        Lock         => $Param{Data}->{TicketLock},
+        PriorityID   => $Param{Data}->{TicketPriorityID},
+        State        => $Param{Data}->{TicketState},
+        Title        => $Param{Data}->{TicketTitle},
+        Subject      => $Param{Data}->{TicketSubject},
     );
 
     if ( !$TicketID ) {
@@ -134,38 +139,52 @@ sub Run {
     #     );
     # }
 
+    # preparing from data
+    my $ArticleFrom;
+    my @CustomerUsers = split( ',', $Param{Data}->{TicketCustomerUser} );
+    for my $CustomerUser (@CustomerUsers) {
+        my %CustomerUserData = $Kernel::OM->Get('Kernel::System::CustomerUser')->CustomerUserDataGet(
+            User => $CustomerUser,
+        );
+        if ($ArticleFrom) {
+            $ArticleFrom .= ", \"$CustomerUserData{UserFirstname} $CustomerUserData{UserLastname}\" <$CustomerUserData{UserEmail}>";
+        }
+        else {
+            $ArticleFrom = "\"$CustomerUserData{UserFirstname} $CustomerUserData{UserLastname}\" <$CustomerUserData{UserEmail}>";
+        }
+    }
+
     my $ArticleObject        = $Kernel::OM->Get('Kernel::System::Ticket::Article');
     my $ArticleBackendObject = $ArticleObject->BackendForChannel( ChannelName => 'Internal' );
     my $ArticleID            = $ArticleBackendObject->ArticleCreate(
         TicketID             => $TicketID,
         SenderType           => 'system',
         IsVisibleForCustomer => 0,
-        From                 => $Param{Data}->{User},
-        To                   => $Param{Data}->{CustomerUser},
-        Subject              => $Param{Data}->{Subject},
-        Body                 => $Param{Data}->{Content},
+        From                 => $ArticleFrom,
+        To                   => $Param{Data}->{TicketUser},
+        Subject              => $Param{Data}->{TicketSubject},
+        Body                 => $Param{Data}->{TicketContent},
         MimeType             => 'text/html',
         Charset              => 'utf-8',
-        UserID               => $Param{Data}->{UserID},
+        UserID               => $Param{Data}->{TicketUserID},
         HistoryType          => 'EmailCustomer',
         HistoryComment       => 'Automatically created ticket from appointment',
         AutoResponseType     => ( $ConfigObject->Get('AutoResponseForWebTickets') )
         ? 'auto reply'
         : '',
-
-        # OrigHeader => {
-        #     From    => $GetParam{From},
-        #     To      => $GetParam{To},
-        #     Subject => $GetParam{Subject},
-        #     Body    => $PlainBody,
-        # },
-        Queue => $Param{Data}->{QueueID},
+        OrigHeader => {
+            From    => $ArticleFrom,
+            To      => $Param{Data}->{TicketUserID},
+            Subject => $Param{Data}->{TicketSubject},
+            Body    => $Param{Data}->{TicketContent},
+        },
+        Queue => $Param{Data}->{TicketQueueID},
     );
-    
+
     if ( !$ArticleID ) {
         $Kernel::OM->Get('Kernel::System::Log')->Log(
             Priority => 'error',
-            Message  => "Could not create article for ticket $TicketID from appointment $Param{Data}->{AppointmentID}!",
+            Message  => "Could not create article for ticket $TicketID from appointment $Param{Data}->{TicketAppointmentID}!",
         );
     }
 
@@ -185,7 +204,7 @@ sub Run {
     # }
 
     my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
-        AppointmentID => $Param{Data}->{AppointmentID},
+        AppointmentID => $Param{Data}->{TicketAppointmentID},
     );
 
     # link the tickets
@@ -196,7 +215,7 @@ sub Run {
         TargetKey    => $TicketID,
         Type         => 'Normal',
         State        => 'Valid',
-        UserID       => $Param{Data}->{UserID},
+        UserID       => $Param{Data}->{TicketUserID},
     );
 
     # Check if appointment is recurring and if so, create next future task for appointment which is in the future and closest to now
@@ -259,20 +278,21 @@ sub Run {
                 Type          => 'AppointmentTicket',
                 Name          => 'Test',
                 Data          => {
-                    Title         => $Param{Title},
-                    QueueID       => $Param{QueueID},
-                    Subject       => $Param{Subject},
-                    Lock          => 'unlock',
-                    TypeID        => $Param{TypeID},
-                    ServiceID     => $Param{ServiceID},
-                    SLAID         => $Param{SLAID},
-                    StateID       => $Param{StateID},
-                    PriorityID    => $Param{PriorityID},
-                    OwnerID       => $Param{OwnerID},
-                    CustomerID    => $Param{CustomerID},
-                    CustomerUser  => $Param{CustomerUser},
-                    UserID        => $Param{UserID},
-                    AppointmentID => $NextAppointment{AppointmentID},
+                    TicketTitle                => $Param{Data}->{TicketTitle},
+                    TicketQueueID              => $Param{Data}->{TicketQueueID},
+                    TicketSubject              => $Param{Data}->{TicketSubject},
+                    TicketLock                 => 'unlock',
+                    TicketTypeID               => $Param{Data}->{TicketTypeID},
+                    TicketServiceID            => $Param{Data}->{TicketServiceID},
+                    TicketSLAID                => $Param{Data}->{TicketSLAID},
+                    TicketStateID              => $Param{Data}->{TicketStateID},
+                    TicketPriorityID           => $Param{Data}->{TicketPriorityID},
+                    TicketOwnerID              => $Param{Data}->{TicketOwnerID},
+                    TicketCustomerID           => $Param{Data}->{TicketCustomerID},
+                    TicketCustomerUser         => $Param{Data}->{TicketCustomerUser},
+                    TicketSelectedCustomerUser => $Param{Data}->{TicketSelectedCustomerUser},
+                    TicketUserID               => $Param{Data}->{TicketUserID},
+                    TicketAppointmentID        => $NextAppointment{AppointmentID},
                 }
             );
         }
