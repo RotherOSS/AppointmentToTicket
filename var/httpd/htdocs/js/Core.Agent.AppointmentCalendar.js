@@ -355,7 +355,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                 CurrentAppointment.end = CalEvent.end;
                 CurrentAppointment.resourceIds = CalEvent.resourceIds;
 // RotherOSS / AppointmentToTicket
-                CurrentAppointment.ticketTemplate = CalEven.ticketTemplate;
+                CurrentAppointment.ticketTemplate = CalEvent.ticketTemplate;
 // EO AppointmentToTicket
             },
             eventMouseover: function(CalEvent, JSEvent) {
@@ -583,7 +583,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         ticketCustomDateTime: AppointmentData.TicketCustomDateTime,
                         ticketQueueId: AppointmentData.TicketQueueID,
                         ticketCustomerId: AppointmentData.TicketCustomerID,
+                        // TODO Check if this is correct
                         ticketCustomerUser: AppointmentData.TicketCustomerUser,
+                        ticketCustomerUserSelected: AppointmentData.TicketCustomerUserSelected,
                         ticketUserId: AppointmentData.TicketUserID,
                         ticketOwnerId: AppointmentData.TicketOwnerID,
                         ticketLock: AppointmentData.TicketLock,
@@ -1398,6 +1400,18 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         var TicketCustomStringDiv = Fields.$TicketCustomStringDiv.attr('id');
         var TicketCustomCreationDiv = Fields.$TicketCustomCreationDiv.attr('id');
 
+        // Bind event to customer radio button.
+        /*$('.CustomerTicketRadio').on('change', function () {
+            var CustomerKey;
+            if ($(this).prop('checked')){
+
+                CustomerKey = $('#CustomerKey_' +$(this).val()).val();
+                // get customer tickets
+                Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
+            }   
+            return false;
+        });*/ 
+
         if (Fields.$TicketTemplate.val() !== 'Custom') {
 
             // hide the custom fields
@@ -1449,8 +1463,17 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         }
 
         if (Fields.$TicketTemplate.val() !== '0') {
-            
+
+            // Bind event to customer remove button.
+            $('.CustomerTicketRemove').on('click', function () {
+                Core.Agent.CustomerSearch.RemoveCustomerTicket($(this));
+                return false;
+            }); 
+
             Fields.$TicketCustomCreationDiv.show();
+     
+            // initialize customer user search field
+            Core.Agent.CustomerSearchAutoComplete.Init();
 
         }
         else {
