@@ -1568,7 +1568,7 @@ sub Run {
         }
 
         $Param{CustomerHiddenContainer} = $#MultipleCustomer > 0 ? '' : 'Hidden';
-        $Param{ArticleVisibleToCustomer} = ($Param{TicketArticleVisibleToCustomer} || $FutureTask{Data}->{TicketArticleVisibleToCustomer}) ? 'checked=checked' : '';
+        $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || $FutureTask{Data}->{TicketArticleVisibleForCustomer}) ? 'checked=checked' : '';
 
         if ( %FutureTask ) {
             # html mask output
@@ -2259,7 +2259,7 @@ sub Run {
                     $GetParam{TicketLock} = $FutureTask{Data}->{TicketLock};
                     $GetParam{TicketPriorityID} = $FutureTask{Data}->{TicketPriorityID};
                     $GetParam{TicketState} = $FutureTask{Data}->{TicketState};
-                    $GetParam{TicketArticleVisibleToCustomer} = $FutureTask{Data}->{TicketArticleVisibleToCustomer};
+                    $GetParam{TicketArticleVisibleForCustomer} = $FutureTask{Data}->{TicketArticleVisibleForCustomer};
                 }
             }
         }

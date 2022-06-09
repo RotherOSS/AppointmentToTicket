@@ -576,8 +576,8 @@
                     [% Data.PriorityHTMLString %]
                 </div>
                 <div class="Clear"></div>
-                <label for="TicketArticleVisibleToCustomer">[% Translate('Article Visible To Customer') | html %]</label>
-                <input name="TicketArticleVisibleToCustomer" id="TicketArticleVisibleToCustomer" value="" [% Data.ArticleVisibleToCustomer | html %] type="checkbox" />
+                <label for="TicketArticleVisibleForCustomer">[% Translate('Article is visible for Customer') | html %]</label>
+                <input name="TicketArticleVisibleForCustomer" id="TicketArticleVisibleForCustomer" value="" [% Data.ArticleVisibleForCustomer | html %] type="checkbox" />
                [% FOREACH DynamicFieldKey IN Data.DynamicFieldHTML.nsort %]
                 <div class="Clear"></div>
                 <div class="Field">
