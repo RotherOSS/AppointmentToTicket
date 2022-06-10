@@ -437,7 +437,7 @@ sub AppointmentCreate {
     if ( !$Param{ParentID} ) {
         my $FutureTaskAppointmentID = 0;
         my $ExecutionTime;
-        my $CurrentTimeObject = $Kernel::OM->Create(
+        my $CurrentDateTimeObject = $Kernel::OM->Create(
             'Kernel::System::DateTime',
         );
         if ( $Param{Recurring} ) {
@@ -450,11 +450,11 @@ sub AppointmentCreate {
             my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $AppointmentID );
             push @AppointmentList, \%ParentAppointment;
 
-            my $TimeDistance;
+            my $TimeDiff;
             for my $Appointment (@AppointmentList) {
                 # Take smallest positive distance from current time
                 # Take execution time of future task as reference
-                my $AppointmentTimeObject = $Kernel::OM->Create(
+                my $AppointmentExecutionTimeObject = $Kernel::OM->Create(
                     'Kernel::System::DateTime',
                     ObjectParams => {
                         String => $Self->AppointmentToTicketExecutionTime(
@@ -472,19 +472,25 @@ sub AppointmentCreate {
                         ),
                     },
                 );
-                if ( $AppointmentTimeObject->Compare( DateTimeObject => $CurrentTimeObject ) > 0 )
+                if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) > 0 )
                 {
-                    if ( !$TimeDistance || $AppointmentTimeObject->Delta( DateTimeObject => $CurrentTimeObject ) < $TimeDistance ) {
-                        $TimeDistance = $AppointmentTimeObject->Delta( DateTimeObject => $CurrentTimeObject );
+                    my $DeltaResult = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject );
+                    if ( !defined $TimeDiff ) {
+                        $TimeDiff = $DeltaResult->{AbsoluteSeconds};
                         $FutureTaskAppointmentID = $Appointment->{AppointmentID};
-                        $ExecutionTime = $AppointmentTimeObject->ToString();
+                        $ExecutionTime = $AppointmentExecutionTimeObject->ToString(); 
+                    }
+                    elsif ( $DeltaResult->{AbsoluteSeconds} < $TimeDiff ) {
+                        $TimeDiff = $DeltaResult->{AbsoluteSeconds};
+                        $FutureTaskAppointmentID = $Appointment->{AppointmentID};
+                        $ExecutionTime = $AppointmentExecutionTimeObject->ToString();
                     }
                 }
             }
 
         }
         else {
-            my $AppointmentTimeObject = $Kernel::OM->Create(
+            my $AppointmentExecutionTimeObject = $Kernel::OM->Create(
                 'Kernel::System::DateTime',
                 ObjectParams => {
                     String => $Self->AppointmentToTicketExecutionTime(
@@ -503,9 +509,9 @@ sub AppointmentCreate {
                 },
             );
             
-            if ( $AppointmentTimeObject->Compare( DateTimeObject => $CurrentTimeObject ) > 0 ) {
+            if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) > 0 ) {
                 $FutureTaskAppointmentID = $AppointmentID;
-                $ExecutionTime = $AppointmentTimeObject->ToString();
+                $ExecutionTime = $AppointmentExecutionTimeObject->ToString();
             }
         }
 
@@ -524,7 +530,7 @@ sub AppointmentCreate {
                     TicketQueueID                   => $Param{TicketQueueID},
                     TicketCustomerID                => $Param{TicketCustomerID},
                     TicketCustomerUser              => $Param{TicketCustomerUser},
-                    TicketSelectedCustomerUser      => $Param{TIcketSelectedCustomerUser},
+                    TicketSelectedCustomerUser      => $Param{TicketSelectedCustomerUser},
                     TicketUserID                    => $Param{TicketUserID},
                     TicketOwnerID                   => $Param{TicketOwnerID},
                     TicketLock                      => $Param{TicketLock},
@@ -1628,6 +1634,8 @@ sub AppointmentUpdate {
 # RotherOSS / AppointmentToTicket
     my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
     my $CurrentDateTimeObject = $Kernel::OM->Create('Kernel::System::DateTime');
+    my $FutureTaskAppointmentID;
+
     # Set future task id to NULL and delete future task if no id provided, else update existing future task
     if ( !$Param{TicketTemplate} ) {
 
@@ -1640,8 +1648,7 @@ sub AppointmentUpdate {
         {
             $Param{$PossibleParam} = undef;
         }
-    }
-    
+    }    
     if ( $Param{FutureTaskID} && !$Param{TicketTemplate} ) {
         $Param{FutureTaskID} = undef;
         $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete( 
@@ -1677,9 +1684,9 @@ sub AppointmentUpdate {
         if ( $Param{Recurring} ) {
             my @AppointmentList = $Self->AppointmentList(
                 CalendarID => $PreviousCalendarID,
-                ParentID => $Param{ParentID} || $Param{AppointmentID}
+                ParentID => $Param{AppointmentID}
             );
-            my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $Param{ParentID} || $Param{AppointmentID} );
+            my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $Param{AppointmentID} );
             push @AppointmentList, \%ParentAppointment;
             my $TimeDiff;
             for my $Appointment (@AppointmentList) {
@@ -1692,9 +1699,10 @@ sub AppointmentUpdate {
                         TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
                         TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
                         TicketCustomDateTime            => $Param{TicketCustomDateTime},
-                   },
-                    StartTime => $Appointment->{StartTime},
-                    EndTime => $Appointment->{EndTime},
+                    },
+                    # when the appointment was just updated in database, maybe the data is still incorrect here
+                    StartTime => $Appointment->{AppointmentID} == $Param{AppointmentID} ? $Param{StartTime} : $Appointment->{StartTime},
+                    EndTime => $Appointment->{AppointmentID} == $Param{AppointmentID} ? $Param{EndTime} : $Appointment->{EndTime},
                 );
                 my $AppointmentExecutionTimeObject = $Kernel::OM->Create(
                     'Kernel::System::DateTime',
@@ -1704,13 +1712,20 @@ sub AppointmentUpdate {
                 );
                 
                 if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) > 0 ) {
-                    if ( !defined $TimeDiff || $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject )->{AbsouluteSeconds} < $TimeDiff ) {
-                        $TimeDiff = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject )->{AbsoluteSeconds};
-                        $FutureTaskData{Data}{AppointmentID} = $Appointment->{AppointmentID};
+                    my $DeltaResult = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject );
+                    if ( !defined $TimeDiff ) {
+                        $TimeDiff = $DeltaResult->{AbsoluteSeconds};
+                        $FutureTaskData{Data}->{AppointmentID} = $Appointment->{AppointmentID};
+                        $FutureTaskData{ExecutionTime} = $AppointmentExecutionTime; 
+                    }
+                    elsif ( $DeltaResult->{AbsoluteSeconds} < $TimeDiff ) {
+                        $TimeDiff = $DeltaResult->{AbsoluteSeconds};
+                        $FutureTaskData{Data}->{AppointmentID} = $Appointment->{AppointmentID};
                         $FutureTaskData{ExecutionTime} = $AppointmentExecutionTime;
                     }
                 }
             }
+            $FutureTaskAppointmentID = $FutureTaskData{Data}->{AppointmentID};
 
         }
         else {
@@ -1736,6 +1751,7 @@ sub AppointmentUpdate {
             );
             if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) ) {
                 $FutureTaskData{Data}->{AppointmentID} = $Param{AppointmentID};
+                $FutureTaskAppointmentID = $FutureTaskData{Data}->{AppointmentID};
                 $FutureTaskData{ExecutionTime} = $AppointmentExecutionTimeObject->ToString();
             }
        }
@@ -1761,30 +1777,40 @@ sub AppointmentUpdate {
         }
         # No future task id present, create future task if execution time is in the future
         else {
-            if ( $FutureTaskData{Data}{AppointmentID} ) {
-                my $TaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd( %FutureTaskData );
-                if ( $TaskID ) {
-                    my $SQL = "
-                        UPDATE calendar_appointment
-                        SET future_task_id = ?
-                        WHERE id = ?
-                    ";
-                    my @Bind = (\$TaskID, \$FutureTaskData{Data}{AppointmentID});
-                
-                    # update db record
-                    return if !$DBObject->Do(
-                        SQL  => $SQL,
-                        Bind => \@Bind,
-                    );
-                }
-                else {
-                    $Kernel::OM->Get('Kernel::System::Log')->Log(
-                        Priority => 'error',
-                        Message => "Could not create ticket task for appointment $FutureTaskData{Data}{AppointmentID}!"
-                    );
-                }
+            if ( $FutureTaskData{Data}->{AppointmentID} ) {
+                $Param{FutureTaskID} = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd( %FutureTaskData );
             }
         }
+    }
+    
+    # delete future task ids from all related appointments and update it where it belongs afterwards
+    my $DeleteFutureTaskIDSQL = "
+        UPDATE calendar_appointment
+        SET future_task_id = NULL
+        WHERE id = ?
+        OR parent_id = ?
+    ";
+    my @Bind = (\$Param{AppointmentID}, \$Param{AppointmentID});
+
+    # update db record
+    return if !$DBObject->Do(
+        SQL => $DeleteFutureTaskIDSQL,
+        Bind => \@Bind,
+    );
+
+    if ( $FutureTaskAppointmentID ) {
+        my $UpdateFutureTaskIDSQL = "
+            UPDATE calendar_appointment
+            SET future_task_id = ?
+            WHERE id = ?
+        ";
+        my @Bind = (\$Param{FutureTaskID}, \$FutureTaskAppointmentID);
+
+        # update db record
+        return if !$DBObject->Do(
+            SQL => $UpdateFutureTaskIDSQL,
+            Bind => \@Bind,
+        );
     }
 # EO AppointmentToTicket
 

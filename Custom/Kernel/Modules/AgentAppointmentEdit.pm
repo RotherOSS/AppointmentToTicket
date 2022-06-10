@@ -1567,7 +1567,7 @@ sub Run {
             );
         }
 
-        $Param{CustomerHiddenContainer} = $#MultipleCustomer > 0 ? '' : 'Hidden';
+        $Param{CustomerHiddenContainer} = $#MultipleCustomer != -1 ? '' : 'Hidden';
         $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || $FutureTask{Data}->{TicketArticleVisibleForCustomer}) ? 'checked=checked' : '';
 
         if ( %FutureTask ) {

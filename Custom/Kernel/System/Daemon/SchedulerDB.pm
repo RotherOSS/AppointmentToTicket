@@ -900,6 +900,7 @@ Returns:
 sub FutureTaskAdd {
     my ( $Self, %Param ) = @_;
 
+    print STDERR "SchedulerDB.pm, L.902: 1\n";
     # check needed stuff
     for my $Key (qw(ExecutionTime Type Data)) {
         if ( !$Param{$Key} ) {
@@ -1041,6 +1042,7 @@ updates an existing task in the scheduler future task list
 sub FutureTaskUpdate {
     my ( $Self, %Param ) = @_;
 
+    print STDERR "SchedulerDB.pm, L.1044: 2\n";
     # check needed stuff
     for my $Key (qw(TaskID ExecutionTime Data)) {
         if ( !$Param{$Key} ) {
