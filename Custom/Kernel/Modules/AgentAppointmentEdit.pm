@@ -2243,6 +2243,9 @@ sub Run {
                     my %FutureTask = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(
                         TaskID => $FutureTaskID,
                     );
+                    $GetParam{TicketSubject} = $FutureTask{Data}->{TicketSubject};
+                    $GetParam{TicketTitle} = $FutureTask{Data}->{TicketTitle};
+                    $GetParam{TicketContent} = $FutureTask{Data}->{TicketContent};
                     $GetParam{TicketTemplate} = $FutureTask{Data}->{TicketTemplate};
                     $GetParam{TicketTime} = $FutureTask{Data}->{TicketTime};
                     $GetParam{TicketCustom} = $FutureTask{Data}->{TicketCustom};
@@ -2316,6 +2319,7 @@ sub Run {
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task
         $GetParam{TicketSubject} = $GetParam{Title};
+        $GetParam{TicketTitle} = $GetParam{Title};
         $GetParam{TicketContent} = $GetParam{Description};
         $GetParam{TicketCustomerID} = 1;
         $GetParam{TicketUserID} = 1;
