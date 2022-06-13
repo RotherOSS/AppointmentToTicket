@@ -817,7 +817,10 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                 Title: Core.Language.Translate('This is a repeating appointment'),
                 HTML: Core.Language.Translate('Would you like to edit just this occurrence or all occurrences?'),
                 Modal: true,
-                CloseOnClickOutside: true,
+// RotherOSS / AppointmentToTicket
+                // CloseOnClickOutside: true,
+                CloseOnClickOutside: false,
+// EO AppointmentToTicket
                 CloseOnEscape: true,
                 PositionTop: '20%',
                 PositionLeft: 'Center',

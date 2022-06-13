@@ -17,7 +17,6 @@
         <File Permission="660" Location="Kernel/System/Daemon/DaemonModules/SchedulerTaskWorker/AppointmentTicket.pm" />
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.AppointmentCalendar.js" />
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.CustomerSearch.js" />
-        <File Permission="660" Location="var/httpd/htdocs/js/Core.UI.Dialog" />
     </Filelist>
     <DatabaseInstall Type="post">
         <TableAlter Name="calendar_appointment">
