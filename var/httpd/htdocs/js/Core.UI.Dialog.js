@@ -579,7 +579,7 @@ Core.UI.Dialog = (function (TargetNS) {
 //              if ($(event.target).parents('html).length && $(event.target).closest('div.Dialog).length === 0) {
                 if (($(event.target).parents('html').length && $(event.target).closest('div.Dialog').length === 0) && !(event.target instanceof HTMLAnchorElement)) {
 // EO AppointmentToTicket
-                    HandleClosingAction();
+                    // HandleClosingAction();
                 }
             });
         }
