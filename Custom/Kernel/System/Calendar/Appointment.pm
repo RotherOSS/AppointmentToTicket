@@ -434,7 +434,7 @@ sub AppointmentCreate {
     }
 
 # RotherOSS / AppointmentToTicket
-    if ( !$Param{ParentID} ) {
+    if ( $Param{TicketTemplate} && !$Param{ParentID} ) {
         my $FutureTaskAppointmentID = 0;
         my $ExecutionTime;
         my $CurrentDateTimeObject = $Kernel::OM->Create(
@@ -541,6 +541,7 @@ sub AppointmentCreate {
                     TicketContent                   => $Param{Description},
                     AppointmentID             => $FutureTaskAppointmentID,
                     TicketArticleVisibleForCustomer => $Param{TicketArticleVisibleForCustomer},
+                    TicketDynamicFields             => $Param{TicketDynamicFields},
                 },
             );
             if ($TaskID) {
@@ -850,7 +851,9 @@ sub AppointmentList {
         # parent id
         $Row[1] = $Row[1] ? $Row[1] : 0;
         my $ParentID = $Row[1];
+        print STDERR "Appointment.pm, L.852: " . $Param{ParentID} . "\n";
         if ( $Param{ParentID} ) {
+            print STDERR "Appointment.pm, L.854: " . $ParentID . "\n";
             next ROW if ( $Param{ParentID} != $ParentID );
         }
 # EO AppointmentToTicket
@@ -1681,6 +1684,7 @@ sub AppointmentUpdate {
                 TicketPriorityID                => $Param{TicketPriorityID},
                 TicketState                     => $Param{TicketState},
                 TicketArticleVisibleForCustomer => $Param{TicketArticleVisibleForCustomer},
+                TicketDynamicFields             => $Param{TicketDynamicFields},
             },
         );
         # Check for recurring and if execution time is in future
