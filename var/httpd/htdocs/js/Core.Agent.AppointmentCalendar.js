@@ -1398,6 +1398,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
     TargetNS.TicketInit = function (Fields) {
         var TicketCustomStringDiv = Fields.$TicketCustomStringDiv.attr('id');
         var TicketCustomCreationDiv = Fields.$TicketCustomCreationDiv.attr('id');
+        var ElementsRequired = ['TicketQueueID', 'TicketPriorityID', 'TicketStateID', 'TicketTypeID'];
 
         if (Fields.$TicketTemplate.val() !== 'Custom') {
 
@@ -1451,6 +1452,11 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
 
         if (Fields.$TicketTemplate.val() !== '0') {
 
+            // Add mandatory and validate classes
+            ElementsRequired.forEach(function (element, index) {
+                $('select[name="' + element + '"]').addClass('Validate_Required');
+            });
+
             // Bind event to customer radio button.
             $('.CustomerTicketRadio').on('change', function () {
                 var CustomerKey;
@@ -1478,6 +1484,10 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         else {
             
             Fields.$TicketCustomCreationDiv.hide();
+            // Remove mandatory and validate classes
+            ElementsRequired.forEach(function (element, index) {
+                $('select[name="' + element + '"]').removeClass('Validate_Required');
+            });
 
         }
 
