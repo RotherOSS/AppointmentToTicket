@@ -1510,7 +1510,7 @@ sub Run {
         my $QueueHTMLString;
         if ( $ConfigObject->Get('Ticket::Frontend::NewQueueSelectionType') eq 'Queue' ) {
             $QueueHTMLString = $LayoutObject->AgentQueueListOption(
-                Class          => 'Modernize',
+                Class          => 'Mandatory Validate_Required Modernize',
                 Data           => $QueueValues,
                 Multiple       => 0,
                 Size           => 0,
@@ -1524,12 +1524,16 @@ sub Run {
         }
         else {
             $QueueHTMLString = $LayoutObject->BuildSelection(
-                Class       => 'Validate_Required Modernize',
+                Class       => 'Mandatory Validate_Required Modernize',
                 Data        => $QueueValues,
+                Multiple    => 0,
+                Size        => 0,
                 Name        => 'TicketQueue',
                 TreeView    => $TreeView,
                 SelectedID  => $GetParam{QueueID},
                 Translation => 0,
+                OnChangeSubmit => 0,
+                Mandatory => 1,                
             );
         }
 
@@ -1544,6 +1548,7 @@ sub Run {
                 PossibleNone => 1,
                 Sort         => 'AlphanumericValue',
                 Translation  => 1,
+                Mandatory => 1,
             );
         }
 
@@ -1556,6 +1561,7 @@ sub Run {
             PossibleNone => 1,
             Sort         => 'AlphanumericValue',
             Translation  => 1,
+            Mandatory => 1,
         );
 
 
@@ -1576,6 +1582,7 @@ sub Run {
             SelectedID    => $GetParam{TicketPriorityID},
             SelectedValue => $GetParam{TicketPriorityID},
             Translation   => 1,
+            Mandatory => 1,
         );
 
         $Param{CustomerHiddenContainer} = $#MultipleCustomer != -1 ? '' : 'Hidden';
@@ -2333,6 +2340,7 @@ sub Run {
         $GetParam{TicketContent} = $GetParam{Description};
         $GetParam{TicketUserID} = $Self->{UserID};
         $GetParam{TicketLock} = 'unlock';
+        $GetParam{TicketOwnerID} = 1;
 # EO AppointmentToTicket
 
         if (%Appointment) {
