@@ -566,22 +566,22 @@
                 <div class="Clear"></div>
                 <input type="hidden" name="CustomerID" id="CustomerID" value="[% Data.CustomerID | html %]" readonly="readonly"/>
                 <div class="Clear"></div>
-                <label for="TicketQueue">[% Translate('Queue') | html %]</label>
+                <label class="Mandatory" for="TicketQueue"><span class="Marker">*</span>[% Translate('Queue') | html %]</label>
                 <div class="Field">
                     [% Data.QueueHTMLString %]
                 </div>
                 <div class="Clear"></div>
-                <label for="TicketPriorityID">[% Translate('Priority') | html %]</label>
+                <label class="Mandatory" for="TicketPriorityID"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
                 <div class="Field">
                     [% Data.PriorityHTMLString %]
                 </div>
                 <div class="Clear"></div>
-                <label for="TicketTypeID">[% Translate('Type') | html %]</label>
+                <label class="Mandatory" for="TicketTypeID"><span class="Marker">*</span>[% Translate('Type') | html %]</label>
                 <div class="Field">
                     [% Data.TypeHTMLString %]
                 </div>
                  <div class="Clear"></div>
-                <label for="TicketStateID">[% Translate('State') | html %]</label>
+                <label class="Mandatory" for="TicketStateID"><span class="Marker">*</span>[% Translate('State') | html %]</label>
                 <div class="Field">
                     [% Data.StateHTMLString %]
                 </div>
