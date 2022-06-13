@@ -539,7 +539,7 @@ sub AppointmentCreate {
                     TicketTitle                     => $Param{Title},
                     TicketSubject                   => $Param{Title},
                     TicketContent                   => $Param{Description},
-                    TicketAppointmentID             => $FutureTaskAppointmentID,
+                    AppointmentID             => $FutureTaskAppointmentID,
                     TicketArticleVisibleForCustomer => $Param{TicketArticleVisibleForCustomer},
                 },
             );
@@ -1650,10 +1650,10 @@ sub AppointmentUpdate {
         }
     }    
     if ( $Param{FutureTaskID} && !$Param{TicketTemplate} ) {
-        $Param{FutureTaskID} = undef;
         $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete( 
             TaskID => $Param{FutureTaskID}
         );
+        $Param{FutureTaskID} = undef;
     }
     # FutureTask is to be (re)created
     elsif ( $Param{TicketTemplate} ) {
@@ -1674,6 +1674,9 @@ sub AppointmentUpdate {
                 TicketSelectedCustomerUser      => $Param{TicketSelectedCustomerUser},
                 TicketUserID                    => $Param{TicketUserID},
                 TicketOwnerID                   => $Param{TicketOwnerID},
+                TicketSubject                   => $Param{Title},
+                TicketTitle                     => $Param{Title},
+                TicketContent                   => $Param{Description},
                 TicketLock                      => $Param{TicketLock},
                 TicketPriorityID                => $Param{TicketPriorityID},
                 TicketState                     => $Param{TicketState},
