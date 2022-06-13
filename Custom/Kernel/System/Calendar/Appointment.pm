@@ -852,9 +852,7 @@ sub AppointmentList {
         # parent id
         $Row[1] = $Row[1] ? $Row[1] : 0;
         my $ParentID = $Row[1];
-        print STDERR "Appointment.pm, L.852: " . $Param{ParentID} . "\n";
         if ( $Param{ParentID} ) {
-            print STDERR "Appointment.pm, L.854: " . $ParentID . "\n";
             next ROW if ( $Param{ParentID} != $ParentID );
         }
 # EO AppointmentToTicket
