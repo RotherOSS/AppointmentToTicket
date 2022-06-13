@@ -86,8 +86,6 @@ Returns:
 sub Run {
     my ( $Self, %Param ) = @_;
 
-    use Data::Dumper;
-    print STDERR "AppointmentTicket.pm, L.88: " . Dumper(\%Param) . "\n";
     # check task params
     my $CheckResult = $Self->_CheckTaskParams(
         %Param,
@@ -95,9 +93,8 @@ sub Run {
             [ 'AppointmentID', 'TicketCustomerUser', 'TicketCustomerID', 'TicketUserID', 'TicketQueueID', 'TicketOwnerID', 'TicketTitle', 'TicketSubject', 'TicketContent' ],
     );
 
-    print STDERR "AppointmentTicket.pm, L.97: " . $CheckResult . "\n";
     # stop execution if an error in params is detected
-    # return if !$CheckResult;
+     return if !$CheckResult;
 
     my $DBObject                  = $Kernel::OM->Get('Kernel::System::DB');
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
@@ -123,7 +120,8 @@ sub Run {
         OwnerID      => $Param{Data}->{TicketOwnerID},
         Lock         => $Param{Data}->{TicketLock},
         PriorityID   => $Param{Data}->{TicketPriorityID},
-        State        => $Param{Data}->{TicketState},
+        StateID      => $Param{Data}->{TicketStateID},
+        TypeID       => $Param{Data}->{TicketTypeID},
         Title        => $Param{Data}->{TicketTitle},
         Subject      => $Param{Data}->{TicketSubject},
     );
@@ -203,26 +201,6 @@ sub Run {
             Priority => 'error',
             Message  => "Could not create article for ticket $TicketID from appointment $Param{Data}->{AppointmentID}!",
         );
-    }
-
-    # set dynamic fields for article
-    # get dynamic field configs
-    my @ArticleDynamicFieldConfigs = @{ $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
-        Valid => 1,
-        ObjectType => ['Article'],
-        FieldFilter => $Config->{DynamicField} || {},
-    ) };
-    # set ticket dynamic fields
-    for my $DynamicFieldConfig ( @ArticleDynamicFieldConfigs ) {
-        if ( $DynamicFields{$DynamicFieldConfig->{Name}} ) {
-            # set the value
-            my $Success = $DynamicFieldBackendObject->ValueSet(
-                DynamicFieldConfig => $DynamicFieldConfig,
-                ObjectID           => $TicketID,
-                Value              => $Param{Data}->{TicketDynamicFields}->{$DynamicFieldConfig->{Name}},
-                UserID             => $Param{Data}->{TicketUserID},
-            );
-        }
     }
 
     my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
