@@ -6,13 +6,18 @@
     <Vendor>Rother OSS GmbH</Vendor>
     <URL>https://rother-oss.com/</URL>
     <License>GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007</License>
-    <Description Lang="en">..</Description>
+    <Description Lang="en">This package brings the functionality to automatically create a ticket with configurable parameters to a freely chooseable point in time in relation to an appointment.</Description>
     <Filelist>
         <File Permission="660" Location="Custom/Kernel/Modules/AgentAppointmentEdit.pm" />
         <File Permission="660" Location="Custom/Kernel/Output/HTML/Templates/Standard/AgentAppointmentEdit.tt" />
+        <File Permission="660" Location="Custom/Kernel/System/Calendaer/Appointment.pm" />
+        <File Permission="660" Location="Custom/Kernel/System/Daemon/SchedulerDB.pm" />
         <File Permission="660" Location="Custom/Kernel/System/Scheduler.pm" />
+        <File Permission="660" Location="Kernel/Config/Files/XML/AppointmentToTicket.xml" />
         <File Permission="660" Location="Kernel/System/Daemon/DaemonModules/SchedulerTaskWorker/AppointmentTicket.pm" />
-        <File Permission="660" Location="Kernel/System/Daemon/SchedulerDB.pm" />
+        <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.AppointmentCalendar.js" />
+        <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.CustomerSearch.js" />
+        <File Permission="660" Location="var/httpd/htdocs/js/Core.UI.Dialog" />
     </Filelist>
     <DatabaseInstall Type="post">
         <TableAlter Name="calendar_appointment">
