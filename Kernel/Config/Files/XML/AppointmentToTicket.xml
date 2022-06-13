@@ -29,4 +29,16 @@
             </Hash>
         </Value>
     </Setting>
+    <Setting Name="Ticket::Frontend::AgentAppointmentEdit###StateType" Required="1" Valid="1">
+        <Description Translatable="1">Determines the next possible ticket states, after the creation of a new ticket from a calendar appointment in the agent interface.</Description>
+        <Navigation>Frontend::Agent::View::TicketCalendar</Navigation>
+        <Value>
+            <Array>
+                <Item Translatable="1">open</Item>
+                <Item Translatable="1">pending auto</Item>
+                <Item Translatable="1">pending reminder</Item>
+                <Item Translatable="1">closed</Item>
+            </Array>
+        </Value>
+    </Setting>
 </otobo_config>
