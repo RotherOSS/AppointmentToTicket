@@ -1371,6 +1371,8 @@ sub Run {
         elsif ( %FutureTask ) {
             $GetParam{TicketQueueID} = $FutureTask{Data}->{TicketQueueID};
             $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
+            $GetParam{TicketStateID} = $FutureTask{Data}->{TicketStateID};
+            $GetParam{TicketTypeID} = $FutureTask{Data}->{TicketTypeID};
         }
         else {
             my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
@@ -1399,9 +1401,7 @@ sub Run {
         my $QueueValues = $Self->_GetTos(
             %GetParam,
         );
-        my $UserValues = $Self->_GetUsers(
-            %GetParam,
-        );
+
         my $PriorityValues = $Self->_GetPriorities(
             %GetParam,
         );
@@ -1414,8 +1414,6 @@ sub Run {
             %GetParam,
         );
 
-        use Data::Dumper;
-        print STDERR "AgentAppointmentEdit.pm, L.1418: " . Dumper($TypeValues) . "\n";
         my %DynamicFieldValues;
         # cycle through the activated Dynamic Fields for this screen
         DYNAMICFIELD:
@@ -1519,6 +1517,7 @@ sub Run {
                 Name           => 'TicketQueueID',
                 TreeView       => $TreeView,
                 SelectedID     => $GetParam{TicketQueueID},
+                Translation    => 0,
                 OnChangeSubmit => 0,
                 Mandatory      => 1,
             );
@@ -1541,10 +1540,10 @@ sub Run {
                 Class        => 'Modernize Validate_Required' . ( $Param{Errors}->{TypeIDInvalid} || ' ' ),
                 Data         => $TypeValues,
                 Name         => 'TicketTypeID',
-                SelectedID   => $GetParam{TicketType},
+                SelectedID   => $GetParam{TicketTypeID},
                 PossibleNone => 1,
                 Sort         => 'AlphanumericValue',
-                Translation  => 0,
+                Translation  => 1,
             );
         }
 
@@ -1553,10 +1552,10 @@ sub Run {
             Class        => 'Modernize Validate_Required',
             Data         => $StateValues,
             Name         => 'TicketStateID',
-            SelectedID   => $GetParam{TicketState},
+            SelectedID   => $GetParam{TicketStateID},
             PossibleNone => 1,
             Sort         => 'AlphanumericValue',
-            Translation  => 0,
+            Translation  => 1,
         );
 
 
@@ -1570,7 +1569,7 @@ sub Run {
             }
         }
         # build priority html string
-        my $PriorityHTMLString = $Param{PriorityStrg} = $LayoutObject->BuildSelection(
+        my $PriorityHTMLString = $LayoutObject->BuildSelection(
             Class         => 'Validate_Required Modernize',
             Data          => $PriorityValues,
             Name          => 'TicketPriorityID',
@@ -1578,15 +1577,6 @@ sub Run {
             SelectedValue => $GetParam{TicketPriorityID},
             Translation   => 1,
         );
-
-        # TODO Check and maybe rebuild
-        # show owner selection
-        if ( $ConfigObject->Get('Ticket::Frontend::NewOwnerSelection') ) {
-            $LayoutObject->Block(
-                Name => 'OwnerSelection',
-                Data => \%Param,
-            );
-        }
 
         $Param{CustomerHiddenContainer} = $#MultipleCustomer != -1 ? '' : 'Hidden';
         $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || $FutureTask{Data}->{TicketArticleVisibleForCustomer}) ? 'checked=checked' : '';
@@ -2164,6 +2154,12 @@ sub Run {
             $GetParam{TicketCustomerUser} = $GetParam{SelectedCustomerUser};
         }
         $GetParam{TicketSelectedCustomerUser} = $GetParam{SelectedCustomerUser};
+        
+        # fetch customer id for selected customer user
+        my %SelectedCustomerUserData = $CustomerUserObject->CustomerUserDataGet(
+            User => $GetParam{TicketSelectedCustomerUser},
+        );
+        $GetParam{TicketCustomerID} = $SelectedCustomerUserData{CustomerID};
 # EO AppointmentToTicket
 
         # team
@@ -2286,7 +2282,8 @@ sub Run {
                     $GetParam{TicketOwnerID} = $FutureTask{Data}->{TicketOwnerID};
                     $GetParam{TicketLock} = $FutureTask{Data}->{TicketLock};
                     $GetParam{TicketPriorityID} = $FutureTask{Data}->{TicketPriorityID};
-                    $GetParam{TicketState} = $FutureTask{Data}->{TicketState};
+                    $GetParam{TicketStateID} = $FutureTask{Data}->{TicketStateID};
+                    $GetParam{TicketTypeID} = $FutureTask{Data}->{TicketTypeID};
                     $GetParam{TicketArticleVisibleForCustomer} = $FutureTask{Data}->{TicketArticleVisibleForCustomer};
                     $GetParam{TicketDynamicFields} = $FutureTask{Data}->{TicketDynamicFields};
                 }
@@ -2329,29 +2326,13 @@ sub Run {
             }
         }
 
-       # TODO Add DynamicField Stuff similar to AgentTicketPhone
-    # cycle through the activated Dynamic Fields for this screen
-    # DYNAMICFIELD:
-    # for my $DynamicFieldConfig ( @{ $Self->{DynamicField} } ) {
-    #     next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
-
-        # extract the dynamic field value from the web request
-    #     $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
-    #         DynamicFieldConfig => $DynamicFieldConfig,
-    #         ParamObject        => $ParamObject,
-    #         LayoutObject       => $LayoutObject,
-    #     );   
-    # } 
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task
         $GetParam{TicketSubject} = $GetParam{Title};
         $GetParam{TicketTitle} = $GetParam{Title};
         $GetParam{TicketContent} = $GetParam{Description};
-        $GetParam{TicketCustomerID} = 1;
-        $GetParam{TicketUserID} = 1;
-        $GetParam{TicketOwnerID} = 1;
+        $GetParam{TicketUserID} = $Self->{UserID};
         $GetParam{TicketLock} = 'unlock';
-        $GetParam{TicketState} = 'new';
 # EO AppointmentToTicket
 
         if (%Appointment) {
@@ -2701,58 +2682,6 @@ sub _DayOffsetGet {
 }
 
 # RotherOSS / AppointmentToTicket
-sub _GetUsers {
-    my ( $Self, %Param ) = @_;
-
-    # get users
-    my %ShownUsers;
-    my %AllGroupsMembers = $Kernel::OM->Get('Kernel::System::User')->UserList(
-        Type  => 'Long',
-        Valid => 1,
-    );
-
-    # get ticket object
-    my $TicketObject = $Kernel::OM->Get('Kernel::System::Ticket');
-
-    # just show only users with selected custom queue
-    if ( $Param{TicketQueueID} && !$Param{OwnerAll} ) {
-        $Param{QueueID} = $Param{TicketQueueID};
-        my @UserIDs = $TicketObject->GetSubscribedUserIDsByQueueID(%Param);
-        for my $KeyGroupMember ( sort keys %AllGroupsMembers ) {
-            my $Hit = 0;
-            for my $UID (@UserIDs) {
-                if ( $UID eq $KeyGroupMember ) {
-                    $Hit = 1;
-                }
-            }
-            if ( !$Hit ) {
-                delete $AllGroupsMembers{$KeyGroupMember};
-            }
-        }
-    }
-
-    # show all system users
-    if ( $Kernel::OM->Get('Kernel::Config')->Get('Ticket::ChangeOwnerToEveryone') ) {
-        %ShownUsers = %AllGroupsMembers;
-    }
-
-    # show all users who are owner or rw in the queue group
-    elsif ( $Param{TicketQueueID} ) {
-        my $GID        = $Kernel::OM->Get('Kernel::System::Queue')->GetQueueGroupID( QueueID => $Param{QueueID} );
-        my %MemberList = $Kernel::OM->Get('Kernel::System::Group')->PermissionGroupGet(
-            GroupID => $GID,
-            Type    => 'owner',
-        );
-        for my $KeyMember ( sort keys %MemberList ) {
-            if ( $AllGroupsMembers{$KeyMember} ) {
-                $ShownUsers{$KeyMember} = $AllGroupsMembers{$KeyMember};
-            }
-        }
-    }
-
-    return \%ShownUsers;
-}
-
 sub _GetPriorities {
     my ( $Self, %Param ) = @_;
 
