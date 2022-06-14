@@ -1479,7 +1479,6 @@ sub Run {
         }
         my @DynamicFieldHTML;
         for my $Key (sort keys %DynamicFieldHTMLData) {
-            print STDERR "AgentAppointmentEdit.pm, L.1481: " . $Key . "\n";
             push @DynamicFieldHTML, $DynamicFieldHTMLData{$Key};
         }
 
