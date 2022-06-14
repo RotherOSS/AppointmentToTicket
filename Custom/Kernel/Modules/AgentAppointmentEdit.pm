@@ -1423,7 +1423,10 @@ sub Run {
                 DynamicFieldConfig => $DynamicFieldConfig,
                 ParamObject        => $ParamObject,
                 LayoutObject       => $LayoutObject,
-            );   
+            );
+            if ( $DynamicFieldConfig->{FieldType} eq 'Multiselect' ) {
+                $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $Kernel::OM->Get('Kernel::System::JSON')->Decode( Data => $DynamicFieldValues{ $DynamicFieldConfig->{Name} }[0] );
+            }  
         }
 
         # cycle trough the activated Dynamic Fields for this screen
@@ -1471,7 +1474,7 @@ sub Run {
                 Value           => $GetParam{TicketDynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
                 LayoutObject    => $LayoutObject,
                 ParamObject     => $ParamObject,
-                AJAXUpdate      => 1,
+                AJAXUpdate      => 0,
                 Mandatory       => $Config->{DynamicField}->{ $DynamicFieldConfig->{Name} } == 2,
             );
         }
@@ -2118,7 +2121,10 @@ sub Run {
                 DynamicFieldConfig => $DynamicFieldConfig,
                 ParamObject        => $ParamObject,
                 LayoutObject       => $LayoutObject,
-            );   
+            ); 
+            if ( $DynamicFieldConfig->{FieldType} eq 'Multiselect' ) {
+                $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $Kernel::OM->Get('Kernel::System::JSON')->Decode( Data => $DynamicFieldValues{ $DynamicFieldConfig->{Name} }[0] );
+            }
         }
 
         # cycle trough the activated Dynamic Fields for this screen

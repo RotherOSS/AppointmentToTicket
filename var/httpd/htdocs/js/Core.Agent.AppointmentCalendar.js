@@ -2206,10 +2206,18 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                 if (Element.type == 'checkbox') {
                     Data[Element.id] = $(Element).prop('checked') ? '1' : '0';
                 } else {
-                    Data[Element.id] = $(Element).val();
+// RotherOSS / AppointmentToTicket
+//                     Data[Element.id] = $(Element).val();
+// EO AppointmentToTicket
+                    if (typeof $(Element).val() === 'object' ) {
+                        Data[Element.id] = JSON.stringify($(Element).val());
+                    } else {
+                        Data[Element.id] = $(Element).val();
+                    }
                 }
             });
 
+            console.log("Core.Agent.AppointmentCalendar.js, L. 2219:", Data);
             TargetNS.ShowWaitingDialog();
             TargetNS.EditAppointment(Data);
         });
@@ -2227,6 +2235,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
 
         // Save the appointment
         $('#EditFormSubmit').on('click', function() {
+            console.log("Core.Agent.AppointmentCalendar.js, L. 2229:", $('#EditAppointmentForm'));
             $('#EditAppointmentForm').submit();
         });
 
