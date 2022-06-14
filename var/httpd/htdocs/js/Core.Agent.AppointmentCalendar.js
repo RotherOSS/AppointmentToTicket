@@ -2053,6 +2053,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      * @param {Integer} Data.EndHour - Appointment end hour.
      * @param {Integer} Data.EndMinute - Appointment end minute.
      * @param {Integer} Data.AllDay - Is appointment an all-day appointment (0|1)?
+// RotherOSS / AppointmentToTicket
+     * @param 
+// EO AppointmentToTicket
      * @description
      *      This method submits an edit appointment call to the backend and refreshes the view.
       */
@@ -2206,14 +2209,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                 if (Element.type == 'checkbox') {
                     Data[Element.id] = $(Element).prop('checked') ? '1' : '0';
                 } else {
-// RotherOSS / AppointmentToTicket
-//                     Data[Element.id] = $(Element).val();
-// EO AppointmentToTicket
-                    if (typeof $(Element).val() === 'object' ) {
-                        Data[Element.id] = JSON.stringify($(Element).val());
-                    } else {
-                        Data[Element.id] = $(Element).val();
-                    }
+                    Data[Element.id] = $(Element).val();
                 }
             });
 

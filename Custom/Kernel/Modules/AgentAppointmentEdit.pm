@@ -1418,15 +1418,26 @@ sub Run {
         for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
             next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
 
-            # extract the dynamic field value from the web request
-            $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
-                DynamicFieldConfig => $DynamicFieldConfig,
-                ParamObject        => $ParamObject,
-                LayoutObject       => $LayoutObject,
-            );
             if ( $DynamicFieldConfig->{FieldType} eq 'Multiselect' ) {
-                $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $Kernel::OM->Get('Kernel::System::JSON')->Decode( Data => $DynamicFieldValues{ $DynamicFieldConfig->{Name} }[0] );
-            }  
+                # extract the dynamic field value from the web request
+                $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+                    DynamicFieldConfig => { $DynamicFieldConfig->%*, Name => $DynamicFieldConfig->{Name} . '[]' },
+                    ParamObject        => $ParamObject,
+                    LayoutObject       => $LayoutObject,
+                );
+            # if ( $DynamicFieldConfig->{FieldType} eq 'Multiselect' ) {
+            #     $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $Kernel::OM->Get('Kernel::System::JSON')->Decode( Data => $DynamicFieldValues{ $DynamicFieldConfig->{Name} }[0] );
+            # }
+            }
+            else {
+                # extract the dynamic field value from the web request
+                $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+                    DynamicFieldConfig => $DynamicFieldConfig,
+                    ParamObject        => $ParamObject,
+                    LayoutObject       => $LayoutObject,
+                );
+
+            }
         }
 
         # cycle trough the activated Dynamic Fields for this screen
@@ -2116,15 +2127,27 @@ sub Run {
         for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
             next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
 
-            # extract the dynamic field value from the web request
-            $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
-                DynamicFieldConfig => $DynamicFieldConfig,
-                ParamObject        => $ParamObject,
-                LayoutObject       => $LayoutObject,
-            ); 
             if ( $DynamicFieldConfig->{FieldType} eq 'Multiselect' ) {
-                $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $Kernel::OM->Get('Kernel::System::JSON')->Decode( Data => $DynamicFieldValues{ $DynamicFieldConfig->{Name} }[0] );
+                # extract the dynamic field value from the web request
+                $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+                    DynamicFieldConfig => { $DynamicFieldConfig->%*, Name => $DynamicFieldConfig->{Name} . '[]' },
+                    ParamObject        => $ParamObject,
+                    LayoutObject       => $LayoutObject,
+                );
+            # if ( $DynamicFieldConfig->{FieldType} eq 'Multiselect' ) {
+            #     $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $Kernel::OM->Get('Kernel::System::JSON')->Decode( Data => $DynamicFieldValues{ $DynamicFieldConfig->{Name} }[0] );
+            # }
             }
+            else {
+                # extract the dynamic field value from the web request
+                $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+                    DynamicFieldConfig => $DynamicFieldConfig,
+                    ParamObject        => $ParamObject,
+                    LayoutObject       => $LayoutObject,
+                );
+
+            }
+
         }
 
         # cycle trough the activated Dynamic Fields for this screen
