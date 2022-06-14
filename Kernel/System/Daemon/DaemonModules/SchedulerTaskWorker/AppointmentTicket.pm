@@ -90,11 +90,14 @@ sub Run {
     my $CheckResult = $Self->_CheckTaskParams(
         %Param,
         NeededDataAttributes =>
-            [ 'AppointmentID', 'TicketCustomerUser', 'TicketCustomerID', 'TicketUserID', 'TicketQueueID', 'TicketOwnerID', 'TicketTitle', 'TicketSubject', 'TicketContent' ],
+            [
+                'AppointmentID', 'TicketCustomerUser', 'TicketCustomerID', 'TicketUserID', 'TicketQueueID', 'TicketOwnerID',
+                'TicketTitle',   'TicketSubject',      'TicketContent'
+            ],
     );
 
     # stop execution if an error in params is detected
-     return if !$CheckResult;
+    return if !$CheckResult;
 
     my $DBObject                  = $Kernel::OM->Get('Kernel::System::DB');
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
@@ -135,20 +138,24 @@ sub Run {
 
     # set dynamic fields for ticket
     # get dynamic field configs
-    my @TicketDynamicFieldConfigs = @{ $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
-        Valid => 1,
-        ObjectType => ['Ticket'],
-        FieldFilter => $Config->{DynamicField} || {},
-    ) };
+    my @TicketDynamicFieldConfigs = @{
+        $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+            Valid       => 1,
+            ObjectType  => ['Ticket'],
+            FieldFilter => $Config->{DynamicField} || {},
+        )
+    };
+
     # set ticket dynamic fields
     my %DynamicFields = %{ $Param{Data}->{TicketDynamicFields} };
-    for my $DynamicFieldConfig ( @TicketDynamicFieldConfigs ) {
-        if ( $DynamicFields{$DynamicFieldConfig->{Name}} ) {
+    for my $DynamicFieldConfig (@TicketDynamicFieldConfigs) {
+        if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
+
             # set the value
             my $Success = $DynamicFieldBackendObject->ValueSet(
                 DynamicFieldConfig => $DynamicFieldConfig,
                 ObjectID           => $TicketID,
-                Value              => $Param{Data}->{TicketDynamicFields}->{$DynamicFieldConfig->{Name}},
+                Value              => $Param{Data}->{TicketDynamicFields}->{ $DynamicFieldConfig->{Name} },
                 UserID             => $Param{Data}->{TicketUserID},
             );
         }
@@ -224,11 +231,11 @@ sub Run {
         SET future_task_id = NULL
         WHERE id = ?
     ";
-    my @Bind = (\$Param{Data}->{AppointmentID});
-    
+    my @Bind = ( \$Param{Data}->{AppointmentID} );
+
     # update db record
     return if !$DBObject->Do(
-        SQL => $SQL,
+        SQL  => $SQL,
         Bind => \@Bind,
     );
 
@@ -243,10 +250,10 @@ sub Run {
 
         # Push parent into list since AppointmentList with filter ParentID does not include the parent itself
         my %ParentAppointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
-                AppointmentID => ( $Appointment{ParentID} ? $Appointment{ParentID} : $Appointment{AppointmentID} )
+            AppointmentID => ( $Appointment{ParentID} ? $Appointment{ParentID} : $Appointment{AppointmentID} )
         );
         push @Appointments, \%ParentAppointment;
-            
+
         my $CurrentTimeObject = $Kernel::OM->Create(
             'Kernel::System::DateTime'
         );
@@ -279,12 +286,12 @@ sub Run {
                 if ( !defined $TimeDiff ) {
                     $NextAppointment = $AppointmentRef;
                     $TimeDiff        = $DeltaResult->{AbsoluteSeconds};
-                    $ExecutionTime = $AppointmentExecutionTimeObject->ToString();
+                    $ExecutionTime   = $AppointmentExecutionTimeObject->ToString();
                 }
                 elsif ( $DeltaResult->{AbsoluteSeconds} < $TimeDiff ) {
                     $NextAppointment = $AppointmentRef;
                     $TimeDiff        = $DeltaResult->{AbsoluteSeconds};
-                    $ExecutionTime = $AppointmentExecutionTimeObject->ToString();
+                    $ExecutionTime   = $AppointmentExecutionTimeObject->ToString();
                 }
             }
         }
@@ -296,22 +303,22 @@ sub Run {
                 Type          => 'AppointmentTicket',
                 Name          => 'Test',
                 Data          => {
-                    TicketTitle                => $Param{Data}->{TicketTitle},
-                    TicketQueueID              => $Param{Data}->{TicketQueueID},
-                    TicketSubject              => $Param{Data}->{TicketSubject},
-                    TicketContent              => $Param{Data}->{TicketContent},
-                    TicketLock                 => 'unlock',
-                    TicketTypeID               => $Param{Data}->{TicketTypeID},
-                    TicketServiceID            => $Param{Data}->{TicketServiceID},
-                    TicketSLAID                => $Param{Data}->{TicketSLAID},
-                    TicketStateID              => $Param{Data}->{TicketStateID},
-                    TicketPriorityID           => $Param{Data}->{TicketPriorityID},
-                    TicketOwnerID              => $Param{Data}->{TicketOwnerID},
-                    TicketCustomerID           => $Param{Data}->{TicketCustomerID},
-                    TicketCustomerUser         => $Param{Data}->{TicketCustomerUser},
-                    TicketSelectedCustomerUser => $Param{Data}->{TicketSelectedCustomerUser},
-                    TicketUserID               => $Param{Data}->{TicketUserID},
-                    AppointmentID              => $NextAppointment->{AppointmentID},
+                    TicketTitle                     => $Param{Data}->{TicketTitle},
+                    TicketQueueID                   => $Param{Data}->{TicketQueueID},
+                    TicketSubject                   => $Param{Data}->{TicketSubject},
+                    TicketContent                   => $Param{Data}->{TicketContent},
+                    TicketLock                      => 'unlock',
+                    TicketTypeID                    => $Param{Data}->{TicketTypeID},
+                    TicketServiceID                 => $Param{Data}->{TicketServiceID},
+                    TicketSLAID                     => $Param{Data}->{TicketSLAID},
+                    TicketStateID                   => $Param{Data}->{TicketStateID},
+                    TicketPriorityID                => $Param{Data}->{TicketPriorityID},
+                    TicketOwnerID                   => $Param{Data}->{TicketOwnerID},
+                    TicketCustomerID                => $Param{Data}->{TicketCustomerID},
+                    TicketCustomerUser              => $Param{Data}->{TicketCustomerUser},
+                    TicketSelectedCustomerUser      => $Param{Data}->{TicketSelectedCustomerUser},
+                    TicketUserID                    => $Param{Data}->{TicketUserID},
+                    AppointmentID                   => $NextAppointment->{AppointmentID},
                     TicketTime                      => $Param{Data}->{TicketTime},
                     TicketTemplate                  => $Param{Data}->{TicketTemplate},
                     TicketCustom                    => $Param{Data}->{TicketCustom},
@@ -323,18 +330,18 @@ sub Run {
                     TicketDynamicFields             => $Param{Data}->{TicketDynamicFields},
                 }
             );
-            
+
             # update appointment in db
             my $SQL = "
                 UPDATE calendar_appointment
                 SET future_task_id = ?
                 WHERE id = ?
             ";
-            my @Bind = (\$FutureTaskID, \$NextAppointment->{AppointmentID});
-    
+            my @Bind = ( \$FutureTaskID, \$NextAppointment->{AppointmentID} );
+
             # update db record
             return if !$DBObject->Do(
-                SQL => $SQL,
+                SQL  => $SQL,
                 Bind => \@Bind,
             );
         }
