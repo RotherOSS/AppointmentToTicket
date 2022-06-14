@@ -103,7 +103,7 @@ sub Run {
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
     my $ConfigObject              = $Kernel::OM->Get('Kernel::Config');
 
-    my $Config = $ConfigObject->Get('AgentAppointmentEdit');
+    my $Config = $ConfigObject->Get('Ticket::Frontend::AgentAppointmentEdit');
 
     if ( $Self->{Debug} ) {
         print "    $Self->{WorkerName} executes task: $Param{TaskName}\n";
@@ -138,19 +138,18 @@ sub Run {
 
     # set dynamic fields for ticket
     # get dynamic field configs
-    my @TicketDynamicFieldConfigs = @{
-        $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
-            Valid       => 1,
-            ObjectType  => ['Ticket'],
-            FieldFilter => $Config->{DynamicField} || {},
-        )
-    };
+    my $DynamicFieldConfigs = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+        Valid       => 1,
+        ObjectType  => ['Ticket', 'Article'],
+        FieldFilter => $Config->{DynamicField} || {},
+    );
 
     # set ticket dynamic fields
     my %DynamicFields = %{ $Param{Data}->{TicketDynamicFields} };
-    for my $DynamicFieldConfig (@TicketDynamicFieldConfigs) {
+    for my $DynamicFieldConfig (@{ $DynamicFieldConfigs }) {
+        next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+        next DYNAMICFIELD if $DynamicFieldConfig->{ObjectType} ne 'Ticket';
         if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
-
             # set the value
             my $Success = $DynamicFieldBackendObject->ValueSet(
                 DynamicFieldConfig => $DynamicFieldConfig,
@@ -208,6 +207,21 @@ sub Run {
             Priority => 'error',
             Message  => "Could not create article for ticket $TicketID from appointment $Param{Data}->{AppointmentID}!",
         );
+    }
+
+    # set article dynamic fields
+    for my $DynamicFieldConfig (@{ $DynamicFieldConfigs }) {
+        next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+        next DYNAMICFIELD if $DynamicFieldConfig->{ObjectType} ne 'Article';
+        if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
+            # set the value
+            my $Success = $DynamicFieldBackendObject->ValueSet(
+                DynamicFieldConfig => $DynamicFieldConfig,
+                ObjectID           => $ArticleID,
+                Value              => $Param{Data}->{TicketDynamicFields}->{ $DynamicFieldConfig->{Name} },
+                UserID             => $Param{Data}->{TicketUserID},
+            );
+        }
     }
 
     my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
