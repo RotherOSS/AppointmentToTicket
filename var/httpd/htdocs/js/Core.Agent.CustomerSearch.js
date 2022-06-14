@@ -809,7 +809,7 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                 });
             }
         });
-        
+
         // show container
         $('#TicketCustomerContent' + Field).parent().removeClass('Hidden');
         // append to container
