@@ -588,11 +588,11 @@
                 <div class="Clear"></div>
                 <label for="TicketArticleVisibleForCustomer">[% Translate('Article is visible for Customer') | html %]</label>
                 <input name="TicketArticleVisibleForCustomer" id="TicketArticleVisibleForCustomer" value="" [% Data.ArticleVisibleForCustomer | html %] type="checkbox" />
-               [% FOREACH DynamicFieldKey IN Data.DynamicFieldHTML.nsort %]
+               [% FOREACH DynamicField IN Data.DynamicFieldHTML %]
                 <div class="Clear"></div>
                 <div class="Field">
-                    [% Data.DynamicFieldHTML.$DynamicFieldKey.Label %]
-                    [% Data.DynamicFieldHTML.$DynamicFieldKey.Field %]
+                    [% DynamicField.Label %]
+                    [% DynamicField.Field %]
                 </div>
                 [% END %]
             </div>

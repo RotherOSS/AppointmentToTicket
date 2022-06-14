@@ -1460,7 +1460,7 @@ sub Run {
         }
 
         # create html strings for all dynamic fields
-        my %DynamicFieldHTML;
+        my %DynamicFieldHTMLData;
         DYNAMICFIELD:
         for my $i ( 0 .. $#DynamicFieldConfigs ) {
             next DYNAMICFIELD if !IsHashRefWithData( $DynamicFieldConfigs[$i] );
@@ -1468,7 +1468,7 @@ sub Run {
             my $DynamicFieldConfig = $DynamicFieldConfigs[$i];
 
             # get field html
-            $DynamicFieldHTML{ $DynamicFieldConfig->{FieldOrder} } = $DynamicFieldBackendObject->EditFieldRender(
+            $DynamicFieldHTMLData{ $DynamicFieldConfig->{FieldOrder} } = $DynamicFieldBackendObject->EditFieldRender(
                 DynamicFieldConfig   => $DynamicFieldConfig,
                 Value           => $GetParam{TicketDynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
                 LayoutObject    => $LayoutObject,
@@ -1476,6 +1476,11 @@ sub Run {
                 AJAXUpdate      => 1,
                 Mandatory       => $Config->{DynamicField}->{ $DynamicFieldConfig->{Name} } == 2,
             );
+        }
+        my @DynamicFieldHTML;
+        for my $Key (sort keys %DynamicFieldHTMLData) {
+            print STDERR "AgentAppointmentEdit.pm, L.1481: " . $Key . "\n";
+            push @DynamicFieldHTML, $DynamicFieldHTMLData{$Key};
         }
 
         # get list type
@@ -1602,7 +1607,7 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
-                    DynamicFieldHTML => \%DynamicFieldHTML,
+                    DynamicFieldHTML => \@DynamicFieldHTML,
                 },
             );
         }
@@ -1619,7 +1624,7 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
-                    DynamicFieldHTML => \%DynamicFieldHTML,
+                    DynamicFieldHTML => \@DynamicFieldHTML,
                },
             );
         }
