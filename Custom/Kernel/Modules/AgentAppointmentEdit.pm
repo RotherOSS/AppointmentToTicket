@@ -1450,8 +1450,8 @@ sub Run {
                 $Value = $DynamicFieldValues{$DynamicFieldConfig->{Name}};
             }
  
-            if ( %FutureTask && $FutureTask{Data}->{TicketDynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}} ) {
-                $Value = $FutureTask{Data}->{TicketDynamicFields}->{'DynamicField_' . $DynamicFieldConfig->{Name}};
+            if ( %FutureTask && $FutureTask{Data}->{TicketDynamicFields}->{$DynamicFieldConfig->{Name}} ) {
+                $Value = $FutureTask{Data}->{TicketDynamicFields}->{$DynamicFieldConfig->{Name}};
             }
 
             $GetParam{TicketDynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
