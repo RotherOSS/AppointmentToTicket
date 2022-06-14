@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <otobo_config version="2.0" init="Application">
-    <Setting Name="AgentAppointmentEdit###DynamicField" Required="0" Valid="1">
+    <Setting Name="Ticket::Frontend::AgentAppointmentEdit###DynamicField" Required="0" Valid="1">
         <Description Translatable="1">Dynamic fields shown in the appointment edit screen of the agent interface</Description>
         <Navigation>Frontend::Agent::View::AgentAppointmentEdit</Navigation>
         <Value>
@@ -39,6 +39,15 @@
                 <Item Translatable="1">pending reminder</Item>
                 <Item Translatable="1">closed</Item>
             </Array>
+        </Value>
+    </Setting>
+    <Setting Name="DynamicFieldScreens###AppointmentTickets" Required="0" Valid="1">
+        <Description Translatable="1">This configuration defines all possible screens to enable or disable dynamic fields.</Description>
+        <Navigation>Frontend::Base::DynamicFieldScreens</Navigation>
+        <Value>
+            <Hash>
+                <Item Key="Ticket::Frontend::AgentAppointmentEdit###DynamicField">AgentAppointmentEdit</Item>
+            </Hash>
         </Value>
     </Setting>
 </otobo_config>
