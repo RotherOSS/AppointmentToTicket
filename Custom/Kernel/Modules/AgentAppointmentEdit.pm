@@ -142,7 +142,7 @@ sub Run {
 
     my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
 # RotherOSS / AppointmentToTicket
-    my $Config = $ConfigObject->Get("AgentAppointmentEdit");
+    my $Config = $ConfigObject->Get("Ticket::Frontend::AgentAppointmentEdit");
     my $CustomerUserObject = $Kernel::OM->Get('Kernel::System::CustomerUser');
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
 # EO AppointmentToTicket
@@ -1476,7 +1476,7 @@ sub Run {
             );
         }
         my @DynamicFieldHTML;
-        for my $Key (sort keys %DynamicFieldHTMLData) {
+        for my $Key (sort { $a <=> $b } keys %DynamicFieldHTMLData) {
             push @DynamicFieldHTML, $DynamicFieldHTMLData{$Key};
         }
 
