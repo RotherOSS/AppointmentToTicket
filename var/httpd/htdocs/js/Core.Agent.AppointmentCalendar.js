@@ -803,7 +803,20 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                 Core.Config.Get('CGIHandle'),
                 Data,
                 function (HTML) {
-                    Core.UI.Dialog.ShowContentDialog(HTML, Core.Language.Translate('Appointment'), '10px', 'Center', true, undefined, true);
+// RotherOSS / AppointmentToTicket
+                    // Core.UI.Dialog.ShowContentDialog(HTML, Core.Language.Translate('Appointment'), '10px', 'Center', true, undefined, true);
+                    Core.UI.Dialog.ShowDialog({
+                        HTML: HTML,
+                        Title: Core.Language.Translate('Appointment'), 
+                        Modal: true,
+                        CloseOnClickOutside: false,
+                        CloseOnEscape: true,
+                        PositionTop: '10px',
+                        PositionLeft: 'Center',
+                        Buttons: undefined,
+                        AllowAutoGrow: true
+                    });
+// EO AppointmentToTicket
                     Core.UI.InputFields.Activate($('.Dialog:visible'));
 
                     TargetNS.AgentAppointmentEdit();
@@ -830,7 +843,10 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         Class: 'Primary CallForAction',
                         Function: function() {
                             Data.AppointmentID = AppointmentData.CalEvent.parentId;
-                            EditDialog();
+// RotherOSS / AppointmentToTicket
+                            // EditDialog();
+                            EditDialog(false);
+// EO AppointmentToTicket
                         }
                     },
                     {
@@ -1468,24 +1484,24 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                     CustomerKey = $('#CustomerKey_' +$(this).val()).val();
                     // get customer tickets
                     Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
-                }   
+                }
                 return false;
-            }); 
+            });
 
            // Bind event to customer remove button.
             $('.CustomerTicketRemove').on('click', function () {
                 Core.Agent.CustomerSearch.RemoveCustomerTicket($(this));
                 return false;
-            }); 
+            });
 
             Fields.$TicketCustomCreationDiv.show();
-     
+
             // initialize customer user search field
             Core.Agent.CustomerSearchAutoComplete.Init();
 
         }
         else {
-            
+
             Fields.$TicketCustomCreationDiv.hide();
             // Remove mandatory and validate classes
             ElementsRequired.forEach(function (element, index) {
