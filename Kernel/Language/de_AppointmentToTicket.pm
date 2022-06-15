@@ -25,6 +25,7 @@ sub Data {
 
     $Self->{Translation}->{'No ticket creation'} = 'Kein Ticket erstellen';
     $Self->{Translation}->{'Article is visible for customer'} = 'Artikel ist sichtbar für Kunde';
+    $Self->{Translation}->{'Ticket Creation'} = 'Ticket-Erstellung';
 
 }
 
