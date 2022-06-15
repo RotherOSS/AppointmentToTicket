@@ -10,9 +10,8 @@
     <Filelist>
         <File Permission="660" Location="Custom/Kernel/Modules/AgentAppointmentEdit.pm" />
         <File Permission="660" Location="Custom/Kernel/Output/HTML/Templates/Standard/AgentAppointmentEdit.tt" />
-        <File Permission="660" Location="Custom/Kernel/System/Calendaer/Appointment.pm" />
+        <File Permission="660" Location="Custom/Kernel/System/Calendar/Appointment.pm" />
         <File Permission="660" Location="Custom/Kernel/System/Daemon/SchedulerDB.pm" />
-        <File Permission="660" Location="Custom/Kernel/System/Scheduler.pm" />
         <File Permission="660" Location="Kernel/Config/Files/XML/AppointmentToTicket.xml" />
         <File Permission="660" Location="Kernel/System/Daemon/DaemonModules/SchedulerTaskWorker/AppointmentTicket.pm" />
         <File Permission="660" Location="var/packagesetup/AppointmentToTicket.pm" />
