@@ -15,6 +15,7 @@
         <File Permission="660" Location="Custom/Kernel/System/Scheduler.pm" />
         <File Permission="660" Location="Kernel/Config/Files/XML/AppointmentToTicket.xml" />
         <File Permission="660" Location="Kernel/System/Daemon/DaemonModules/SchedulerTaskWorker/AppointmentTicket.pm" />
+        <File Permission="660" Location="var/packagesetup/AppointmentToTicket.pm" />
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.AppointmentCalendar.js" />
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.CustomerSearch.js" />
     </Filelist>
@@ -28,4 +29,11 @@
             <ColumnDrop Name="future_task_id" />
         </TableAlter>
     </DatabaseUninstall>
+    <CodeUninstalli Type="pre"><![CDATA[
+        
+        # create the package name
+        my $CodeModule = 'var::packagesetup::AppointmentToTicket';
+        
+        $Kernel::OM->Get('$CodeModule')->CodeUninstall();
+    ]]</CodeUninstall>
 </otobo_package>
