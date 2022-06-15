@@ -20,6 +20,7 @@ use strict;
 use warnings;
 
 use parent qw(Kernel::System::Daemon::DaemonModules::BaseTaskWorker);
+use Kernel::System::VariableCheck qw(:all);
 
 our @ObjectDependencies = (
     'Kernel::Config',
@@ -146,9 +147,10 @@ sub Run {
 
     # set ticket dynamic fields
     my %DynamicFields = %{ $Param{Data}->{TicketDynamicFields} };
+    DYNAMICFIELDTICKET:
     for my $DynamicFieldConfig (@{ $DynamicFieldConfigs }) {
-        next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
-        next DYNAMICFIELD if $DynamicFieldConfig->{ObjectType} ne 'Ticket';
+        next DYNAMICFIELDTICKET if !IsHashRefWithData($DynamicFieldConfig);
+        next DYNAMICFIELDTICKET if $DynamicFieldConfig->{ObjectType} ne 'Ticket';
         if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
             # set the value
             my $Success = $DynamicFieldBackendObject->ValueSet(
@@ -210,9 +212,10 @@ sub Run {
     }
 
     # set article dynamic fields
+    DYNAMICFIELDARTICLE:
     for my $DynamicFieldConfig (@{ $DynamicFieldConfigs }) {
-        next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
-        next DYNAMICFIELD if $DynamicFieldConfig->{ObjectType} ne 'Article';
+        next DYNAMICFIELDARTICLE if !IsHashRefWithData($DynamicFieldConfig);
+        next DYNAMICFIELDARTICLE if $DynamicFieldConfig->{ObjectType} ne 'Article';
         if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
             # set the value
             my $Success = $DynamicFieldBackendObject->ValueSet(
@@ -254,12 +257,12 @@ sub Run {
     );
 
     # Check if appointment is recurring and if so, create next future task for appointment which is in the future and closest to now
-    if ( $Appointment{Recurring} ) {
+    if ( $Appointment{Recurring} || $Appointment{ParentID} ) {
 
         # Get all related appointments
         my @Appointments = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
             CalendarID => $Appointment{CalendarID},
-            ParentID   => $Appointment{ParentID},
+            ParentID   => $Appointment{ParentID} || $Appointment{AppointmentID},
         );
 
         # Push parent into list since AppointmentList with filter ParentID does not include the parent itself
