@@ -586,7 +586,7 @@
                     [% Data.StateHTMLString %]
                 </div>
                 <div class="Clear"></div>
-                <label for="TicketArticleVisibleForCustomer">[% Translate('Article is visible for Customer') | html %]</label>
+                <label for="TicketArticleVisibleForCustomer">[% Translate('Article is visible for customer') | html %]</label>
                 <input name="TicketArticleVisibleForCustomer" id="TicketArticleVisibleForCustomer" value="" [% Data.ArticleVisibleForCustomer | html %] type="checkbox" />
                [% FOREACH DynamicField IN Data.DynamicFieldHTML %]
                 <div class="Clear"></div>
