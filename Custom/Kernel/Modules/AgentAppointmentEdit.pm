@@ -1357,11 +1357,15 @@ sub Run {
         );
 
         # Fetch dynamic field configs
-        my @DynamicFieldConfigs = @{ $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
-            Valid       => 1,
-            ObjectType  => [ 'Ticket', 'Article' ],
-            FieldFilter => $Config->{DynamicField} || {},
-        ) }; 
+        my @DynamicFieldConfigs;
+        if ( defined $Config->{DynamicField} ) {
+            my $DynamicFieldConfigsRef = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+                Valid       => 1,
+                ObjectType  => [ 'Ticket', 'Article' ],
+                FieldFilter => $Config->{DynamicField} || {},
+            );
+            @DynamicFieldConfigs = @{ $DynamicFieldConfigsRef };
+        }
 
         if ( $GetParam{TicketQueueID} ) {
             $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
@@ -2113,11 +2117,15 @@ sub Run {
             }
         }
         
-        my @DynamicFieldConfigs = @{ $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
-            Valid       => 1,
-            ObjectType  => [ 'Ticket', 'Article' ],
-            FieldFilter => $Config->{DynamicField} || {},
-        ) };
+        my @DynamicFieldConfigs;
+        if ( defined $Config->{DynamicField} ) {
+            my $DynamicFieldConfigsRef= $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+                Valid       => 1,
+                ObjectType  => [ 'Ticket', 'Article' ],
+                FieldFilter => $Config->{DynamicField} || {},
+            ); 
+            @DynamicFieldConfigs = @{ $DynamicFieldConfigsRef };
+        }
 
         my %UserPreferences = $Kernel::OM->Get('Kernel::System::User')->GetUserData(
             UserID => $Self->{UserID},
