@@ -1415,22 +1415,59 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      *      This method initializes the ticket creation section behavior.
      */
     TargetNS.TicketInit = function (Fields) {
-        var TicketCustomStringDiv = Fields.$TicketCustomStringDiv.attr('id');
-        var TicketCustomCreationDiv = Fields.$TicketCustomCreationDiv.attr('id');
         var ElementsRequired = ['TicketQueueID', 'TicketPriority', 'TicketStateID', 'TicketTypeID'];
 
-        if (Fields.$TicketTemplate.val() !== 'Custom') {
+        if (Fields.$TicketTemplate.val() === '0') {
 
-            // hide the custom fields
-            Fields.$TicketCustomStringDiv.hide();
-        }
-        else {
+            $('.TicketTemplateSelection ~ div:not(.Hidden)').hide();
+            $('.TicketTemplateSelection ~ label').hide();
 
-            // custom field is needed
-            Fields.$TicketCustomStringDiv.show();
+            // Remove mandatory and validate classes
+            ElementsRequired.forEach(function (element, index) {
+                $('select[name="' + element + '"]').removeClass('Validate_Required');
+            });
+        
+        } else {
 
+            $('.TicketTemplateSelection ~ div:not(.Hidden)').show();
+            $('.TicketTemplateSelection ~ label').show();
+
+            if (Fields.$TicketTemplate.val() !== 'Custom') {
+
+                // hide the custom fields
+                $('.TicketTemplateSelection ~ div.AppointmentTicketCustomTime').hide();
+                $('.TicketTemplateSelection ~ label.AppointmentTicketCustomTime').hide();
+
+            }
+
+            // Add mandatory and validate classes
+            ElementsRequired.forEach(function (element, index) {
+                $('select[name="' + element + '"]').addClass('Validate_Required');
+            });
+
+            // Bind event to customer radio button.
+            $('.CustomerTicketRadio').on('change', function () {
+                var CustomerKey;
+                if ($(this).prop('checked')){
+
+                    CustomerKey = $('#CustomerKey_' +$(this).val()).val();
+                    // get customer tickets
+                    Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
+                }
+                return false;
+            });
+
+           // Bind event to customer remove button.
+            $('.CustomerTicketRemove').on('click', function () {
+                Core.Agent.CustomerSearch.RemoveCustomerTicket($(this));
+                return false;
+            });
+
+            // initialize customer user search field
+            Core.Agent.CustomerSearchAutoComplete.Init();
             // initialize modern fields on custom selection
             Core.UI.InputFields.InitSelect($('select.Modernize'));
+
         }
 
         // disable enable the different custom fields
@@ -1468,51 +1505,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             Fields.$TicketCustomRelativeUnit.prop('disabled', true);
             Fields.$TicketCustomRelativePointOfTime.prop('disabled', true);
         }
-
-        if (Fields.$TicketTemplate.val() !== '0') {
-
-            // Add mandatory and validate classes
-            ElementsRequired.forEach(function (element, index) {
-                $('select[name="' + element + '"]').addClass('Validate_Required');
-            });
-
-            // Bind event to customer radio button.
-            $('.CustomerTicketRadio').on('change', function () {
-                var CustomerKey;
-                if ($(this).prop('checked')){
-
-                    CustomerKey = $('#CustomerKey_' +$(this).val()).val();
-                    // get customer tickets
-                    Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
-                }
-                return false;
-            });
-
-           // Bind event to customer remove button.
-            $('.CustomerTicketRemove').on('click', function () {
-                Core.Agent.CustomerSearch.RemoveCustomerTicket($(this));
-                return false;
-            });
-
-            Fields.$TicketCustomCreationDiv.show();
-
-            // initialize customer user search field
-            Core.Agent.CustomerSearchAutoComplete.Init();
-
-        }
-        else {
-
-            Fields.$TicketCustomCreationDiv.hide();
-            // Remove mandatory and validate classes
-            ElementsRequired.forEach(function (element, index) {
-                $('select[name="' + element + '"]').removeClass('Validate_Required');
-            });
-
-        }
-
-        // TODO: Workaround for InputFields bug in the framework (disabled attribute not checked after initialization)
-        Core.UI.InputFields.Deactivate('#' + Core.App.EscapeSelector(TicketCustomStringDiv));
-        Core.UI.InputFields.Activate('#' + Core.App.EscapeSelector(TicketCustomStringDiv));
 
         // Register change event handler
         Fields.$TicketTemplate.off('change.AppointmentCalendar').on('change.AppointmentCalendar', function() {
