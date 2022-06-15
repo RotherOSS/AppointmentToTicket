@@ -138,17 +138,21 @@ sub Run {
     }
 
     # set dynamic fields for ticket
-    # get dynamic field configs
-    my $DynamicFieldConfigs = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
-        Valid       => 1,
-        ObjectType  => ['Ticket', 'Article'],
-        FieldFilter => $Config->{DynamicField} || {},
-    );
-
+    # Fetch dynamic field configs
+    my @DynamicFieldConfigs;
+    if ( defined $Config->{DynamicField} ) {
+        my $DynamicFieldConfigsRef = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+            Valid       => 1,
+            ObjectType  => [ 'Ticket', 'Article' ],
+            FieldFilter => $Config->{DynamicField} || {},
+        );   
+        @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{ $DynamicFieldConfigsRef } : ();
+    }
+ 
     # set ticket dynamic fields
     my %DynamicFields = %{ $Param{Data}->{TicketDynamicFields} };
     DYNAMICFIELDTICKET:
-    for my $DynamicFieldConfig (@{ $DynamicFieldConfigs }) {
+    for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
         next DYNAMICFIELDTICKET if !IsHashRefWithData($DynamicFieldConfig);
         next DYNAMICFIELDTICKET if $DynamicFieldConfig->{ObjectType} ne 'Ticket';
         if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
@@ -213,7 +217,7 @@ sub Run {
 
     # set article dynamic fields
     DYNAMICFIELDARTICLE:
-    for my $DynamicFieldConfig (@{ $DynamicFieldConfigs }) {
+    for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
         next DYNAMICFIELDARTICLE if !IsHashRefWithData($DynamicFieldConfig);
         next DYNAMICFIELDARTICLE if $DynamicFieldConfig->{ObjectType} ne 'Article';
         if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
