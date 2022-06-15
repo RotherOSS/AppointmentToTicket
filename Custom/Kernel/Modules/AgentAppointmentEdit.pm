@@ -1603,6 +1603,7 @@ sub Run {
                 Class         => 'Validate_Required Modernize',
                 Data          => $PriorityValues,
                 Name          => 'TicketPriority',
+                SelectedID    => $GetParam{TicketPriority},
                 SelectedValue => $GetParam{TicketPriority},
                 Translation   => 1,
                 Mandatory => 1,
@@ -2341,7 +2342,7 @@ sub Run {
             }
         }
         
-        # Determine notification custom type, if supplied.
+        # Determine ticket custom type, if supplied.
         if ( defined $GetParam{TicketTemplate} ) {
             if ( $GetParam{TicketTemplate} ne 'Custom' ) {
                 $GetParam{TicketCustom} = '';
