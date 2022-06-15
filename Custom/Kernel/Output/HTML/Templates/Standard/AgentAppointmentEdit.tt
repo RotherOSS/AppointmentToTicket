@@ -573,11 +573,13 @@
                 <div class="Field">
                     [% Data.PriorityHTMLString %]
                 </div>
+[% IF Data.TypeHTMLString %]
                 <div class="Clear"></div>
                 <label class="Mandatory" for="TicketTypeID"><span class="Marker">*</span>[% Translate('Type') | html %]</label>
                 <div class="Field">
                     [% Data.TypeHTMLString %]
                 </div>
+[% END %]
                  <div class="Clear"></div>
                 <label class="Mandatory" for="TicketStateID"><span class="Marker">*</span>[% Translate('State') | html %]</label>
                 <div class="Field">
