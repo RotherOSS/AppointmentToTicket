@@ -88,7 +88,7 @@ sub Run {
         my $CustomerCounter = 1;
         for my $Count ( 0 ... $CustomersNumber ) {
             my $CustomerElement  = $GetParam{'CustomerTicketText_' . $Count};
-            my $CustomerSelected = ( $Selected eq $GetParam{'CustomerKey_' . $Count} ? 'checked="checked"' : '' );
+            my $CustomerSelected = ( ( $Selected && $Selected eq $GetParam{'CustomerKey_' . $Count} ) ? 'checked="checked"' : '' );
             my $CustomerKey      = $GetParam{'CustomerKey_' . $Count} || '';
 
             if ($CustomerElement) {
