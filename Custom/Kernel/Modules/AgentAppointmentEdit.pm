@@ -1364,7 +1364,7 @@ sub Run {
                 ObjectType  => [ 'Ticket', 'Article' ],
                 FieldFilter => $Config->{DynamicField} || {},
             );
-            @DynamicFieldConfigs = @{ $DynamicFieldConfigsRef };
+            @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{ $DynamicFieldConfigsRef } : ();
         }
 
         if ( $GetParam{TicketQueueID} ) {
@@ -2124,7 +2124,7 @@ sub Run {
                 ObjectType  => [ 'Ticket', 'Article' ],
                 FieldFilter => $Config->{DynamicField} || {},
             ); 
-            @DynamicFieldConfigs = @{ $DynamicFieldConfigsRef };
+            @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{ $DynamicFieldConfigsRef } : ();
         }
 
         my %UserPreferences = $Kernel::OM->Get('Kernel::System::User')->GetUserData(
