@@ -13,6 +13,25 @@
             </Hash>
         </Value>
     </Setting>
+    <Setting Name="Ticket::Frontend::AgentAppointmentEdit###Priority" Required="1" Valid="1">
+        <Description Translatable="1">Sets the default priority for new tickets in the AgentAppointmentEdit interface.</Description>
+        <Navigation>Frontend::Agent::View::AgentAppointmentEdit</Navigation>
+        <Value>
+            <Item ValueType="Entity" ValueEntityType="Priority" ValueRegex="">3 normal</Item>
+        </Value>
+    </Setting>
+    <Setting Name="Ticket::Frontend::AgentAppointmentEdit###StateType" Required="1" Valid="1">
+        <Description Translatable="1">Determines the next possible ticket states, after the creation of a new ticket from a calendar appointment in the agent interface.</Description>
+        <Navigation>Frontend::Agent::View::TicketCalendar</Navigation>
+        <Value>
+            <Array>
+                <Item Translatable="1">open</Item>
+                <Item Translatable="1">pending auto</Item>
+                <Item Translatable="1">pending reminder</Item>
+                <Item Translatable="1">closed</Item>
+            </Array>
+        </Value>
+    </Setting>
     <Setting Name="Loader::Module::AgentAppointmentCalendarOverview###009-AppointmentTicket" Required="0" Valid="1">
         <Description Translatable="1">Loadermodule registration for the agent interface.</Description>
         <Navigation>Frontend::Agent::ModuleRegistration::Loader</Navigation>
@@ -27,18 +46,6 @@
                     </Array>
                 </Item>
             </Hash>
-        </Value>
-    </Setting>
-    <Setting Name="Ticket::Frontend::AgentAppointmentEdit###StateType" Required="1" Valid="1">
-        <Description Translatable="1">Determines the next possible ticket states, after the creation of a new ticket from a calendar appointment in the agent interface.</Description>
-        <Navigation>Frontend::Agent::View::TicketCalendar</Navigation>
-        <Value>
-            <Array>
-                <Item Translatable="1">open</Item>
-                <Item Translatable="1">pending auto</Item>
-                <Item Translatable="1">pending reminder</Item>
-                <Item Translatable="1">closed</Item>
-            </Array>
         </Value>
     </Setting>
     <Setting Name="DynamicFieldScreens###AppointmentTickets" Required="0" Valid="1">

@@ -1588,24 +1588,26 @@ sub Run {
 
 
         # get priority data
-        if ( !$GetParam{TicketPriorityID} ) {
+        if ( !$GetParam{TicketPriority} ) {
             if ( %FutureTask ) {
-                $GetParam{TicketPriorityID} = $FutureTask{Data}->{TicketPriorityID};
+                $GetParam{TicketPriority} = $FutureTask{Data}->{TicketPriority};
             }
             else {
-                $GetParam{TicketPriorityID} = $Config->{Priority};
+                $GetParam{TicketPriority} = $Config->{Priority};
             }
         }
         # build priority html string
-        my $PriorityHTMLString = $LayoutObject->BuildSelection(
-            Class         => 'Validate_Required Modernize',
-            Data          => $PriorityValues,
-            Name          => 'TicketPriorityID',
-            SelectedID    => $GetParam{TicketPriorityID},
-            SelectedValue => $GetParam{TicketPriorityID},
-            Translation   => 1,
-            Mandatory => 1,
-        );
+        my $PriorityHTMLString;
+        if ( $Config->{Priority} ) {
+            $PriorityHTMLString = $LayoutObject->BuildSelection(
+                Class         => 'Validate_Required Modernize',
+                Data          => $PriorityValues,
+                Name          => 'TicketPriority',
+                SelectedValue => $GetParam{TicketPriority},
+                Translation   => 1,
+                Mandatory => 1,
+            );
+        }
 
         $Param{CustomerHiddenContainer} = $#MultipleCustomer != -1 ? '' : 'Hidden';
         $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || $FutureTask{Data}->{TicketArticleVisibleForCustomer}) ? 'checked=checked' : '';
@@ -2330,7 +2332,7 @@ sub Run {
                     $GetParam{TicketUserID} = $FutureTask{Data}->{TicketUserID};
                     $GetParam{TicketOwnerID} = $FutureTask{Data}->{TicketOwnerID};
                     $GetParam{TicketLock} = $FutureTask{Data}->{TicketLock};
-                    $GetParam{TicketPriorityID} = $FutureTask{Data}->{TicketPriorityID};
+                    $GetParam{TicketPriority} = $FutureTask{Data}->{TicketPriority};
                     $GetParam{TicketStateID} = $FutureTask{Data}->{TicketStateID};
                     $GetParam{TicketTypeID} = $FutureTask{Data}->{TicketTypeID};
                     $GetParam{TicketArticleVisibleForCustomer} = $FutureTask{Data}->{TicketArticleVisibleForCustomer};

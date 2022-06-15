@@ -144,7 +144,7 @@ creates a new appointment.
         TicketUserID => 1,                                                # (optional) Ticket user id
         TicketOwnerID => 1,                                               # (optional) Ticket owner id
         TicketLock => 'unlock',                                           # (optional) Ticket lock state
-        TicketPriorityID => '3',                                          # (optional) Ticket priority
+        TicketPriority => '3 normal',                                     # (optional) Ticket priority
         TicketStateID => 1,                                               # (optional) Ticket state
         TicketTypeID => 1,                                                # (optional) Ticket type
         TicketDynamicFields => {                                          # (optional) Name value combinations for dynamic fields  
@@ -540,7 +540,7 @@ sub AppointmentCreate {
                     TicketUserID                    => $Param{TicketUserID},
                     TicketOwnerID                   => $Param{TicketOwnerID},
                     TicketLock                      => $Param{TicketLock},
-                    TicketPriorityID                => $Param{TicketPriorityID},
+                    TicketPriority                  => $Param{TicketPriority},
                     TicketStateID                   => $Param{TicketStateID},
                     TicketTypeID                    => $Param{TicketTypeID},
                     TicketTitle                     => $Param{Title},
@@ -1363,7 +1363,7 @@ updates an existing appointment.
         TicketUserID => 1,                                                # (optional) Ticket user id
         TicketOwnerID => 1,                                               # (optional) Ticket owner id
         TicketLock => 'unlock',                                           # (optional) Ticket lock state
-        TicketPriorityID => '3',                                          # (optional) Ticket priority
+        TicketPriority => '3 normal',                                     # (optional) Ticket priority
         TicketStateID => 1,                                               # (optional) Ticket state
         TicketTypeID => 1,                                                # (optional) Ticket type id
         TicketDynamicFields => {                                          # (optional) Name value combinations for dynamic fields
@@ -1697,7 +1697,7 @@ sub AppointmentUpdate {
                 TicketTitle                     => $Param{Title},
                 TicketContent                   => $Param{Description},
                 TicketLock                      => $Param{TicketLock},
-                TicketPriorityID                => $Param{TicketPriorityID},
+                TicketPriority                  => $Param{TicketPriority},
                 TicketStateID                   => $Param{TicketStateID},
                 TicketTypeID                    => $Param{TicketTypeID},
                 TicketArticleVisibleForCustomer => $Param{TicketArticleVisibleForCustomer},

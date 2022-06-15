@@ -1417,7 +1417,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
     TargetNS.TicketInit = function (Fields) {
         var TicketCustomStringDiv = Fields.$TicketCustomStringDiv.attr('id');
         var TicketCustomCreationDiv = Fields.$TicketCustomCreationDiv.attr('id');
-        var ElementsRequired = ['TicketQueueID', 'TicketPriorityID', 'TicketStateID', 'TicketTypeID'];
+        var ElementsRequired = ['TicketQueueID', 'TicketPriority', 'TicketStateID', 'TicketTypeID'];
 
         if (Fields.$TicketTemplate.val() !== 'Custom') {
 

@@ -569,7 +569,7 @@
                     [% Data.QueueHTMLString %]
                 </div>
                 <div class="Clear"></div>
-                <label class="Mandatory" for="TicketPriorityID"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
+                <label class="Mandatory" for="TicketPriority"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
                 <div class="Field">
                     [% Data.PriorityHTMLString %]
                 </div>
