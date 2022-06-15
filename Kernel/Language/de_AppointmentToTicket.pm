@@ -27,3 +27,5 @@ sub Data {
     $Self->{Translation}->{'Article is visible for customer'} = 'Artikel ist sichtbar für Kunde';
 
 }
+
+1;
