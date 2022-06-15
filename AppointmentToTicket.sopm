@@ -29,7 +29,7 @@
             <ColumnDrop Name="future_task_id" />
         </TableAlter>
     </DatabaseUninstall>
-    <CodeUninstalli Type="pre"><![CDATA[
+    <CodeUninstall Type="pre"><![CDATA[
         
         # create the package name
         my $CodeModule = 'var::packagesetup::AppointmentToTicket';
