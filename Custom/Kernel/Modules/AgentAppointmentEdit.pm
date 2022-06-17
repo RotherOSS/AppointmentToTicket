@@ -1404,10 +1404,6 @@ sub Run {
             %GetParam,
         );
 
-        my $ServiceValues = $Self->_GetServices(
-            %GetParam,
-        );
-
         my %DynamicFieldValues;
         # cycle through the activated Dynamic Fields for this screen
         DYNAMICFIELD:
@@ -1476,7 +1472,7 @@ sub Run {
                 Value           => $GetParam{TicketDynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
                 LayoutObject    => $LayoutObject,
                 ParamObject     => $ParamObject,
-                AJAXUpdate      => 0,
+                AJAXUpdate      => 1,
                 Mandatory       => $Config->{DynamicField}->{ $DynamicFieldConfig->{Name} } == 2,
             );
         }
@@ -1596,19 +1592,6 @@ sub Run {
             );
         }
 
-        # build priority html string
-        my $ServiceHTMLString;
-        if ( $Config->{Priority} ) {
-            $ServiceHTMLString = $LayoutObject->BuildSelection(
-                Class         => 'Validate_Required Modernize',
-                Data          => $ServiceValues,
-                Name          => 'TicketServiceID',
-                SelectedID    => $GetParam{TicketServiceID},
-                Translation   => 1,
-                Mandatory     => 1,
-            );
-        }
-
         $Param{CustomerHiddenContainer} = $#MultipleCustomer != -1 ? '' : 'Hidden';
         $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || $FutureTask{Data}->{AppointmentTicket}->{ArticleVisibleForCustomer}) ? 'checked=checked' : '';
 
@@ -1626,7 +1609,6 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
-                    ServiceHTMLString => $ServiceHTMLString,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                 },
             );
@@ -1644,7 +1626,6 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
-                    ServiceHTMLString => $ServiceHTMLString,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                },
             );
@@ -2192,10 +2173,10 @@ sub Run {
         if ( @MultipleCustomer ) {
             for my $CustomerUser (@MultipleCustomer) {
                 if ( $GetParam{TicketCustomerUser} ) {
-                    $GetParam{TicketCustomerUser} .= ",$CustomerUser->{CustomerKey}";
+                    $GetParam{TicketCustomerUser} .= ",$CustomerUser->{CustomerElement}";
                 }
                 else {
-                    $GetParam{TicketCustomerUser} = $CustomerUser->{CustomerKey};
+                    $GetParam{TicketCustomerUser} = $CustomerUser->{CustomerElement};
                 }
             }
         }
@@ -2358,7 +2339,7 @@ sub Run {
 
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task
-        $GetParam{AppointmentTicket} = (
+        $GetParam{AppointmentTicket} = {
             $GetParam{AppointmentTicket}->%*,
             Subject                   => $GetParam{Title},
             Title                     => $GetParam{Title},
@@ -2376,12 +2357,12 @@ sub Run {
             QueueID                   => $GetParam{TicketQueueID},
             CustomerID                => $GetParam{TicketCustomerID},
             CustomerUser              => $GetParam{TicketCustomerUser},
+            SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
             Priority                  => $GetParam{TicketPriority},
             StateID                   => $GetParam{TicketStateID},
             TypeID                    => $GetParam{TicketTypeID},
-            ServiceID                 => $GetParam{TicketServiceID},
             ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
-        );
+        };
 # EO AppointmentToTicket
 
         if (%Appointment) {
@@ -2855,37 +2836,6 @@ sub _GetStates {
     }
     return \%NextStates;
 }
-
-sub _GetServices {
-    my ( $Self, %Param ) = @_;
-
-    # get service
-    my %Service;
-
-    # use default Queue if none is provided
-    $Param{QueueID} = $Param{QueueID} || 1;
-
-    # get options for default services for unknown customers
-    my $DefaultServiceUnknownCustomer = $Kernel::OM->Get('Kernel::Config')->Get('Ticket::Service::Default::UnknownCustomer');
-
-    # check if no CustomerUserID is selected
-    # if $DefaultServiceUnknownCustomer = 0 leave CustomerUserID empty, it will not get any services
-    # if $DefaultServiceUnknownCustomer = 1 set CustomerUserID to get default services
-    if ( !$Param{CustomerUserID} && $DefaultServiceUnknownCustomer ) {
-        $Param{CustomerUserID} = '<DEFAULT>';
-    }    
-
-    # get service list
-    if ( $Param{CustomerUserID} ) {
-        %Service = $Kernel::OM->Get('Kernel::System::Ticket')->TicketServiceList(
-            %Param,
-            Action => $Self->{Action},
-            UserID => $Self->{UserID},
-        );   
-    }    
-    return \%Service;
-}
-
 # EO AppointmentToTicket
 
 1;
