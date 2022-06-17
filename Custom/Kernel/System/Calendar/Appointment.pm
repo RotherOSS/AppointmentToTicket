@@ -164,6 +164,8 @@ Events:
 sub AppointmentCreate {
     my ( $Self, %Param ) = @_;
 
+    use Data::Dumper;
+    print STDERR "Appointment.pm, L.167: " . Dumper(\%Param) . "\n";
     # check needed stuff
     for my $Needed (qw(CalendarID Title StartTime EndTime UserID)) {
         if ( !$Param{$Needed} ) {
@@ -453,7 +455,7 @@ sub AppointmentCreate {
                 ParentID   => $AppointmentID,
             );
             my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $AppointmentID );
-            shift @AppointmentList, \%ParentAppointment;
+            unshift @AppointmentList, \%ParentAppointment;
 
             APPOINTMENT:
             for my $Appointment (@AppointmentList) {
@@ -518,10 +520,7 @@ sub AppointmentCreate {
                 Type          => 'AppointmentTicket',
                 Data          => {
                     AppointmentTicket => {
-                        $Param{AppointmentData}->%*,
-                        Title => $Param{Title},
-                        Subject => $Param{Title},
-                        Content => $Param{Content},
+                        $Param{AppointmentTicket}->%*,
                     },
                     AppointmentID                   => $FutureTaskAppointmentID,
                 },
@@ -1670,7 +1669,7 @@ sub AppointmentUpdate {
                 ParentID   => $Param{AppointmentID}
             );
             my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $Param{AppointmentID} );
-            shift @AppointmentList, \%ParentAppointment;
+            unshift @AppointmentList, \%ParentAppointment;
 
             APPOINTMENT:
             for my $Appointment (@AppointmentList) {
