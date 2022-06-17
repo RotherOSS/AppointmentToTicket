@@ -1138,7 +1138,7 @@ sub Run {
             $_->{Key} => $_->{Value}
         } @TicketTemplates;
         
-        my $SelectedTicketTemplate = defined $FutureTask{Data} ? $FutureTask{Data}->{TicketTemplate} : '0';
+        my $SelectedTicketTemplate = defined $FutureTask{Data} ? $FutureTask{Data}->{AppointmentTicket}->{Template} : '0';
         $Param{TicketValue} = $TicketTemplateLookup{$SelectedTicketTemplate};
 
         # ticket selection
@@ -1169,7 +1169,7 @@ sub Run {
         my %TicketCustomUnitLookup = map {
             $_->{Key} => $_->{Value}
         } @TicketCustomUnits;
-        my $SelectedTicketCustomUnit = ( $FutureTask{Data} ? $FutureTask{Data}->{TicketCustomRelativeUnit} : '' ) || 'minutes';
+        my $SelectedTicketCustomUnit = ( $FutureTask{Data} ? $FutureTask{Data}->{AppointmentTicket}->{CustomRelativeUnit} : '' ) || 'minutes';
 
         # ticket custom units selection
         $Param{TicketCustomUnitsStrg} = $LayoutObject->BuildSelection(
@@ -1203,7 +1203,7 @@ sub Run {
         my %TicketCustomUnitPointOfTimeLookup = map {
             $_->{Key} => $_->{Value}
         } @TicketCustomUnitsPointOfTime;
-        my $SelectedTicketCustomUnitPointOfTime = ( $FutureTask{Data} ? $FutureTask{Data}->{TicketCustomRelativePointOfTime} : '' )
+        my $SelectedTicketCustomUnitPointOfTime = ( $FutureTask{Data} ? $FutureTask{Data}->{AppointmentTicket}->{CustomRelativePointOfTime} : '' )
             || 'beforestart';
 
         # ticket custom units point of time selection
@@ -1218,11 +1218,11 @@ sub Run {
 
         # Extract the date units for the custom date selection.
         my $TicketCustomDateTimeSettings = {};
-        if ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustomDateTime} ) {
+        if ( $FutureTask{Data} && $FutureTask{Data}->{AppointmentTicket}->{CustomDateTime} ) {
             my $TicketCustomDateTimeObject = $Kernel::OM->Create(
                 'Kernel::System::DateTime',
                 ObjectParams => {
-                    String => $FutureTask{Data}->{TicketCustomDateTime},
+                    String => $FutureTask{Data}->{AppointmentTicket}->{CustomDateTime},
                 },
             );
             $TicketCustomDateTimeSettings = $TicketCustomDateTimeObject->Get();
@@ -1243,13 +1243,13 @@ sub Run {
 
         # prepare radio button for custom date time and relative input
         if ( $FutureTask{Data} ) {
-            $FutureTask{Data}->{TicketCustom} ||= '';
+            $FutureTask{Data}->{AppointmentTicket}->{Custom} ||= '';
         }
 
-        if ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustom} eq 'datetime' ) {
+        if ( $FutureTask{Data} && $FutureTask{Data}->{AppointmentTicket}->{Custom} eq 'datetime' ) {
             $Param{TicketCustomDateTimeInputRadio} = 'checked="checked"';
         }
-        elsif ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustom} eq 'relative' ) {
+        elsif ( $FutureTask{Data} && $FutureTask{Data}->{AppointmentTicket}->{Custom} eq 'relative' ) {
             $Param{TicketCustomRelativeInputRadio} = 'checked="checked"';
         }
         else {
@@ -1257,21 +1257,21 @@ sub Run {
         }
 
         # ticket custom string value
-        if ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustom} eq 'datetime' ) {
+        if ( $FutureTask{Data} && $FutureTask{Data}->{AppointmentTicket}->{Custom} eq 'datetime' ) {
             $Param{TicketValue} .= ', ' . $LayoutObject->{LanguageObject}->FormatTimeString(
-                $FutureTask{Data}->{TicketCustomDateTime},
+                $FutureTask{Data}->{AppointmentTicket}->{CustomDateTime},
                 'DateFormat'
             );
         }
-        elsif ( $FutureTask{Data} && $FutureTask{Data}->{TicketCustom} eq 'relative' ) {
+        elsif ( $FutureTask{Data} && $FutureTask{Data}->{AppointmentTicket}->{Custom} eq 'relative' ) {
             if (
-                $FutureTask{Data}->{TicketCustomRelativeUnit}
-                && $FutureTask{Data}->{TicketCustomRelativePointOfTime}
+                $FutureTask{Data}->{AppointmentTicket}->{CustomRelativeUnit}
+                && $FutureTask{Data}->{AppointmentTicket}->{CustomRelativePointOfTime}
                 )
             {
-                $FutureTask{Data}->{TicketCustomRelativeUnitCount} ||= 0;
+                $FutureTask{Data}->{AppointmentTicket}->{CustomRelativeUnitCount} ||= 0;
                 $Param{TicketValue} .= ', '
-                    . $FutureTask{Data}->{TicketCustomRelativeUnitCount}
+                    . $FutureTask{Data}->{AppointmentTicket}->{CustomRelativeUnitCount}
                     . ' '
                     . $TicketCustomUnitLookup{$SelectedTicketCustomUnit}
                     . ' '
@@ -1371,10 +1371,10 @@ sub Run {
             $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
         }
         elsif ( %FutureTask ) {
-            $GetParam{TicketQueueID} = $FutureTask{Data}->{TicketQueueID};
+            $GetParam{TicketQueueID} = $FutureTask{Data}->{AppointmentTicket}->{QueueID};
             $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
-            $GetParam{TicketStateID} = $FutureTask{Data}->{TicketStateID};
-            $GetParam{TicketTypeID} = $FutureTask{Data}->{TicketTypeID};
+            $GetParam{TicketStateID} = $FutureTask{Data}->{AppointmentTicket}->{StateID};
+            $GetParam{TicketTypeID} = $FutureTask{Data}->{AppointmentTicket}->{TicketTypeID};
         }
         else {
             my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
@@ -1386,18 +1386,6 @@ sub Run {
                 }
             }
         }
-
-        # which standard fields to check - FieldID => GetParamValue (neccessary for Dest)
-        my %Check = (
-            QueueID            => 'QueueID',
-            UserID          => 'UserID',
-            StateID        => 'StateID',
-            PriorityID         => 'PriorityID',
-            ServiceID          => 'ServiceID',
-            SLAID              => 'SLAID',
-            StandardTemplateID => 'StandardTemplateID',
-            TypeID             => 'TypeID',
-        );
 
         # for each standard field which has to be checked, run the defined method
         my $QueueValues = $Self->_GetTos(
@@ -1413,6 +1401,10 @@ sub Run {
         );
 
         my $TypeValues = $Self->_GetTypes(
+            %GetParam,
+        );
+
+        my $ServiceValues = $Self->_GetServices(
             %GetParam,
         );
 
@@ -1463,8 +1455,8 @@ sub Run {
                 $Value = $DynamicFieldValues{$DynamicFieldConfig->{Name}};
             }
  
-            if ( %FutureTask && $FutureTask{Data}->{TicketDynamicFields}->{$DynamicFieldConfig->{Name}} ) {
-                $Value = $FutureTask{Data}->{TicketDynamicFields}->{$DynamicFieldConfig->{Name}};
+            if ( %FutureTask && $FutureTask{Data}->{AppointmentTicket}->{DynamicFields}->{$DynamicFieldConfig->{Name}} ) {
+                $Value = $FutureTask{Data}->{AppointmentTicket}->{DynamicFields}->{$DynamicFieldConfig->{Name}};
             }
 
             $GetParam{TicketDynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
@@ -1501,7 +1493,7 @@ sub Run {
 
         # if future task exists, transform existing data into neede structure
         if (%FutureTask) {
-            my @CustomerUserIDs = split(',', $FutureTask{Data}->{TicketCustomerUser});
+            my @CustomerUserIDs = split(',', $FutureTask{Data}->{AppointmentTicket}->{CustomerUser});
             if ( scalar @CustomerUserIDs ) {
                 my $Count = 0;
                 for my $CustomerUserID ( @CustomerUserIDs ) {
@@ -1511,7 +1503,7 @@ sub Run {
                     push @MultipleCustomer, {
                         Count => $Count++,
                         CustomerElement => '"' . $CustomerUser{UserFirstname} . ' ' . $CustomerUser{UserLastname} . '" <' . $CustomerUser{UserEmail} . '>',
-                        CustomerSelected => ( $FutureTask{Data}->{TicketSelectedCustomerUser} eq $CustomerUserID ? 'checked="checked"' : '' ),
+                        CustomerSelected => ( $FutureTask{Data}->{AppointmentTicket}->{SelectedCustomerUser} eq $CustomerUserID ? 'checked="checked"' : '' ),
                         CustomerKey => $CustomerUser{UserLogin},
                         CustomerError => '',
                         CustomerErrorMsg => 'CustomerGenericServerErrorMsg',
@@ -1539,16 +1531,16 @@ sub Run {
         }
         else {
             $QueueHTMLString = $LayoutObject->BuildSelection(
-                Class       => 'Mandatory Validate_Required Modernize',
-                Data        => $QueueValues,
-                Multiple    => 0,
-                Size        => 0,
-                Name        => 'TicketQueue',
-                TreeView    => $TreeView,
-                SelectedID  => $GetParam{QueueID},
-                Translation => 0,
+                Class          => 'Mandatory Validate_Required Modernize',
+                Data           => $QueueValues,
+                Multiple       => 0,
+                Size           => 0,
+                Name           => 'TicketQueue',
+                TreeView       => $TreeView,
+                SelectedID     => $GetParam{QueueID},
+                Translation    => 0,
                 OnChangeSubmit => 0,
-                Mandatory => 1,                
+                Mandatory      => 1,                
             );
         }
 
@@ -1563,7 +1555,7 @@ sub Run {
                 PossibleNone => 1,
                 Sort         => 'AlphanumericValue',
                 Translation  => 1,
-                Mandatory => 1,
+                Mandatory    => 1,
             );
         }
 
@@ -1576,19 +1568,20 @@ sub Run {
             PossibleNone => 1,
             Sort         => 'AlphanumericValue',
             Translation  => 1,
-            Mandatory => 1,
+            Mandatory    => 1,
         );
 
 
         # get priority data
         if ( !$GetParam{TicketPriority} ) {
             if ( %FutureTask ) {
-                $GetParam{TicketPriority} = $FutureTask{Data}->{TicketPriority};
+                $GetParam{TicketPriority} = $FutureTask{Data}->{AppointmentTicket}->{Priority};
             }
             else {
                 $GetParam{TicketPriority} = $Config->{Priority};
             }
         }
+
         # build priority html string
         my $PriorityHTMLString;
         if ( $Config->{Priority} ) {
@@ -1599,12 +1592,25 @@ sub Run {
                 SelectedID    => $GetParam{TicketPriority},
                 SelectedValue => $GetParam{TicketPriority},
                 Translation   => 1,
-                Mandatory => 1,
+                Mandatory     => 1,
+            );
+        }
+
+        # build priority html string
+        my $ServiceHTMLString;
+        if ( $Config->{Priority} ) {
+            $ServiceHTMLString = $LayoutObject->BuildSelection(
+                Class         => 'Validate_Required Modernize',
+                Data          => $ServiceValues,
+                Name          => 'TicketServiceID',
+                SelectedID    => $GetParam{TicketServiceID},
+                Translation   => 1,
+                Mandatory     => 1,
             );
         }
 
         $Param{CustomerHiddenContainer} = $#MultipleCustomer != -1 ? '' : 'Hidden';
-        $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || $FutureTask{Data}->{TicketArticleVisibleForCustomer}) ? 'checked=checked' : '';
+        $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || $FutureTask{Data}->{AppointmentTicket}->{ArticleVisibleForCustomer}) ? 'checked=checked' : '';
 
         if ( %FutureTask ) {
             # html mask output
@@ -1620,6 +1626,7 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
+                    ServiceHTMLString => $ServiceHTMLString,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                 },
             );
@@ -1637,6 +1644,7 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
+                    ServiceHTMLString => $ServiceHTMLString,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                },
             );
@@ -2177,7 +2185,7 @@ sub Run {
                 $Value= $DynamicFieldValues{$DynamicFieldConfig->{Name}};
             }
 
-            $GetParam{TicketDynamicFields}{ $DynamicFieldConfig->{Name} } = $Value;
+            $GetParam{AppointmentTicket}->{DynamicFields}{ $DynamicFieldConfig->{Name} } = $Value;
         }
 
         # Parse possibly multiple customer users
@@ -2305,30 +2313,8 @@ sub Run {
                     my %FutureTask = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(
                         TaskID => $FutureTaskID,
                     );
-                    %GetParam = (
-                        %GetParam,
-                        TicketSubject => $FutureTask{Data}->{TicketSubject},
-                        TicketTitle => $FutureTask{Data}->{TicketTitle},
-                        TicketContent => $FutureTask{Data}->{TicketContent},
-                        TicketTemplate => $FutureTask{Data}->{TicketTemplate},
-                        TicketTime => $FutureTask{Data}->{TicketTime},
-                        TicketCustom => $FutureTask{Data}->{TicketCustom},
-                        TicketCustomRelativeUnitCount => $FutureTask{Data}->{TicketCustomRelativeUnitCount},
-                        TicketCustomRelativeUnit => $FutureTask{Data}->{TicketCustomRelativeUnit},
-                        TicketCustomRelativePointOfTime => $FutureTask{Data}->{TicketCustomRelativePointOfTime},
-                        TicketCustomDateTime => $FutureTask{Data}->{TicketCustomDateTime},
-                        TicketQueueID => $FutureTask{Data}->{TicketQueueID},
-                        TicketCustomerID => $FutureTask{Data}->{TicketQueueID},
-                        TicketCustomerUser => $FutureTask{Data}->{TicketCustomerUser},
-                        TicketSelectedCustomerUser => $FutureTask{Data}->{TicketSelectedCustomerUser},
-                        TicketUserID => $FutureTask{Data}->{TicketUserID},
-                        TicketOwnerID => $FutureTask{Data}->{TicketOwnerID},
-                        TicketLock => $FutureTask{Data}->{TicketLock},
-                        TicketPriority => $FutureTask{Data}->{TicketPriority},
-                        TicketStateID => $FutureTask{Data}->{TicketStateID},
-                        TicketTypeID => $FutureTask{Data}->{TicketTypeID},
-                        TicketArticleVisibleForCustomer => $FutureTask{Data}->{TicketArticleVisibleForCustomer},
-                        TicketDynamicFields => $FutureTask{Data}->{TicketDynamicFields},
+                    $GetParam{AppointmentTicket} = (
+                        $FutureTask{Data}->{AppointmentTicket}->%*,
                     );
                 }
             }
@@ -2372,14 +2358,29 @@ sub Run {
 
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task
-        %GetParam = (
-            %GetParam,
-            TicketSubject => $GetParam{Title},
-            TicketTitle => $GetParam{Title},
-            TicketContent => $GetParam{Description},
-            TicketUserID => $Self->{UserID},
-            TicketLock => 'unlock',
-            TicketOwnerID => 1,
+        $GetParam{AppointmentTicket} = (
+            $GetParam{AppointmentTicket}->%*,
+            Subject                   => $GetParam{Title},
+            Title                     => $GetParam{Title},
+            Content                   => $GetParam{Description},
+            UserID                    => $Self->{UserID},
+            Lock                      => 'unlock',
+            OwnerID                   => 1,
+            Template                  => $GetParam{TicketTemplate},
+            Time                      => $GetParam{TicketTime},
+            Custom                    => $GetParam{TicketCustom},
+            CustomRelativeUnit        => $GetParam{TicketCustomRelativeUnit},
+            CustomRelativeUnitCount   => $GetParam{TicketCustomRelativeUnitCount},
+            CustomRelativePointOfTime => $GetParam{TicketCustomRelativePointOfTime},
+            CustomDateTime            => $GetParam{TicketCustomDateTime},
+            QueueID                   => $GetParam{TicketQueueID},
+            CustomerID                => $GetParam{TicketCustomerID},
+            CustomerUser              => $GetParam{TicketCustomerUser},
+            Priority                  => $GetParam{TicketPriority},
+            StateID                   => $GetParam{TicketStateID},
+            TypeID                    => $GetParam{TicketTypeID},
+            ServiceID                 => $GetParam{TicketServiceID},
+            ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
         );
 # EO AppointmentToTicket
 
@@ -2854,6 +2855,37 @@ sub _GetStates {
     }
     return \%NextStates;
 }
+
+sub _GetServices {
+    my ( $Self, %Param ) = @_;
+
+    # get service
+    my %Service;
+
+    # use default Queue if none is provided
+    $Param{QueueID} = $Param{QueueID} || 1;
+
+    # get options for default services for unknown customers
+    my $DefaultServiceUnknownCustomer = $Kernel::OM->Get('Kernel::Config')->Get('Ticket::Service::Default::UnknownCustomer');
+
+    # check if no CustomerUserID is selected
+    # if $DefaultServiceUnknownCustomer = 0 leave CustomerUserID empty, it will not get any services
+    # if $DefaultServiceUnknownCustomer = 1 set CustomerUserID to get default services
+    if ( !$Param{CustomerUserID} && $DefaultServiceUnknownCustomer ) {
+        $Param{CustomerUserID} = '<DEFAULT>';
+    }    
+
+    # get service list
+    if ( $Param{CustomerUserID} ) {
+        %Service = $Kernel::OM->Get('Kernel::System::Ticket')->TicketServiceList(
+            %Param,
+            Action => $Self->{Action},
+            UserID => $Self->{UserID},
+        );   
+    }    
+    return \%Service;
+}
+
 # EO AppointmentToTicket
 
 1;

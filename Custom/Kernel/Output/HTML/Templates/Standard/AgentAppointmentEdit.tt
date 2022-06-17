@@ -553,16 +553,6 @@
             </div>
             <div class="Clear"></div>
             <input type="hidden" name="CustomerID" id="CustomerID" value="[% Data.CustomerID | html %]" readonly="readonly"/>
-            <div class="Clear"></div>
-            <label class="Mandatory" for="TicketQueue"><span class="Marker">*</span>[% Translate('Queue') | html %]</label>
-            <div class="Field">
-                [% Data.QueueHTMLString %]
-            </div>
-            <div class="Clear"></div>
-            <label class="Mandatory" for="TicketPriority"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
-            <div class="Field">
-                [% Data.PriorityHTMLString %]
-            </div>
 [% IF Data.TypeHTMLString %]
             <div class="Clear"></div>
             <label class="Mandatory" for="TicketTypeID"><span class="Marker">*</span>[% Translate('Type') | html %]</label>
@@ -570,7 +560,22 @@
                 [% Data.TypeHTMLString %]
             </div>
 [% END %]
-             <div class="Clear"></div>
+            <div class="Clear"></div>
+            <label class="Mandatory" for="TicketQueueID"><span class="Marker">*</span>[% Translate('Queue') | html %]</label>
+            <div class="Field">
+                [% Data.QueueHTMLString %]
+            </div>
+            <div class="Clear"></div>
+            <label class="Mandatory" for="TicketServiceID"><span class="Marker">*</span>[% Translate('Service') | html %]</label>
+            <div class="Field">
+                [% Data.ServiceHTMLString %]
+            </div>
+            <div class="Clear"></div>
+            <label class="Mandatory" for="TicketPriority"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
+            <div class="Field">
+                [% Data.PriorityHTMLString %]
+            </div>
+            <div class="Clear"></div>
             <label class="Mandatory" for="TicketStateID"><span class="Marker">*</span>[% Translate('State') | html %]</label>
             <div class="Field">
                 [% Data.StateHTMLString %]
