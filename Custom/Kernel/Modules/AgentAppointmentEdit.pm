@@ -1429,14 +1429,7 @@ sub Run {
                 LayoutObject       => $LayoutObject,
             );
 
-            if ( !$DynamicFieldValues{ $DynamicFieldConfig->{Name} }
-                || ($DynamicFieldValues{ $DynamicFieldConfig->{Name} } 
-                    && ref($DynamicFieldValues{ $DynamicFieldConfig->{Name} }) eq 'HASH' 
-                    && !IsHashRefWithData($DynamicFieldValues{ $DynamicFieldConfig->{Name} }))
-                || ($DynamicFieldValues{ $DynamicFieldConfig->{Name} } 
-                    && ref($DynamicFieldValues{ $DynamicFieldConfig->{Name} }) eq 'ARRAY' 
-                    && !IsArrayRefWithData($DynamicFieldValues{ $DynamicFieldConfig->{Name} }))
-            ) {
+            if ( !$DynamicFieldValues{ $DynamicFieldConfig->{Name} } ) {
                 # extract the dynamic field value from the web request with approach for array
                 $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
                     DynamicFieldConfig => { $DynamicFieldConfig->%*, Name => $DynamicFieldConfig->{Name} . '[]' },
@@ -2148,11 +2141,7 @@ sub Run {
             );
 
             if ( !$DynamicFieldValues{ $DynamicFieldConfig->{Name} }
-                || ($DynamicFieldValues{ $DynamicFieldConfig->{Name} } 
-                    && ref($DynamicFieldValues{ $DynamicFieldConfig->{Name} }) eq 'HASH' 
-                    && !IsHashRefWithData($DynamicFieldValues{ $DynamicFieldConfig->{Name} }))
-                || ($DynamicFieldValues{ $DynamicFieldConfig->{Name} } 
-                    && ref($DynamicFieldValues{ $DynamicFieldConfig->{Name} }) eq 'ARRAY' 
+                || (ref($DynamicFieldValues{ $DynamicFieldConfig->{Name} }) eq 'ARRAY' 
                     && !IsArrayRefWithData($DynamicFieldValues{ $DynamicFieldConfig->{Name} }))
             ) {
                 # extract the dynamic field value from the web request with approach for array
@@ -2316,28 +2305,31 @@ sub Run {
                     my %FutureTask = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(
                         TaskID => $FutureTaskID,
                     );
-                    $GetParam{TicketSubject} = $FutureTask{Data}->{TicketSubject};
-                    $GetParam{TicketTitle} = $FutureTask{Data}->{TicketTitle};
-                    $GetParam{TicketContent} = $FutureTask{Data}->{TicketContent};
-                    $GetParam{TicketTemplate} = $FutureTask{Data}->{TicketTemplate};
-                    $GetParam{TicketTime} = $FutureTask{Data}->{TicketTime};
-                    $GetParam{TicketCustom} = $FutureTask{Data}->{TicketCustom};
-                    $GetParam{TicketCustomRelativeUnitCount} = $FutureTask{Data}->{TicketCustomRelativeUnitCount};
-                    $GetParam{TicketCustomRelativeUnit} = $FutureTask{Data}->{TicketCustomRelativeUnit};
-                    $GetParam{TicketCustomRelativePointOfTime} = $FutureTask{Data}->{TicketCustomRelativePointOfTime};
-                    $GetParam{TicketCustomDateTime} = $FutureTask{Data}->{TicketCustomDateTime};
-                    $GetParam{TicketQueueID} = $FutureTask{Data}->{TicketQueueID};
-                    $GetParam{TicketCustomerID} = $FutureTask{Data}->{TicketQueueID};
-                    $GetParam{TicketCustomerUser} = $FutureTask{Data}->{TicketCustomerUser};
-                    $GetParam{TicketSelectedCustomerUser} = $FutureTask{Data}->{TicketSelectedCustomerUser},
-                    $GetParam{TicketUserID} = $FutureTask{Data}->{TicketUserID};
-                    $GetParam{TicketOwnerID} = $FutureTask{Data}->{TicketOwnerID};
-                    $GetParam{TicketLock} = $FutureTask{Data}->{TicketLock};
-                    $GetParam{TicketPriority} = $FutureTask{Data}->{TicketPriority};
-                    $GetParam{TicketStateID} = $FutureTask{Data}->{TicketStateID};
-                    $GetParam{TicketTypeID} = $FutureTask{Data}->{TicketTypeID};
-                    $GetParam{TicketArticleVisibleForCustomer} = $FutureTask{Data}->{TicketArticleVisibleForCustomer};
-                    $GetParam{TicketDynamicFields} = $FutureTask{Data}->{TicketDynamicFields};
+                    %GetParam = (
+                        %GetParam,
+                        TicketSubject => $FutureTask{Data}->{TicketSubject},
+                        TicketTitle => $FutureTask{Data}->{TicketTitle},
+                        TicketContent => $FutureTask{Data}->{TicketContent},
+                        TicketTemplate => $FutureTask{Data}->{TicketTemplate},
+                        TicketTime => $FutureTask{Data}->{TicketTime},
+                        TicketCustom => $FutureTask{Data}->{TicketCustom},
+                        TicketCustomRelativeUnitCount => $FutureTask{Data}->{TicketCustomRelativeUnitCount},
+                        TicketCustomRelativeUnit => $FutureTask{Data}->{TicketCustomRelativeUnit},
+                        TicketCustomRelativePointOfTime => $FutureTask{Data}->{TicketCustomRelativePointOfTime},
+                        TicketCustomDateTime => $FutureTask{Data}->{TicketCustomDateTime},
+                        TicketQueueID => $FutureTask{Data}->{TicketQueueID},
+                        TicketCustomerID => $FutureTask{Data}->{TicketQueueID},
+                        TicketCustomerUser => $FutureTask{Data}->{TicketCustomerUser},
+                        TicketSelectedCustomerUser => $FutureTask{Data}->{TicketSelectedCustomerUser},
+                        TicketUserID => $FutureTask{Data}->{TicketUserID},
+                        TicketOwnerID => $FutureTask{Data}->{TicketOwnerID},
+                        TicketLock => $FutureTask{Data}->{TicketLock},
+                        TicketPriority => $FutureTask{Data}->{TicketPriority},
+                        TicketStateID => $FutureTask{Data}->{TicketStateID},
+                        TicketTypeID => $FutureTask{Data}->{TicketTypeID},
+                        TicketArticleVisibleForCustomer => $FutureTask{Data}->{TicketArticleVisibleForCustomer},
+                        TicketDynamicFields => $FutureTask{Data}->{TicketDynamicFields},
+                    );
                 }
             }
         }
@@ -2380,12 +2372,15 @@ sub Run {
 
         # Handle Ticket Creation on Appointment
         # Necessary to do after creation to save appointment id with future task
-        $GetParam{TicketSubject} = $GetParam{Title};
-        $GetParam{TicketTitle} = $GetParam{Title};
-        $GetParam{TicketContent} = $GetParam{Description};
-        $GetParam{TicketUserID} = $Self->{UserID};
-        $GetParam{TicketLock} = 'unlock';
-        $GetParam{TicketOwnerID} = 1;
+        %GetParam = (
+            %GetParam,
+            TicketSubject => $GetParam{Title},
+            TicketTitle => $GetParam{Title},
+            TicketContent => $GetParam{Description},
+            TicketUserID => $Self->{UserID},
+            TicketLock => 'unlock',
+            TicketOwnerID => 1,
+        );
 # EO AppointmentToTicket
 
         if (%Appointment) {
