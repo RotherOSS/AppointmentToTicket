@@ -346,17 +346,11 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             eventResizeStart: function(CalEvent) {
                 CurrentAppointment.start = CalEvent.start;
                 CurrentAppointment.end = CalEvent.end;
-// RotherOSS / AppointmentToTicket
-                CurrentAppointment.ticketTemplate = CalEvent.ticketTemplate;
-// EO AppointmentToTicket
             },
             eventDragStart: function(CalEvent) {
                 CurrentAppointment.start = CalEvent.start;
                 CurrentAppointment.end = CalEvent.end;
                 CurrentAppointment.resourceIds = CalEvent.resourceIds;
-// RotherOSS / AppointmentToTicket
-                CurrentAppointment.ticketTemplate = CalEvent.ticketTemplate;
-// EO AppointmentToTicket
             },
             eventMouseover: function(CalEvent, JSEvent) {
                 var $TooltipObj,
@@ -573,24 +567,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                             typeof TicketAppointmentConfig[AppointmentData.TicketAppointmentStartDate].NoDrag !== 'undefined' ? false : true,
                         durationEditable: typeof AppointmentData.TicketAppointmentEndDate === 'undefined' ? true :
                             typeof TicketAppointmentConfig[AppointmentData.TicketAppointmentStartDate].NoDrag !== 'undefined' ? true : false,
-// RotherOSS / AppointmentToTicket
-                        ticketTemplate: AppointmentData.TicketTemplate,
-                        ticketTime: AppointmentData.TicketTime,
-                        ticketCustom: AppointmentData.TicketCustom,
-                        ticketCustomRelativeUnit: AppointmentData.TicketCustomRelativeUnit,
-                        ticketCustomRelativeUnitCount: AppointmentData.TicketCustomRelativeUnitCount,
-                        ticketCustomRelativePointOfTime: AppointmentData.TicketCustomRelativePointOfTime,
-                        ticketCustomDateTime: AppointmentData.TicketCustomDateTime,
-                        ticketQueueId: AppointmentData.TicketQueueID,
-                        ticketCustomerId: AppointmentData.TicketCustomerID,
-                        ticketCustomerUser: AppointmentData.TicketCustomerUser,
-                        ticketCustomerUserSelected: AppointmentData.TicketCustomerUserSelected,
-                        ticketUserId: AppointmentData.TicketUserID,
-                        ticketOwnerId: AppointmentData.TicketOwnerID,
-                        ticketLock: AppointmentData.TicketLock,
-                        ticketPriority: AppointmentData.TicketPriority,
-                        ticketState: AppointmentData.TicketState
-// EO AppointmentToTicket
                     };
                 }
             };
