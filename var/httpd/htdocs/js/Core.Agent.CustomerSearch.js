@@ -420,7 +420,9 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
             ||
             (Core.Config.Get('Action') === 'AgentTicketCustomer'
             && !Core.Config.Get('Ticket::Frontend::AgentTicketCustomer::CustomerIDReadOnly'))
-            || Core.Config.Get('Action') === 'AgentAppointmentEdit'
+// RotherOSS / AppointmentToTicket
+            || Core.Config.Get('Action') === 'AgentAppointmentCalendarOverview'
+// EO AppointmentToTicket
             ) {
             $('#CustomerAutoComplete').on('blur keyup' , function() {
                 if($('#CustomerAutoComplete').val()) {
@@ -494,7 +496,9 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                     || Core.Config.Get('Action') === 'AgentTicketForward'
                     || Core.Config.Get('Action') === 'AgentTicketEmailOutbound'
                     || Core.Config.Get('Action') === 'AgentTicketEmailResend'
+// RotherOSS / AppointmentToTicket
                     || Core.Config.Get('Action') === 'AgentAppointmentCalendarOverview'
+// EO AppointmentToTicket
                     )
                 {
                     $Element.val('');
@@ -507,7 +511,9 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                     && Core.Config.Get('Action') !== 'AgentTicketForward'
                     && Core.Config.Get('Action') !== 'AgentTicketEmailOutbound'
                     && Core.Config.Get('Action') !== 'AgentTicketEmailResend'
+// RotherOSS / AppointmentToTicket
                     && Core.Config.Get('Action') !== 'AgentAppointmentCalendarOverview'
+// Eo AppointmentToTicket
                     )
                 {
                     // set hidden field SelectedCustomerUser
@@ -602,7 +608,9 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                 && Core.Config.Get('Action') !== 'AgentTicketForward'
                 && Core.Config.Get('Action') !== 'AgentTicketEmailOutbound'
                 && Core.Config.Get('Action') !== 'AgentTicketEmailResend'
+// RotherOSS / AppointmentToTicket
                 && Core.Config.Get('Action') !== 'AgentAppointmentCalendarOverview'
+// EO AppointmentToTicket
                 )
             {
                 $Element.blur(function () {
@@ -775,7 +783,7 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
             }
 
             // add event handler to remove button
-            if($(this).hasClass('CustomerUserRemoveButton')) {
+            if($(this).hasClass('RemoveButton')) {
 
                 // bind click function to remove button
                 $(this).on('click', function () {
@@ -802,14 +810,13 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                             $(this).hasClass('BccMove') ? 'BccCustomer' : '';
 
                     // remove the current entry
-                    $('.CustomerUserRemoveButton', $(this).parent()).click();
+                    $('.RemoveButton', $(this).parent()).click();
 
                     // add the customer to the target field
                     TargetNS.AddTicketCustomer(TargetField, MoveCustomerVal, MoveCustomerKey);
                 });
             }
         });
-
         // show container
         $('#TicketCustomerContent' + Field).parent().removeClass('Hidden');
         // append to container
