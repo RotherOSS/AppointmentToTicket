@@ -117,17 +117,8 @@ sub Run {
 
     # create the appointment ticket
     my $TicketID = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate(
-        QueueID      => $Param{Data}->{TicketQueueID},
-        CustomerID   => $Param{Data}->{TicketCustomerID},
+        $Param{Data}->{AppointmentTicket}->%*,
         CustomerUser => $CustomerUser{UserEmail},
-        UserID       => $Param{Data}->{TicketUserID},
-        OwnerID      => $Param{Data}->{TicketOwnerID},
-        Lock         => $Param{Data}->{TicketLock},
-        Priority     => $Param{Data}->{TicketPriority},
-        StateID      => $Param{Data}->{TicketStateID},
-        TypeID       => $Param{Data}->{TicketTypeID},
-        Title        => $Param{Data}->{TicketTitle},
-        Subject      => $Param{Data}->{TicketSubject},
     );
 
     if ( !$TicketID ) {
@@ -324,31 +315,10 @@ sub Run {
                 Type          => 'AppointmentTicket',
                 Name          => 'Test',
                 Data          => {
-                    TicketTitle                     => $Param{Data}->{TicketTitle},
-                    TicketQueueID                   => $Param{Data}->{TicketQueueID},
-                    TicketSubject                   => $Param{Data}->{TicketSubject},
-                    TicketContent                   => $Param{Data}->{TicketContent},
-                    TicketLock                      => 'unlock',
-                    TicketTypeID                    => $Param{Data}->{TicketTypeID},
-                    TicketServiceID                 => $Param{Data}->{TicketServiceID},
-                    TicketSLAID                     => $Param{Data}->{TicketSLAID},
-                    TicketStateID                   => $Param{Data}->{TicketStateID},
-                    TicketPriority                  => $Param{Data}->{TicketPriority},
-                    TicketOwnerID                   => $Param{Data}->{TicketOwnerID},
-                    TicketCustomerID                => $Param{Data}->{TicketCustomerID},
-                    TicketCustomerUser              => $Param{Data}->{TicketCustomerUser},
-                    TicketSelectedCustomerUser      => $Param{Data}->{TicketSelectedCustomerUser},
-                    TicketUserID                    => $Param{Data}->{TicketUserID},
-                    AppointmentID                   => $NextAppointment->{AppointmentID},
-                    TicketTime                      => $Param{Data}->{TicketTime},
-                    TicketTemplate                  => $Param{Data}->{TicketTemplate},
-                    TicketCustom                    => $Param{Data}->{TicketCustom},
-                    TicketCustomRelativeUnitCount   => $Param{Data}->{TicketCustomRelativeUnitCount},
-                    TicketCustomRelativeUnit        => $Param{Data}->{TicketCustomRelativeUnit},
-                    TicketCustomRelativePointOfTime => $Param{Data}->{TicketCustomRelativePointOfTime},
-                    TicketCustomDateTime            => $Param{Data}->{TicketCustomDateTime},
-                    TicketArticleVisibleForCustomer => $Param{Data}->{TicketArticleVisibleForCustomer},
-                    TicketDynamicFields             => $Param{Data}->{TicketDynamicFields},
+                    AppointmentTicket => {
+                        $Param{Data}->{AppointmentData}->%*,
+                    },
+                    AppointmentID => $NextAppointment->{AppointmentID},
                 }
             );
 
