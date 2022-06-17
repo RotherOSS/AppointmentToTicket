@@ -1489,21 +1489,33 @@ sub Run {
 
         # if future task exists, transform existing data into neede structure
         if (%FutureTask) {
-            my @CustomerUserIDs = split(',', $FutureTask{Data}->{AppointmentTicket}->{CustomerUser});
-            if ( scalar @CustomerUserIDs ) {
+            my @CustomerUserStrings = split(',', $FutureTask{Data}->{AppointmentTicket}->{CustomerUser});
+            if ( scalar @CustomerUserStrings ) {
                 my $Count = 0;
-                for my $CustomerUserID ( @CustomerUserIDs ) {
+                for my $CustomerUserString ( @CustomerUserStrings ) {
                     my %CustomerUser = $CustomerUserObject->CustomerUserDataGet(
-                        User => $CustomerUserID,
+                        User => $CustomerUserString,
                     );
-                    push @MultipleCustomer, {
-                        Count => $Count++,
-                        CustomerElement => '"' . $CustomerUser{UserFirstname} . ' ' . $CustomerUser{UserLastname} . '" <' . $CustomerUser{UserEmail} . '>',
-                        CustomerSelected => ( $FutureTask{Data}->{AppointmentTicket}->{SelectedCustomerUser} eq $CustomerUserID ? 'checked="checked"' : '' ),
-                        CustomerKey => $CustomerUser{UserLogin},
-                        CustomerError => '',
-                        CustomerErrorMsg => 'CustomerGenericServerErrorMsg',
-                        CustomerDisabled => '',
+                    if ( %CustomerUser ) {
+                        push @MultipleCustomer, {
+                            Count => $Count++,
+                            CustomerElement => '"' . $CustomerUser{UserFirstname} . ' ' . $CustomerUser{UserLastname} . '" <' . $CustomerUser{UserEmail} . '>',
+                            CustomerSelected => ( $FutureTask{Data}->{AppointmentTicket}->{SelectedCustomerUser} eq $CustomerUserString ? 'checked="checked"' : '' ),
+                            CustomerKey => $CustomerUser{UserLogin},
+                            CustomerError => '',
+                            CustomerErrorMsg => 'CustomerGenericServerErrorMsg',
+                            CustomerDisabled => '',
+                        }
+                    }
+                    else {
+                        push @MultipleCustomer, {
+                            Count => $Count++,
+                            CustomerElement => $CustomerUserString,
+                            CustomerSelected => ( $FutureTask{Data}->{AppointmentTicket}->{SelectedCustomerUser} eq $CustomerUserString ? 'checked="checked"' : '' ),
+                            CustomerError => '',
+                            CustomerErrrorMsg => 'CustomerGenericServerErrorMsg',
+                            CustomerDisabled => '',
+                        }
                     }
                 }
             }
@@ -2172,11 +2184,12 @@ sub Run {
         # Parse possibly multiple customer users
         if ( @MultipleCustomer ) {
             for my $CustomerUser (@MultipleCustomer) {
+                my $CustomerUserIdentifier = $CustomerUser->{CustomerKey} ? $CustomerUser->{CustomerKey} : $CustomerUser->{CustomerElement};
                 if ( $GetParam{TicketCustomerUser} ) {
-                    $GetParam{TicketCustomerUser} .= ",$CustomerUser->{CustomerElement}";
+                    $GetParam{TicketCustomerUser} .= ",$CustomerUserIdentifier";
                 }
                 else {
-                    $GetParam{TicketCustomerUser} = $CustomerUser->{CustomerElement};
+                    $GetParam{TicketCustomerUser} = $CustomerUserIdentifier;
                 }
             }
         }
