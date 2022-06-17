@@ -453,9 +453,9 @@ sub AppointmentCreate {
                 ParentID   => $AppointmentID,
             );
             my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $AppointmentID );
-            push @AppointmentList, \%ParentAppointment;
+            shift @AppointmentList, \%ParentAppointment;
 
-            my $TimeDiff;
+            APPOINTMENT:
             for my $Appointment (@AppointmentList) {
 
                 # Take smallest positive distance from current time
@@ -478,19 +478,10 @@ sub AppointmentCreate {
                         ),
                     },
                 );
-                if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) > 0 )
-                {
-                    my $DeltaResult = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject );
-                    if ( !defined $TimeDiff ) {
-                        $TimeDiff                = $DeltaResult->{AbsoluteSeconds};
-                        $FutureTaskAppointmentID = $Appointment->{AppointmentID};
-                        $ExecutionTime           = $AppointmentExecutionTimeObject->ToString();
-                    }
-                    elsif ( $DeltaResult->{AbsoluteSeconds} < $TimeDiff ) {
-                        $TimeDiff                = $DeltaResult->{AbsoluteSeconds};
-                        $FutureTaskAppointmentID = $Appointment->{AppointmentID};
-                        $ExecutionTime           = $AppointmentExecutionTimeObject->ToString();
-                    }
+                if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) > 0 ) {
+                    $FutureTaskAppointmentID = $Appointment->{AppointmentID};
+                    $ExecutionTime           = $AppointmentExecutionTimeObject->ToString();
+                    last APPOINTMENT;
                 }
             }
 
@@ -526,29 +517,13 @@ sub AppointmentCreate {
                 ExecutionTime => $ExecutionTime,
                 Type          => 'AppointmentTicket',
                 Data          => {
-                    TicketTime                      => $Param{TicketTime},
-                    TicketTemplate                  => $Param{TicketTemplate},
-                    TicketCustom                    => $Param{TicketCustom},
-                    TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
-                    TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
-                    TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                    TicketCustomDateTime            => $Param{TicketCustomDateTime},
-                    TicketQueueID                   => $Param{TicketQueueID},
-                    TicketCustomerID                => $Param{TicketCustomerID},
-                    TicketCustomerUser              => $Param{TicketCustomerUser},
-                    TicketSelectedCustomerUser      => $Param{TicketSelectedCustomerUser},
-                    TicketUserID                    => $Param{TicketUserID},
-                    TicketOwnerID                   => $Param{TicketOwnerID},
-                    TicketLock                      => $Param{TicketLock},
-                    TicketPriority                  => $Param{TicketPriority},
-                    TicketStateID                   => $Param{TicketStateID},
-                    TicketTypeID                    => $Param{TicketTypeID},
-                    TicketTitle                     => $Param{Title},
-                    TicketSubject                   => $Param{Title},
-                    TicketContent                   => $Param{Description},
+                    AppointmentTicket => {
+                        $Param{AppointmentData}->%*,
+                        Title => $Param{Title},
+                        Subject => $Param{Title},
+                        Content => $Param{Content},
+                    },
                     AppointmentID                   => $FutureTaskAppointmentID,
-                    TicketArticleVisibleForCustomer => $Param{TicketArticleVisibleForCustomer},
-                    TicketDynamicFields             => $Param{TicketDynamicFields},
                 },
             );
             if ($TaskID) {
@@ -1637,7 +1612,6 @@ sub AppointmentUpdate {
             \$Param{TicketAppointmentRuleID},               \$Param{UserID}, \$Param{FutureTaskID}, \$Param{AppointmentID},
         ],
     );
-
 # EO AppointmentToTicket
 
     # add recurred appointments again
@@ -1680,28 +1654,12 @@ sub AppointmentUpdate {
         my %FutureTaskData = (
             Type => 'AppointmentTicket',
             Data => {
-                TicketTime                      => $Param{TicketTime},
-                TicketTemplate                  => $Param{TicketTemplate},
-                TicketCustom                    => $Param{TicketCustom},
-                TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
-                TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
-                TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                TicketCustomDateTime            => $Param{TicketCustomDateTime},
-                TicketQueueID                   => $Param{TicketQueueID},
-                TicketCustomerID                => $Param{TicketCustomerID},
-                TicketCustomerUser              => $Param{TicketCustomerUser},
-                TicketSelectedCustomerUser      => $Param{TicketSelectedCustomerUser},
-                TicketUserID                    => $Param{TicketUserID},
-                TicketOwnerID                   => $Param{TicketOwnerID},
-                TicketSubject                   => $Param{Title},
-                TicketTitle                     => $Param{Title},
-                TicketContent                   => $Param{Description},
-                TicketLock                      => $Param{TicketLock},
-                TicketPriority                  => $Param{TicketPriority},
-                TicketStateID                   => $Param{TicketStateID},
-                TicketTypeID                    => $Param{TicketTypeID},
-                TicketArticleVisibleForCustomer => $Param{TicketArticleVisibleForCustomer},
-                TicketDynamicFields             => $Param{TicketDynamicFields},
+                AppointmentTicket => {
+                    $Param{AppointmentTicket}->%*,
+                    Title => $Param{Title},
+                    Subject => $Param{Title},
+                    Content => $Param{Title},
+                },
             },
         );
 
@@ -1712,8 +1670,9 @@ sub AppointmentUpdate {
                 ParentID   => $Param{AppointmentID}
             );
             my %ParentAppointment = $Self->AppointmentGet( AppointmentID => $Param{AppointmentID} );
-            push @AppointmentList, \%ParentAppointment;
-            my $TimeDiff;
+            shift @AppointmentList, \%ParentAppointment;
+
+            APPOINTMENT:
             for my $Appointment (@AppointmentList) {
                 my $AppointmentExecutionTime = $Self->AppointmentToTicketExecutionTime(
                     Data => {
@@ -1738,17 +1697,9 @@ sub AppointmentUpdate {
                 );
 
                 if ( $AppointmentExecutionTimeObject->Compare( DateTimeObject => $CurrentDateTimeObject ) > 0 ) {
-                    my $DeltaResult = $AppointmentExecutionTimeObject->Delta( DateTimeObject => $CurrentDateTimeObject );
-                    if ( !defined $TimeDiff ) {
-                        $TimeDiff                              = $DeltaResult->{AbsoluteSeconds};
-                        $FutureTaskData{Data}->{AppointmentID} = $Appointment->{AppointmentID};
-                        $FutureTaskData{ExecutionTime}         = $AppointmentExecutionTime;
-                    }
-                    elsif ( $DeltaResult->{AbsoluteSeconds} < $TimeDiff ) {
-                        $TimeDiff                              = $DeltaResult->{AbsoluteSeconds};
-                        $FutureTaskData{Data}->{AppointmentID} = $Appointment->{AppointmentID};
-                        $FutureTaskData{ExecutionTime}         = $AppointmentExecutionTime;
-                    }
+                    $FutureTaskData{Data}->{AppointmentID} = $Appointment->{AppointmentID};
+                    $FutureTaskData{ExecutionTime}         = $AppointmentExecutionTime;
+                    last APPOINTMENT;
                 }
             }
             $FutureTaskAppointmentID = $FutureTaskData{Data}->{AppointmentID};
