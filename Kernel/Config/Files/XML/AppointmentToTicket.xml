@@ -41,7 +41,6 @@
                     <Array>
                         <Item>Core.Agent.CustomerSearchAutoComplete.js</Item>
                         <Item>Core.Agent.CustomerSearch.js</Item>
-                        <Item>Core.Agent.DynamicFieldDBDetailedSearch.js</Item>
                         <Item>Core.Agent.DynamicFieldDBSearch.js</Item>
                     </Array>
                 </Item>
