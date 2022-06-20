@@ -511,7 +511,7 @@
                 <div id="TicketCustomerContentFromCustomer" class="CustomerContainer">
 [% RenderBlockStart("MultipleCustomer") %]
                     <div class="SpacingTopSmall ">
-                        <input name="CustomerSelected" title="[% Translate("Select this customer as the main customer.") | html %]" id="CustomerSelected" class="CustomerTicketRadio" type="radio" value="[% Data.Count | html %]" [% Data.CustomerSelected | html %]  [% Data.CustomerDisabled | html %] />
+                        <input name="CustomerSelected" title="[% Translate("Select this customer as the main customer.") | html %]" id="CustomerSelected_[% Data.Count %]" class="CustomerTicketRadio" type="radio" value="[% Data.Count | html %]" [% Data.CustomerSelected | html %]  [% Data.CustomerDisabled | html %] />
                         <input name="CustomerKey_[% Data.Count | html %]" id="CustomerKey_[% Data.Count | html %]" class="CustomerKey" type="hidden" value="[% Data.CustomerKey | html %]"/>
                         <input class="CustomerTicketText Radio [% Data.CustomerError | html %]" title="[% Translate("Customer user") | html %]" name="CustomerTicketText_[% Data.Count %]" id="CustomerTicketText_[% Data.Count %]" type="text" value="[% Data.CustomerElement | html %]" readonly="readonly" />
                         <a href="#" id="RemoveCustomerTicket_[% Data.Count %]" class="RemoveButton CustomerTicketRemove" name="RemoveCustomerTicket_[% Data.Count %]">

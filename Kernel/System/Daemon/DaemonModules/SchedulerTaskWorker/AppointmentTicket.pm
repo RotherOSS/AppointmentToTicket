@@ -117,7 +117,7 @@ sub Run {
     # create the appointment ticket
     my $TicketID = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate(
         $Param{Data}->{AppointmentTicket}->%*,
-        CustomerUser => $CustomerUser{UserEmail},
+        CustomerUser => %CustomerUser ? $CustomerUser{UserEmail} : $Param{Data}->{AppointmentTicket}->{SelectedCustomerUser},
     );
 
     if ( !$TicketID ) {
@@ -163,11 +163,12 @@ sub Run {
         my %CustomerUserData = $Kernel::OM->Get('Kernel::System::CustomerUser')->CustomerUserDataGet(
             User => $CustomerUser,
         );
+        my $CustomerUserString = %CustomerUserData ? "\"$CustomerUserData{UserFirstname} $CustomerUserData{UserLastname}\" <$CustomerUserData{UserEmail}>" : $CustomerUser;
         if ($ArticleFrom) {
-            $ArticleFrom .= ", \"$CustomerUserData{UserFirstname} $CustomerUserData{UserLastname}\" <$CustomerUserData{UserEmail}>";
+            $ArticleFrom .= ", $CustomerUserString";
         }
         else {
-            $ArticleFrom = "\"$CustomerUserData{UserFirstname} $CustomerUserData{UserLastname}\" <$CustomerUserData{UserEmail}>";
+            $ArticleFrom = "$CustomerUserString";
         }
     }
 

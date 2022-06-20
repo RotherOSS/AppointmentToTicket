@@ -79,7 +79,7 @@ sub Run {
     my @MultipleCustomer;
     my $CustomersNumber = $GetParam{'CustomerTicketCounterFromCustomer'} || 0;
     # Contains user name
-    my $Selected = $GetParam{'SelectedCustomerUser'} || '';
+    my $Selected = $GetParam{'CustomerSelected'} || '';
 
     # get check item object
     my $CheckItemObject = $Kernel::OM->Get('Kernel::System::CheckItem');
@@ -88,7 +88,7 @@ sub Run {
         my $CustomerCounter = 1;
         for my $Count ( 0 ... $CustomersNumber ) {
             my $CustomerElement  = $GetParam{'CustomerTicketText_' . $Count};
-            my $CustomerSelected = ( ( $Selected && $Selected eq $GetParam{'CustomerKey_' . $Count} ) ? 'checked="checked"' : '' );
+            my $CustomerSelected = $Selected == $Count ? 'checked="checked"' : '';
             my $CustomerKey      = $GetParam{'CustomerKey_' . $Count} || '';
 
             if ($CustomerElement) {
@@ -1492,7 +1492,7 @@ sub Run {
         if (%FutureTask) {
             my @CustomerUserStrings = split(',', $FutureTask{Data}->{AppointmentTicket}->{CustomerUser});
             if ( @CustomerUserStrings ) {
-                my $Count = 0;
+                my $Count = 1;
                 for my $CustomerUserString ( @CustomerUserStrings ) {
                     my %CustomerUser = $CustomerUserObject->CustomerUserDataGet(
                         User => $CustomerUserString,
@@ -2257,6 +2257,9 @@ sub Run {
         if ( @MultipleCustomer ) {
             for my $CustomerUser (@MultipleCustomer) {
                 my $CustomerUserIdentifier = $CustomerUser->{CustomerKey} ? $CustomerUser->{CustomerKey} : $CustomerUser->{CustomerElement};
+                if ( $CustomerUser->{CustomerSelected} ) {
+                    $GetParam{SelectedCustomerUser} = $CustomerUserIdentifier;
+                }
                 if ( $GetParam{TicketCustomerUser} ) {
                     $GetParam{TicketCustomerUser} .= ",$CustomerUserIdentifier";
                 }
@@ -2265,16 +2268,12 @@ sub Run {
                 }
             }
         }
-        else {
-            $GetParam{TicketCustomerUser} = $GetParam{SelectedCustomerUser};
-        }
-        $GetParam{TicketSelectedCustomerUser} = $GetParam{SelectedCustomerUser};
         
         # fetch customer id for selected customer user
         my %SelectedCustomerUserData = $CustomerUserObject->CustomerUserDataGet(
-            User => $GetParam{TicketSelectedCustomerUser},
+            User => $GetParam{SelectedCustomerUser},
         );
-        $GetParam{TicketCustomerID} = $SelectedCustomerUserData{CustomerID};
+        $GetParam{TicketCustomerID} = %SelectedCustomerUserData ? $SelectedCustomerUserData{CustomerID} : '';
 # EO AppointmentToTicket
 
         # team

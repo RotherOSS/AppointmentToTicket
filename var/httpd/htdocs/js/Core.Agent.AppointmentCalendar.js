@@ -2190,12 +2190,17 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             $(Form).find('input,textarea,select').each(function (Index, Element) {
                 if (Element.type == 'checkbox') {
                     Data[Element.id] = $(Element).prop('checked') ? '1' : '0';
+// RotherOSS / AppointmentToTicket
+                } else if (Element.name == 'CustomerSelected') {
+                    if (!Data[Element.name] && $(Element).prop('checked')) {
+                        Data[Element.name] = $(Element).val();
+                    }
+// EO AppointmentToTicket
                 } else {
                     Data[Element.id] = $(Element).val();
                 }
             });
 
-            console.log("Core.Agent.AppointmentCalendar.js, L. 2219:", Data);
             TargetNS.ShowWaitingDialog();
             TargetNS.EditAppointment(Data);
         });
@@ -2213,7 +2218,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
 
         // Save the appointment
         $('#EditFormSubmit').on('click', function() {
-            console.log("Core.Agent.AppointmentCalendar.js, L. 2229:", $('#EditAppointmentForm'));
             $('#EditAppointmentForm').submit();
         });
 
