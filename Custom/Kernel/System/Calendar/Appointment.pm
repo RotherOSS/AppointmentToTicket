@@ -128,28 +128,30 @@ creates a new appointment.
         TicketAppointmentRuleID    => '9bb20ea035e7a9930652a9d82d00c725', # (optional) Ticket appointment rule ID (for ticket appointments only!)
         UserID                     => 1,                                  # (required) UserID
 # RotherOSS / AppointmentToTicket
-        TicketTime => '2016-01-10 00:00:00',                              # (optional) Point of time to execute the ticket creat event
-        TicketTemplate => 'Custom',                                       # (optional) Template to be used for ticket point of time
-        TicketCustom => 'relative',                                       # (optional) Type of the custom template ticket point of time
+        AppointmentTicket => {                                            # (optional) Data for ticket creation
+            Time => '2016-01-10 00:00:00',                                # (optional) Point of time to execute the ticket creat event
+            Template => 'Custom',                                         # (optional) Template to be used for ticket point of time
+            Custom => 'relative',                                         # (optional) Type of the custom template ticket point of time
                                                                           #            Possible "relative", "datetime"
-        TicketCustomRelativeUnitCount => '12',                            # (optional) minutes, hours or days count for custom template
-        TicketCustomRelativeUnit => 'minutes',                            # (optional) minutes, hours or days unit for custom template
-        TicketCustomRelativePointOfTime => 'beforestart',                 # (optional) Point of execute for custom templates
+            CustomRelativeUnitCount => '12',                              # (optional) minutes, hours or days count for custom template
+            CustomRelativeUnit => 'minutes',                              # (optional) minutes, hours or days unit for custom template
+            CustomRelativePointOfTime => 'beforestart'  ,                 # (optional) Point of execute for custom templates
                                                                           #            Possible "beforestart", "afterstart", "beforeend", "afterend"
-        TicketCustomDateTime => '2016-01-01 17:00:00',                    # (optional) Ticket date time for custom template
-        TicketQueueID => 1,                                               # (optional) Ticket queue
-        TicketCustomerID => 1,                                            # (optional) Ticket customer id
-        TicketCustomerUser => 'test@test.com',                            # (optional) Ticket customer user
-        TicketSelectedCustomerUser => 'test'                              # (optional) Selected ticket customer user
-        TicketUserID => 1,                                                # (optional) Ticket user id
-        TicketOwnerID => 1,                                               # (optional) Ticket owner id
-        TicketLock => 'unlock',                                           # (optional) Ticket lock state
-        TicketPriority => '3 normal',                                     # (optional) Ticket priority
-        TicketStateID => 1,                                               # (optional) Ticket state
-        TicketTypeID => 1,                                                # (optional) Ticket type
-        TicketDynamicFields => {                                          # (optional) Name value combinations for dynamic fields  
-            DynamicFieldName1 => Value1,
-            DynamicFieldName2 => Value2,
+            CustomDateTime => '2016-01-01 17:00:00',                      # (optional) Ticket date time for custom template
+            QueueID => 1,                                                 # (optional) Ticket queue
+            CustomerID => 1,                                              # (optional) Ticket customer id
+            CustomerUser => 'test@test.com',                              # (optional) Ticket customer user
+            SelectedCustomerUser => 'test',                               # (optional) Selected customer user
+            UserID => 1,                                                  # (optional) Ticket user id
+            OwnerID => 1,                                                 # (optional) Ticket owner id
+            Lock => 'unlock',                                             # (optional) Ticket lock state
+            PriorityID => 3,                                              # (optional) Ticket priority
+            StateID => 1,                                                 # (optional) Ticket state
+            TypeID => 1,                                                  # (optional) Ticket type id
+            DynamicFields => {                                            # (optional) Name value combinations for dynamic fields
+                DynamicFieldName1 => Value1,
+                DynamicFieldName2 => Value2,
+            },
         },
 # EO AppointmentToTicket
     );
@@ -164,8 +166,6 @@ Events:
 sub AppointmentCreate {
     my ( $Self, %Param ) = @_;
 
-    use Data::Dumper;
-    print STDERR "Appointment.pm, L.167: " . Dumper(\%Param) . "\n";
     # check needed stuff
     for my $Needed (qw(CalendarID Title StartTime EndTime UserID)) {
         if ( !$Param{$Needed} ) {
@@ -1321,28 +1321,30 @@ updates an existing appointment.
         TicketAppointmentRuleID    => '9bb20ea035e7a9930652a9d82d00c725', # (optional) Ticket appointment rule ID (for ticket appointments only!)
         UserID                     => 1,                                  # (required) UserID
 # RotherOSS / AppointmentToTicket
-        TicketTime => '2016-01-10 00:00:00',                              # (optional) Point of time to execute the ticket creat event
-        TicketTemplate => 'Custom',                                       # (optional) Template to be used for ticket point of time
-        TicketCustom => 'relative',                                       # (optional) Type of the custom template ticket point of time
+        AppointmentTicket => {                                            # (optional) Data for ticket creation
+            Time => '2016-01-10 00:00:00',                                # (optional) Point of time to execute the ticket creat event
+            Template => 'Custom',                                         # (optional) Template to be used for ticket point of time
+            Custom => 'relative',                                         # (optional) Type of the custom template ticket point of time
                                                                           #            Possible "relative", "datetime"
-        TicketCustomRelativeUnitCount => '12',                            # (optional) minutes, hours or days count for custom template
-        TicketCustomRelativeUnit => 'minutes',                            # (optional) minutes, hours or days unit for custom template
-        TicketCustomRelativePointOfTime => 'beforestart',                 # (optional) Point of execute for custom templates
+            CustomRelativeUnitCount => '12',                              # (optional) minutes, hours or days count for custom template
+            CustomRelativeUnit => 'minutes',                              # (optional) minutes, hours or days unit for custom template
+            CustomRelativePointOfTime => 'beforestart'  ,                 # (optional) Point of execute for custom templates
                                                                           #            Possible "beforestart", "afterstart", "beforeend", "afterend"
-        TicketCustomDateTime => '2016-01-01 17:00:00',                    # (optional) Ticket date time for custom template
-        TicketQueueID => 1,                                               # (optional) Ticket queue
-        TicketCustomerID => 1,                                            # (optional) Ticket customer id
-        TicketCustomerUser => 'test@test.com',                            # (optional) Ticket customer user
-        TicketSelectedCustomerUser => 'test',                             # (optional) Selected customer user
-        TicketUserID => 1,                                                # (optional) Ticket user id
-        TicketOwnerID => 1,                                               # (optional) Ticket owner id
-        TicketLock => 'unlock',                                           # (optional) Ticket lock state
-        TicketPriority => '3 normal',                                     # (optional) Ticket priority
-        TicketStateID => 1,                                               # (optional) Ticket state
-        TicketTypeID => 1,                                                # (optional) Ticket type id
-        TicketDynamicFields => {                                          # (optional) Name value combinations for dynamic fields
-            DynamicFieldName1 => Value1,
-            DynamicFieldName2 => Value2,
+            CustomDateTime => '2016-01-01 17:00:00',                      # (optional) Ticket date time for custom template
+            QueueID => 1,                                                 # (optional) Ticket queue
+            CustomerID => 1,                                              # (optional) Ticket customer id
+            CustomerUser => 'test@test.com',                              # (optional) Ticket customer user
+            SelectedCustomerUser => 'test',                               # (optional) Selected customer user
+            UserID => 1,                                                  # (optional) Ticket user id
+            OwnerID => 1,                                                 # (optional) Ticket owner id
+            Lock => 'unlock',                                             # (optional) Ticket lock state
+            PriorityID => 3,                                              # (optional) Ticket priority
+            StateID => 1,                                                 # (optional) Ticket state
+            TypeID => 1,                                                  # (optional) Ticket type id
+            DynamicFields => {                                            # (optional) Name value combinations for dynamic fields
+                DynamicFieldName1 => Value1,
+                DynamicFieldName2 => Value2,
+            },
         },
 # EO AppointmentToTicket
     );

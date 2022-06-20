@@ -1583,12 +1583,10 @@ sub Run {
 
         # get priority data
         if ( !$GetParam{TicketPriority} ) {
-            if ( %FutureTask ) {
-                $GetParam{TicketPriority} = $FutureTask{Data}->{AppointmentTicket}->{Priority};
-            }
-            else {
-                $GetParam{TicketPriority} = $Config->{Priority};
-            }
+            $GetParam{TicketPriority} = $Config->{Priority};
+        }
+        if ( %FutureTask ) {
+            $GetParam{TicketPriorityID} = $FutureTask{Data}->{AppointmentTicket}->{PriorityID};
         }
 
         # build priority html string
@@ -1597,8 +1595,8 @@ sub Run {
             $PriorityHTMLString = $LayoutObject->BuildSelection(
                 Class         => 'Validate_Required Modernize',
                 Data          => $PriorityValues,
-                Name          => 'TicketPriority',
-                SelectedID    => $GetParam{TicketPriority},
+                Name          => 'TicketPriorityID',
+                SelectedID    => $GetParam{TicketPriorityID},
                 SelectedValue => $GetParam{TicketPriority},
                 Translation   => 1,
                 Mandatory     => 1,
@@ -1768,7 +1766,7 @@ sub Run {
         my $PriorityValues = $Self->_GetPriorities(
             %GetParam,
         );
-        if ( !$PriorityValues->{$GetParam{TicketPriority}} ) {
+        if ( !$PriorityValues->{$GetParam{TicketPriorityID}} ) {
             return $LayoutObject->ErrorScreen(
                 Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field priority!' ),
                 Comment => Translatable('Please contact the administrator.'),
@@ -2445,7 +2443,7 @@ sub Run {
             CustomerID                => $GetParam{TicketCustomerID},
             CustomerUser              => $GetParam{TicketCustomerUser},
             SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
-            Priority                  => $GetParam{TicketPriority},
+            PriorityID                => $GetParam{TicketPriorityID},
             StateID                   => $GetParam{TicketStateID},
             TypeID                    => $GetParam{TicketTypeID},
             ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},

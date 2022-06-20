@@ -92,8 +92,7 @@ sub Run {
         %Param,
         NeededDataAttributes =>
             [
-                'AppointmentID', 'TicketCustomerUser', 'TicketCustomerID', 'TicketUserID', 'TicketQueueID', 'TicketOwnerID',
-                'TicketTitle',   'TicketSubject',      'TicketContent'
+                'AppointmentTicket', 'AppointmentID'
             ],
     );
 
@@ -112,7 +111,7 @@ sub Run {
 
     # fetching customer user from selectedcustomeruser
     my %CustomerUser = $Kernel::OM->Get('Kernel::System::CustomerUser')->CustomerUserDataGet(
-        User => $Param{Data}->{TicketSelectedCustomerUser},
+        User => $Param{Data}->{AppointmentTicket}->{SelectedCustomerUser},
     );
 
     # create the appointment ticket
@@ -141,7 +140,7 @@ sub Run {
     }
  
     # set ticket dynamic fields
-    my %DynamicFields = %{ $Param{Data}->{TicketDynamicFields} };
+    my %DynamicFields = %{ $Param{Data}->{AppointmentTicket}->{DynamicFields} };
     DYNAMICFIELDTICKET:
     for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
         next DYNAMICFIELDTICKET if !IsHashRefWithData($DynamicFieldConfig);
@@ -151,15 +150,15 @@ sub Run {
             my $Success = $DynamicFieldBackendObject->ValueSet(
                 DynamicFieldConfig => $DynamicFieldConfig,
                 ObjectID           => $TicketID,
-                Value              => $Param{Data}->{TicketDynamicFields}->{ $DynamicFieldConfig->{Name} },
-                UserID             => $Param{Data}->{TicketUserID},
+                Value              => $Param{Data}->{AppointmentTicket}->{DynamicFields}->{ $DynamicFieldConfig->{Name} },
+                UserID             => $Param{Data}->{AppointmentTicket}->{UserID},
             );
         }
     }
 
     # preparing from data
     my $ArticleFrom;
-    my @CustomerUsers = split( ',', $Param{Data}->{TicketCustomerUser} );
+    my @CustomerUsers = split( ',', $Param{Data}->{AppointmentTicket}->{CustomerUser} );
     for my $CustomerUser (@CustomerUsers) {
         my %CustomerUserData = $Kernel::OM->Get('Kernel::System::CustomerUser')->CustomerUserDataGet(
             User => $CustomerUser,
@@ -177,14 +176,14 @@ sub Run {
     my $ArticleID            = $ArticleBackendObject->ArticleCreate(
         TicketID             => $TicketID,
         SenderType           => 'system',
-        IsVisibleForCustomer => $Param{Data}->{TicketArticleVisibleForCustomer} || 0,
+        IsVisibleForCustomer => $Param{Data}->{AppointmentTicket}->{ArticleVisibleForCustomer} || 0,
         From                 => $ArticleFrom,
-        To                   => $Param{Data}->{TicketUserID},
-        Subject              => $Param{Data}->{TicketSubject},
-        Body                 => $Param{Data}->{TicketContent},
+        To                   => $Param{Data}->{AppointmentTicket}->{UserID},
+        Subject              => $Param{Data}->{AppointmentTicket}->{Subject},
+        Body                 => $Param{Data}->{AppointmentTicket}->{Content},
         MimeType             => 'text/html',
         Charset              => 'utf-8',
-        UserID               => $Param{Data}->{TicketUserID},
+        UserID               => $Param{Data}->{AppointmentTicket}->{UserID},
         HistoryType          => 'Misc',
         HistoryComment       => 'Automatically created ticket from appointment',
         AutoResponseType     => ( $ConfigObject->Get('AutoResponseForWebTickets') )
@@ -192,11 +191,11 @@ sub Run {
         : '',
         OrigHeader => {
             From    => $ArticleFrom,
-            To      => $Param{Data}->{TicketUserID},
-            Subject => $Param{Data}->{TicketSubject},
-            Body    => $Param{Data}->{TicketContent},
+            To      => $Param{Data}->{AppointmentTicket}->{UserID},
+            Subject => $Param{Data}->{AppointmentTicket}->{Subject},
+            Body    => $Param{Data}->{AppointmentTicket}->{Content},
         },
-        Queue => $Param{Data}->{TicketQueueID},
+        Queue => $Param{Data}->{AppointmentTicket}->{QueueID},
     );
 
     if ( !$ArticleID ) {
@@ -216,8 +215,8 @@ sub Run {
             my $Success = $DynamicFieldBackendObject->ValueSet(
                 DynamicFieldConfig => $DynamicFieldConfig,
                 ObjectID           => $ArticleID,
-                Value              => $Param{Data}->{TicketDynamicFields}->{ $DynamicFieldConfig->{Name} },
-                UserID             => $Param{Data}->{TicketUserID},
+                Value              => $Param{Data}->{AppointmentTicket}->{DynamicFields}->{ $DynamicFieldConfig->{Name} },
+                UserID             => $Param{Data}->{AppointmetTicket}->{UserID},
             );
         }
     }
@@ -234,7 +233,7 @@ sub Run {
         TargetKey    => $TicketID,
         Type         => 'Normal',
         State        => 'Valid',
-        UserID       => $Param{Data}->{TicketUserID},
+        UserID       => $Param{Data}->{AppointmentTicket}->{UserID},
     );
 
     # delete future task id from appointment
@@ -280,13 +279,13 @@ sub Run {
                 ObjectParams => {
                     String => $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentToTicketExecutionTime(
                         Data => {
-                            TicketTime                      => $Param{Data}->{TicketTime},
-                            TicketTemplate                  => $Param{Data}->{TicketTemplate},
-                            TicketCustom                    => $Param{Data}->{TicketCustom},
-                            TicketCustomRelativeUnitCount   => $Param{Data}->{TicketCustomRelativeUnitCount},
-                            TicketCustomRelativeUnit        => $Param{Data}->{TicketCustomRelativeUnit},
-                            TicketCustomRelativePointOfTime => $Param{Data}->{TicketCustomRelativePointOfTime},
-                            TicketCustomDateTime            => $Param{Data}->{TicketCustomDateTime},
+                            TicketTime                      => $Param{Data}->{AppointmentTicket}->{Time},
+                            TicketTemplate                  => $Param{Data}->{AppointmentTicket}->{Template},
+                            TicketCustom                    => $Param{Data}->{AppointmentTicket}->{Custom},
+                            TicketCustomRelativeUnitCount   => $Param{Data}->{AppointmentTicket}->{CustomRelativeUnitCount},
+                            TicketCustomRelativeUnit        => $Param{Data}->{AppointmentTicket}->{CustomRelativeUnit},
+                            TicketCustomRelativePointOfTime => $Param{Data}->{AppointmentTicket}->{CustomRelativePointOfTime},
+                            TicketCustomDateTime            => $Param{Data}->{AppointmentTicket}->{CustomDateTime},
                         },
                         StartTime => $AppointmentRef->{StartTime},
                         EndTime   => $AppointmentRef->{EndTime},
