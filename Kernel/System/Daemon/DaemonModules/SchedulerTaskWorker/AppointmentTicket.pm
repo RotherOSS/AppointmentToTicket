@@ -128,31 +128,34 @@ sub Run {
     }
 
     # set dynamic fields for ticket
-    # Fetch dynamic field configs
     my @DynamicFieldConfigs;
-    if ( defined $Config->{DynamicField} ) {
-        my $DynamicFieldConfigsRef = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
-            Valid       => 1,
-            ObjectType  => [ 'Ticket', 'Article' ],
-            FieldFilter => $Config->{DynamicField} || {},
-        );   
-        @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{ $DynamicFieldConfigsRef } : ();
-    }
+    my %DynamicFields;
+    if ( $Param{Data}->{AppointmentTicket}->{DynamicFields} ) {
+        # Fetch dynamic field configs
+        if ( defined $Config->{DynamicField} ) {
+            my $DynamicFieldConfigsRef = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+                Valid       => 1,
+                ObjectType  => [ 'Ticket', 'Article' ],
+                FieldFilter => $Config->{DynamicField} || {},
+            );   
+            @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{ $DynamicFieldConfigsRef } : ();
+        }
  
-    # set ticket dynamic fields
-    my %DynamicFields = %{ $Param{Data}->{AppointmentTicket}->{DynamicFields} };
-    DYNAMICFIELDTICKET:
-    for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
-        next DYNAMICFIELDTICKET if !IsHashRefWithData($DynamicFieldConfig);
-        next DYNAMICFIELDTICKET if $DynamicFieldConfig->{ObjectType} ne 'Ticket';
-        if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
-            # set the value
-            my $Success = $DynamicFieldBackendObject->ValueSet(
-                DynamicFieldConfig => $DynamicFieldConfig,
-                ObjectID           => $TicketID,
-                Value              => $Param{Data}->{AppointmentTicket}->{DynamicFields}->{ $DynamicFieldConfig->{Name} },
-                UserID             => $Param{Data}->{AppointmentTicket}->{UserID},
-            );
+        # set ticket dynamic fields
+        %DynamicFields = %{ $Param{Data}->{AppointmentTicket}->{DynamicFields} };
+        DYNAMICFIELDTICKET:
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELDTICKET if !IsHashRefWithData($DynamicFieldConfig);
+            next DYNAMICFIELDTICKET if $DynamicFieldConfig->{ObjectType} ne 'Ticket';
+            if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
+                # set the value
+                my $Success = $DynamicFieldBackendObject->ValueSet(
+                    DynamicFieldConfig => $DynamicFieldConfig,
+                    ObjectID           => $TicketID,
+                    Value              => $Param{Data}->{AppointmentTicket}->{DynamicFields}->{ $DynamicFieldConfig->{Name} },
+                    UserID             => $Param{Data}->{AppointmentTicket}->{UserID},
+                );
+            }
         }
     }
 
@@ -207,18 +210,20 @@ sub Run {
     }
 
     # set article dynamic fields
+    if ( $Param{Data}->{AppointmentTicket}->{DynamicFields} ) {
     DYNAMICFIELDARTICLE:
-    for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
-        next DYNAMICFIELDARTICLE if !IsHashRefWithData($DynamicFieldConfig);
-        next DYNAMICFIELDARTICLE if $DynamicFieldConfig->{ObjectType} ne 'Article';
-        if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
-            # set the value
-            my $Success = $DynamicFieldBackendObject->ValueSet(
-                DynamicFieldConfig => $DynamicFieldConfig,
-                ObjectID           => $ArticleID,
-                Value              => $Param{Data}->{AppointmentTicket}->{DynamicFields}->{ $DynamicFieldConfig->{Name} },
-                UserID             => $Param{Data}->{AppointmetTicket}->{UserID},
-            );
+        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+            next DYNAMICFIELDARTICLE if !IsHashRefWithData($DynamicFieldConfig);
+            next DYNAMICFIELDARTICLE if $DynamicFieldConfig->{ObjectType} ne 'Article';
+            if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
+                # set the value
+                my $Success = $DynamicFieldBackendObject->ValueSet(
+                    DynamicFieldConfig => $DynamicFieldConfig,
+                    ObjectID           => $ArticleID,
+                    Value              => $Param{Data}->{AppointmentTicket}->{DynamicFields}->{ $DynamicFieldConfig->{Name} },
+                    UserID             => $Param{Data}->{AppointmetTicket}->{UserID},
+                );
+            }
         }
     }
 
@@ -316,7 +321,7 @@ sub Run {
                 Name          => 'Test',
                 Data          => {
                     AppointmentTicket => {
-                        $Param{Data}->{AppointmentData}->%*,
+                        $Param{Data}->{AppointmentTicket}->%*,
                     },
                     AppointmentID => $NextAppointment->{AppointmentID},
                 }

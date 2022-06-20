@@ -1065,10 +1065,10 @@ sub Run {
                 # Check all appointments of series for future task id
                 my @AppointmentList = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
                     CalendarID => $Appointment{CalendarID},
-                    ParentID => $Appointment{ParentID} || $Appointment{AppointmentID},
+                    ParentID => $Appointment{AppointmentID},
                 );
-                my %ParentAppointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( AppointmentID => $Appointment{ParentID} || $Appointment{AppointmentID} );
-                push @AppointmentList, \%ParentAppointment;
+                my %ParentAppointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet( AppointmentID => $Appointment{AppointmentID} );
+                unshift @AppointmentList, \%ParentAppointment;
 
                 APPOINTMENTLIST:
                 for my $RecurringAppointment (@AppointmentList) {
@@ -1730,48 +1730,50 @@ sub Run {
     elsif ( $Self->{Subaction} eq 'EditAppointment' ) {
 
 # RotherOSS / AppointmentToTicket
-        # Validate incoming values
-        my $QueueValues = $Self->_GetTos(
-            %GetParam,
-        );
-        if ( !$QueueValues->{$GetParam{TicketQueueID}} ) {
-            return $LayoutObject->ErrorScreen(
-                Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field queue!' ),
-                Comment => Translatable('Please contact the administrator.'),
+        if ($GetParam{TicketTemplate}) {
+            # Validate incoming values
+            my $QueueValues = $Self->_GetTos(
+                %GetParam,
             );
-        }
+            if ( !$QueueValues->{$GetParam{TicketQueueID}} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field queue!' ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
+            }
 
-        my $StateValues = $Self->_GetStates(
-            %GetParam,
-        );
-        if ( !$StateValues->{$GetParam{TicketStateID}} ) {
-            return $LayoutObject->ErrorScreen(
-                Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field state!' ),
-                Comment => Translatable('Please contact the administrator.'),
+            my $StateValues = $Self->_GetStates(
+                %GetParam,
             );
+            if ( !$StateValues->{$GetParam{TicketStateID}} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field state!' ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
 
-        }
+            }
 
-        my $TypeValues = $Self->_GetTypes(
-            %GetParam,
-        );
-        if ( $ConfigObject->Get('Ticket::Type') &&  !$TypeValues->{$GetParam{TicketTypeID}} ) {
-            return $LayoutObject->ErrorScreen(
-                Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field type!' ),
-                Comment => Translatable('Please contact the administrator.'),
+            my $TypeValues = $Self->_GetTypes(
+                %GetParam,
             );
+            if ( $ConfigObject->Get('Ticket::Type') &&  !$TypeValues->{$GetParam{TicketTypeID}} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field type!' ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
 
-        }
+            }
 
-        my $PriorityValues = $Self->_GetPriorities(
-            %GetParam,
-        );
-        if ( !$PriorityValues->{$GetParam{TicketPriorityID}} ) {
-            return $LayoutObject->ErrorScreen(
-                Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field priority!' ),
-                Comment => Translatable('Please contact the administrator.'),
+            my $PriorityValues = $Self->_GetPriorities(
+                %GetParam,
             );
+            if ( !$PriorityValues->{$GetParam{TicketPriorityID}} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field priority!' ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
 
+            }
         }
 # EO AppointmentTicket
 
@@ -2422,31 +2424,57 @@ sub Run {
         }
 
         # Handle Ticket Creation on Appointment
-        # Necessary to do after creation to save appointment id with future task
-        $GetParam{AppointmentTicket} = {
-            $GetParam{AppointmentTicket}->%*,
-            Subject                   => $GetParam{Title},
-            Title                     => $GetParam{Title},
-            Content                   => $GetParam{Description},
-            UserID                    => $Self->{UserID},
-            Lock                      => 'unlock',
-            OwnerID                   => 1,
-            Template                  => $GetParam{TicketTemplate},
-            Time                      => $GetParam{TicketTime},
-            Custom                    => $GetParam{TicketCustom},
-            CustomRelativeUnit        => $GetParam{TicketCustomRelativeUnit},
-            CustomRelativeUnitCount   => $GetParam{TicketCustomRelativeUnitCount},
-            CustomRelativePointOfTime => $GetParam{TicketCustomRelativePointOfTime},
-            CustomDateTime            => $GetParam{TicketCustomDateTime},
-            QueueID                   => $GetParam{TicketQueueID},
-            CustomerID                => $GetParam{TicketCustomerID},
-            CustomerUser              => $GetParam{TicketCustomerUser},
-            SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
-            PriorityID                => $GetParam{TicketPriorityID},
-            StateID                   => $GetParam{TicketStateID},
-            TypeID                    => $GetParam{TicketTypeID},
-            ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
-        };
+        if ($GetParam{AppointmentTicket}) {
+            $GetParam{AppointmentTicket} = {
+                $GetParam{AppointmentTicket}->%*,
+                Subject                   => $GetParam{Title},
+                Title                     => $GetParam{Title},
+                Content                   => $GetParam{Description},
+                UserID                    => $Self->{UserID},
+                Lock                      => 'unlock',
+                OwnerID                   => 1,
+                Template                  => $GetParam{TicketTemplate},
+                Time                      => $GetParam{TicketTime},
+                Custom                    => $GetParam{TicketCustom},
+                CustomRelativeUnit        => $GetParam{TicketCustomRelativeUnit},
+                CustomRelativeUnitCount   => $GetParam{TicketCustomRelativeUnitCount},
+                CustomRelativePointOfTime => $GetParam{TicketCustomRelativePointOfTime},
+                CustomDateTime            => $GetParam{TicketCustomDateTime},
+                QueueID                   => $GetParam{TicketQueueID},
+                CustomerID                => $GetParam{TicketCustomerID},
+                CustomerUser              => $GetParam{TicketCustomerUser},
+                SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
+                PriorityID                => $GetParam{TicketPriorityID},
+                StateID                   => $GetParam{TicketStateID},
+                TypeID                    => $GetParam{TicketTypeID},
+                ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
+            };
+        }
+        else {
+            $GetParam{AppointmentTicket} = {
+                Subject                   => $GetParam{Title},
+                Title                     => $GetParam{Title},
+                Content                   => $GetParam{Description},
+                UserID                    => $Self->{UserID},
+                Lock                      => 'unlock',
+                OwnerID                   => 1,
+                Template                  => $GetParam{TicketTemplate},
+                Time                      => $GetParam{TicketTime},
+                Custom                    => $GetParam{TicketCustom},
+                CustomRelativeUnit        => $GetParam{TicketCustomRelativeUnit},
+                CustomRelativeUnitCount   => $GetParam{TicketCustomRelativeUnitCount},
+                CustomRelativePointOfTime => $GetParam{TicketCustomRelativePointOfTime},
+                CustomDateTime            => $GetParam{TicketCustomDateTime},
+                QueueID                   => $GetParam{TicketQueueID},
+                CustomerID                => $GetParam{TicketCustomerID},
+                CustomerUser              => $GetParam{TicketCustomerUser},
+                SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
+                PriorityID                => $GetParam{TicketPriorityID},
+                StateID                   => $GetParam{TicketStateID},
+                TypeID                    => $GetParam{TicketTypeID},
+                ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
+            };
+        }
 # EO AppointmentToTicket
 
         if (%Appointment) {
