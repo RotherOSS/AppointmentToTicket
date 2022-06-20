@@ -138,6 +138,7 @@ sub Run {
             }
         }
     }
+
 # EO AppointmentToTicket
 
     my $ConfigObject      = $Kernel::OM->Get('Kernel::Config');
@@ -1729,7 +1730,55 @@ sub Run {
     # add/edit appointment
     # ------------------------------------------------------------ #
     elsif ( $Self->{Subaction} eq 'EditAppointment' ) {
+
+# RotherOSS / AppointmentToTicket
+        # Validate incoming values
+        my $QueueValues = $Self->_GetTos(
+            %GetParam,
+        );
+        if ( !$QueueValues->{$GetParam{TicketQueueID}} ) {
+            return $LayoutObject->ErrorScreen(
+                Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field queue!' ),
+                Comment => Translatable('Please contact the administrator.'),
+            );
+        }
+
+        my $StateValues = $Self->_GetStates(
+            %GetParam,
+        );
+        if ( !$StateValues->{$GetParam{TicketStateID}} ) {
+            return $LayoutObject->ErrorScreen(
+                Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field state!' ),
+                Comment => Translatable('Please contact the administrator.'),
+            );
+
+        }
+
+        my $TypeValues = $Self->_GetTypes(
+            %GetParam,
+        );
+        if ( $ConfigObject->Get('Ticket::Type') &&  !$TypeValues->{$GetParam{TicketTypeID}} ) {
+            return $LayoutObject->ErrorScreen(
+                Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field type!' ),
+                Comment => Translatable('Please contact the administrator.'),
+            );
+
+        }
+
+        my $PriorityValues = $Self->_GetPriorities(
+            %GetParam,
+        );
+        if ( !$PriorityValues->{$GetParam{TicketPriority}} ) {
+            return $LayoutObject->ErrorScreen(
+                Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field priority!' ),
+                Comment => Translatable('Please contact the administrator.'),
+            );
+
+        }
+# EO AppointmentTicket
+
         my %Appointment;
+
         if ( $GetParam{AppointmentID} ) {
             %Appointment = $AppointmentObject->AppointmentGet(
                 AppointmentID => $GetParam{AppointmentID},
@@ -2133,6 +2182,31 @@ sub Run {
         DYNAMICFIELD:
         for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
             next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+
+            my $PossibleValues = $DynamicFieldBackendObject->PossibleValuesGet(
+                DynamicFieldConfig => $DynamicFieldConfig,
+            );
+
+            # Validate dynamic field value
+            my $ValidationResult = $DynamicFieldBackendObject->EditFieldValueValidate(
+                DynamicFieldConfig => $DynamicFieldConfig,
+                PossibleValuesFilter => IsHashRefWithData($PossibleValues) ? $PossibleValues : undef,
+                ParamObject => $ParamObject,
+                Mandatory => $Config->{DynamicField}->{ $DynamicFieldConfig->{Name} } == 2,
+            );
+
+            if ( !IsHashRefWithData($ValidationResult) ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field %s!', $DynamicFieldConfig->{Label} ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
+            }
+            elsif ( $ValidationResult->{ServerError} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( $ValidationResult->{ErrorMessage} ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
+            }
 
             # extract the dynamic field value from the web request
             $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
