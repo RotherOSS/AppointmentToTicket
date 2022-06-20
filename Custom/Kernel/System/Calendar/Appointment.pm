@@ -1321,6 +1321,7 @@ updates an existing appointment.
         TicketAppointmentRuleID    => '9bb20ea035e7a9930652a9d82d00c725', # (optional) Ticket appointment rule ID (for ticket appointments only!)
         UserID                     => 1,                                  # (required) UserID
 # RotherOSS / AppointmentToTicket
+        FutureTaskID => 1,                                                # (optional) ID of future task
         AppointmentTicket => {                                            # (optional) Data for ticket creation
             Time => '2016-01-10 00:00:00',                                # (optional) Point of time to execute the ticket creat event
             Template => 'Custom',                                         # (optional) Template to be used for ticket point of time
