@@ -35,5 +35,5 @@
         my $CodeModule = 'var::packagesetup::AppointmentToTicket';
         
         $Kernel::OM->Get('$CodeModule')->CodeUninstall();
-    ]]</CodeUninstall>
+    ]]></CodeUninstall>
 </otobo_package>
