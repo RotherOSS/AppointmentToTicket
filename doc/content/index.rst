@@ -13,7 +13,7 @@ Ticket Creation is initiated in the AppointmentEdit mask under the section 'Tick
 
 The feature as of now does not support the form update functionality to dynamically adjust possible content, database fields are also not supported.
 
-.. image:: screenshot.png
+.. image:: screenshot_en.png
    :alt: The sreenshot shows the newly available fields. 
 
 System requirements
