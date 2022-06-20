@@ -1491,7 +1491,7 @@ sub Run {
         # if future task exists, transform existing data into neede structure
         if (%FutureTask) {
             my @CustomerUserStrings = split(',', $FutureTask{Data}->{AppointmentTicket}->{CustomerUser});
-            if ( scalar @CustomerUserStrings ) {
+            if ( @CustomerUserStrings ) {
                 my $Count = 0;
                 for my $CustomerUserString ( @CustomerUserStrings ) {
                     my %CustomerUser = $CustomerUserObject->CustomerUserDataGet(
