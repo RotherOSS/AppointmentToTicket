@@ -42,6 +42,7 @@
                         <Item>Core.Agent.CustomerSearchAutoComplete.js</Item>
                         <Item>Core.Agent.CustomerSearch.js</Item>
                         <Item>Core.Agent.DynamicFieldDBSearch.js</Item>
+                        <Item>Core.Agent.TicketAction.js</Item>
                     </Array>
                 </Item>
             </Hash>
