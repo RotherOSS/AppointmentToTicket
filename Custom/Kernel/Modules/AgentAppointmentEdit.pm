@@ -2252,7 +2252,7 @@ sub Run {
                 $Value= $DynamicFieldValues{$DynamicFieldConfig->{Name}};
             }
 
-            $GetParam{AppointmentTicket}->{DynamicFields}{ $DynamicFieldConfig->{Name} } = $Value;
+            $GetParam{TicketDynamicFields}->{ $DynamicFieldConfig->{Name} } = $Value;
         }
 
         # Parse possibly multiple customer users
@@ -2380,9 +2380,9 @@ sub Run {
                     my %FutureTask = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskGet(
                         TaskID => $FutureTaskID,
                     );
-                    $GetParam{AppointmentTicket} = (
+                    $GetParam{AppointmentTicket} = {
                         $FutureTask{Data}->{AppointmentTicket}->%*,
-                    );
+                    };
                 }
             }
         }
@@ -2426,7 +2426,6 @@ sub Run {
         # Handle Ticket Creation on Appointment
         if ($GetParam{AppointmentTicket}) {
             $GetParam{AppointmentTicket} = {
-                $GetParam{AppointmentTicket}->%*,
                 Subject                   => $GetParam{Title},
                 Title                     => $GetParam{Title},
                 Content                   => $GetParam{Description},
@@ -2448,6 +2447,8 @@ sub Run {
                 StateID                   => $GetParam{TicketStateID},
                 TypeID                    => $GetParam{TicketTypeID},
                 ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
+                DynamicFields             => $GetParam{TicketDynamicFields},
+                $GetParam{AppointmentTicket}->%*,
             };
         }
         else {
@@ -2473,6 +2474,7 @@ sub Run {
                 StateID                   => $GetParam{TicketStateID},
                 TypeID                    => $GetParam{TicketTypeID},
                 ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
+                DynamicFields             => $GetParam{TicketDynamicFields},
             };
         }
 # EO AppointmentToTicket

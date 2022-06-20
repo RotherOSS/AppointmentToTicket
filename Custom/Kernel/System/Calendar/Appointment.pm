@@ -1629,19 +1629,19 @@ sub AppointmentUpdate {
     my $FutureTaskAppointmentID;
 
     # Set future task id to NULL and delete future task if no id provided, else update existing future task
-    if ( !$Param{TicketTemplate} ) {
+    if ( !$Param{AppointmentTicket}->{Template} ) {
 
         for my $PossibleParam (
             qw(
-                TicketDate TicketTemplate TicketCustom TicketCustomRelativeUnitCount
-                TicketCustomRelativeUnit TicketCustomRelativePointOfTime TicketCustomDateTime
+                Date Template Custom CustomRelativeUnitCount
+                CustomRelativeUnit CustomRelativePointOfTime CustomDateTime
             )
             )
         {
-            $Param{$PossibleParam} = undef;
+            $Param{AppointmentTicket}->{$PossibleParam} = undef;
         }
     }
-    if ( $Param{FutureTaskID} && !$Param{TicketTemplate} ) {
+    if ( $Param{FutureTaskID} && !$Param{AppointmentTicket}->{Template} ) {
         $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskDelete(
             TaskID => $Param{FutureTaskID}
         );
@@ -1649,7 +1649,7 @@ sub AppointmentUpdate {
     }
 
     # FutureTask is to be (re)created
-    elsif ( $Param{TicketTemplate} ) {
+    elsif ( $Param{AppointmentTicket}->{Template} ) {
 
         # Collect data for creating or updating future task
         my %FutureTaskData = (
@@ -1657,9 +1657,6 @@ sub AppointmentUpdate {
             Data => {
                 AppointmentTicket => {
                     $Param{AppointmentTicket}->%*,
-                    Title => $Param{Title},
-                    Subject => $Param{Title},
-                    Content => $Param{Title},
                 },
             },
         );
@@ -1677,13 +1674,13 @@ sub AppointmentUpdate {
             for my $Appointment (@AppointmentList) {
                 my $AppointmentExecutionTime = $Self->AppointmentToTicketExecutionTime(
                     Data => {
-                        TicketTime                      => $Param{TicketTime},
-                        TicketTemplate                  => $Param{TicketTemplate},
-                        TicketCustom                    => $Param{TicketCustom},
-                        TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
-                        TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
-                        TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                        TicketCustomDateTime            => $Param{TicketCustomDateTime},
+                        TicketTime                      => $Param{AppointmentTicket}->{Time},
+                        TicketTemplate                  => $Param{AppointmentTicket}->{Template},
+                        TicketCustom                    => $Param{AppointmentTicket}->{Custom},
+                        TicketCustomRelativeUnitCount   => $Param{AppointmentTicket}->{CustomRelativeUnitCount},
+                        TicketCustomRelativeUnit        => $Param{AppointmentTicket}->{CustomRelativeUnit},
+                        TicketCustomRelativePointOfTime => $Param{AppointmentTicket}->{CustomRelativePointOfTime},
+                        TicketCustomDateTime            => $Param{AppointmentTicket}->{CustomDateTime},
                     },
 
                     # when the appointment was just updated in database, maybe the data is still incorrect here
@@ -1710,13 +1707,13 @@ sub AppointmentUpdate {
             # Single appointment, checking if its execution time is in the future
             my $AppointmentExecutionTime = $Self->AppointmentToTicketExecutionTime(
                 Data => {
-                    TicketTime                      => $Param{TicketTime},
-                    TicketTemplate                  => $Param{TicketTemplate},
-                    TicketCustom                    => $Param{TicketCustom},
-                    TicketCustomRelativeUnitCount   => $Param{TicketCustomRelativeUnitCount},
-                    TicketCustomRelativeUnit        => $Param{TicketCustomRelativeUnit},
-                    TicketCustomRelativePointOfTime => $Param{TicketCustomRelativePointOfTime},
-                    TicketCustomDateTime            => $Param{TicketCustomDateTime},
+                    TicketTime                      => $Param{AppointmentTicket}->{Time},
+                    TicketTemplate                  => $Param{AppointmentTicket}->{Template},
+                    TicketCustom                    => $Param{AppointmentTicket}->{Custom},
+                    TicketCustomRelativeUnitCount   => $Param{AppointmentTicket}->{CustomRelativeUnitCount},
+                    TicketCustomRelativeUnit        => $Param{AppointmentTicket}->{CustomRelativeUnit},
+                    TicketCustomRelativePointOfTime => $Param{AppointmentTicket}->{CustomRelativePointOfTime},
+                    TicketCustomDateTime            => $Param{AppointmentTicket}->{CustomDateTime},
                 },
                 StartTime => $Param{StartTime},
                 EndTime   => $Param{EndTime},
