@@ -1443,6 +1443,20 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             Core.Agent.CustomerSearchAutoComplete.Init();
             // initialize modern fields on custom selection
             Core.UI.InputFields.InitSelect($('select.Modernize'));
+            // initialize dynamic db fields
+            //TODO z index ui-overlay-autocomplete class
+            Core.Agent.DynamicFieldDBSearch.Init();
+
+            // init selected customer user
+            $('.CustomerTicketRadio').each(function(index, element) {
+                if ($(this).prop('checked')){
+                    
+                    CustomerKey = $('#CustomerKey_' +$(this).val()).val();
+                    // get customer tickets
+                    Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
+                    
+                }
+            });
 
         }
 
