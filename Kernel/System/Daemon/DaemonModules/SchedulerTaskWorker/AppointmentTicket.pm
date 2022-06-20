@@ -243,17 +243,10 @@ sub Run {
     );
 
     # delete future task id from appointment
-    my $SQL = "
-        UPDATE calendar_appointment
-        SET future_task_id = NULL
-        WHERE id = ?
-    ";
-    my @Bind = ( \$Param{Data}->{AppointmentID} );
-
-    # update db record
-    return if !$DBObject->Do(
-        SQL  => $SQL,
-        Bind => \@Bind,
+    my $Success = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentUpdate(
+        %Appointment,
+        UserID => $Param{Data}->{AppointmentTicket}->{UserID},
+        FutureTaskID => undef,
     );
 
     # Check if appointment is recurring and if so, create next future task for appointment which is in the future and closest to now
@@ -314,31 +307,13 @@ sub Run {
         }
 
         if ($NextAppointment) {
-            my $FutureTaskID = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB')->FutureTaskAdd(
-
-                ExecutionTime => $ExecutionTime,
-                Type          => 'AppointmentTicket',
-                Name          => 'Test',
-                Data          => {
-                    AppointmentTicket => {
-                        $Param{Data}->{AppointmentTicket}->%*,
-                    },
-                    AppointmentID => $NextAppointment->{AppointmentID},
-                }
-            );
-
             # update appointment in db
-            my $SQL = "
-                UPDATE calendar_appointment
-                SET future_task_id = ?
-                WHERE id = ?
-            ";
-            my @Bind = ( \$FutureTaskID, \$NextAppointment->{AppointmentID} );
-
-            # update db record
-            return if !$DBObject->Do(
-                SQL  => $SQL,
-                Bind => \@Bind,
+            $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentUpdate(
+                $NextAppointment->%*,
+                UserID => $Param{Data}->{AppointmentTicket}->{UserID},
+                AppointmentTicket => {
+                    $Param{Data}->{AppointmentTicket}->%*,
+                },
             );
         }
 
