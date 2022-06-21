@@ -1391,7 +1391,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      *      This method initializes the ticket creation section behavior.
      */
     TargetNS.TicketInit = function (Fields) {
-        var ElementsRequired = ['TicketQueueID', 'TicketPriority', 'TicketStateID', 'TicketTypeID'];
 
         if (Fields.$TicketTemplate.val() === '0') {
 
