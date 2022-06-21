@@ -1399,10 +1399,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             $('.TicketTemplateSelection ~ label').hide();
 
             // Remove mandatory and validate classes
-            ElementsRequired.forEach(function (element, index) {
-                $('select[name="' + element + '"]').removeClass('Validate_Required');
-            });
-        
+            $('.TicketTemplateSelection ~ div > .Validate_Required').addClass('Validate_If_Active').removeClass('Validate_Required');
         } else {
 
             $('.TicketTemplateSelection ~ div:not(.Hidden)').show();
@@ -1417,9 +1414,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             }
 
             // Add mandatory and validate classes
-            ElementsRequired.forEach(function (element, index) {
-                $('select[name="' + element + '"]').addClass('Validate_Required');
-            });
+            $('.TicketTemplateSelection ~ div > .Validate_If_Active').addClass('Validate_Required').removeClass('Validate_If_Active');
 
             // Bind event to customer radio button.
             $('.CustomerTicketRadio').on('change', function () {
