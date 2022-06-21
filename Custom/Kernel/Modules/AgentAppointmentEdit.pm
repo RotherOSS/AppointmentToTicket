@@ -2598,6 +2598,437 @@ sub Run {
         );
     }
 
+# RotherOSS / AppointmentTicket
+    # ------------------------------------------------------------ #
+    # AJAX update
+    # ------------------------------------------------------------ #
+    elsif ( $Self->{Subaction} eq 'AJAXUpdate' ) {
+
+        my $Dest           = $ParamObject->GetParam( Param => 'Dest' ) || '';
+        my $CustomerUser   = $ParamObject->GetParam( Param => 'SelectedCustomerUser' );
+        my $ElementChanged = $ParamObject->GetParam( Param => 'ElementChanged' ) || '';
+        my $QueueID        = '';
+        if ( $Dest =~ /^(\d{1,100})\|\|.+?$/ ) {
+            $QueueID = $1;
+        }    
+        $GetParam{Dest}    = $Dest;
+        $GetParam{QueueID} = $QueueID;
+
+        # get list type
+        my $TreeView = 0; 
+        if ( $ConfigObject->Get('Ticket::Frontend::ListType') eq 'tree' ) {
+            $TreeView = 1; 
+        }    
+
+        my $Autoselect = $ConfigObject->Get('TicketACL::Autoselect') || undef;
+        my $ACLPreselection;
+        if ( $ConfigObject->Get('TicketACL::ACLPreselection') ) {
+
+            # get cached preselection rules
+            my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
+            $ACLPreselection = $CacheObject->Get(
+                Type => 'TicketACL',
+                Key  => 'Preselection',
+            );   
+            if ( !$ACLPreselection ) {
+                $ACLPreselection = $FieldRestrictionsObject->SetACLPreselectionCache();
+            }    
+        }    
+
+        my %Convergence = (
+            StdFields => 0,
+            Fields    => 0,
+        );   
+        my %ChangedElements        = $ElementChanged                                        ? ( $ElementChanged => 1 ) : ();
+        my %ChangedElementsDFStart = $ElementChanged                                        ? ( $ElementChanged => 1 ) : ();
+        my %ChangedStdFields       = $ElementChanged && $ElementChanged !~ /^DynamicField_/ ? ( $ElementChanged => 1 ) : ();
+
+        my $LoopProtection = 100; 
+        my %StdFieldValues;
+        my %DynFieldStates = (
+            Visibility => {},
+            Fields     => {},
+        );   
+
+        until ( $Convergence{Fields} ) {
+
+            # determine standard field input
+            until ( $Convergence{StdFields} ) {
+
+                my %NewChangedElements;
+
+                # which standard fields to check - FieldID => GetParamValue (neccessary for Dest)
+                my %Check = (
+                    Dest               => 'QueueID',
+                    NewUserID          => 'NewUserID',
+                    NewResponsibleID   => 'NewResponsibleID',
+                    NextStateID        => 'NextStateID',
+                    PriorityID         => 'PriorityID',
+                    ServiceID          => 'ServiceID',
+                    SLAID              => 'SLAID',
+                    StandardTemplateID => 'StandardTemplateID',
+                    TypeID             => 'TypeID',
+                );
+                if ($ACLPreselection) {
+                    FIELD:
+                    for my $FieldID ( sort keys %Check ) {
+                        if ( !$ACLPreselection->{Fields}{$FieldID} ) {
+                            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                                Priority => 'debug',
+                                Message  => "$FieldID not defined in TicketACL preselection rules!"
+                            );
+                            next FIELD;
+                        }
+                        if ( $Autoselect && $Autoselect->{$FieldID} && $ChangedElements{$FieldID} ) {
+                            next FIELD;
+                        }
+                        for my $Element ( sort keys %ChangedElements ) {
+                            if (
+                                $ACLPreselection->{Rules}{Ticket}{$Element}{$FieldID}
+                                || $Self->{InternalDependancy}{$Element}{$FieldID}
+                                )
+                            {
+                                next FIELD;
+                            }
+                            if ( !$ACLPreselection->{Fields}{$Element} ) {
+                                $Kernel::OM->Get('Kernel::System::Log')->Log(
+                                    Priority => 'debug',
+                                    Message  => "$Element not defined in TicketACL preselection rules!"
+                                );
+                                next FIELD;
+                            }
+                        }
+
+                        # delete unaffected fields
+                        delete $Check{$FieldID};
+                    }
+                }
+
+                # for each standard field which has to be checked, run the defined method
+                METHOD:
+                for my $Field ( @{ $Self->{FieldMethods} } ) {
+                    next METHOD if !$Check{ $Field->{FieldID} };
+
+                    # use $Check{ $Field->{FieldID} } for Dest=>QueueID
+                    $StdFieldValues{ $Check{ $Field->{FieldID} } } = $Field->{Method}->(
+                        $Self,
+                        %GetParam,
+                        OwnerID        => $GetParam{NewUserID},
+                        CustomerUserID => $CustomerUser || '',
+                        QueueID        => $GetParam{QueueID},
+                        Services       => $StdFieldValues{ServiceID} || undef,    # needed for SLAID
+                    );
+
+                    # special stuff for QueueID/Dest: Dest is "QueueID||QueueName" => "QueueName";
+                    if ( $Field->{FieldID} eq 'Dest' ) {
+                        TOs:
+                        for my $QueueID ( sort keys %{ $StdFieldValues{QueueID} } ) {
+                            next TOs if ( $StdFieldValues{QueueID}{$QueueID} eq '-' );
+                            $StdFieldValues{Dest}{"$QueueID||$StdFieldValues{QueueID}{ $QueueID }"} = $StdFieldValues{QueueID}{$QueueID};
+                        }
+
+                        # check current selection of QueueID (Dest will be done together with the other fields)
+                        if ( $GetParam{QueueID} && !$StdFieldValues{Dest}{ $GetParam{Dest} } ) {
+                            $GetParam{QueueID} = '';
+                        }
+
+                        # autoselect
+                        elsif ( !$GetParam{QueueID} && $Autoselect && $Autoselect->{Dest} ) {
+                            $GetParam{QueueID} = $FieldRestrictionsObject->Autoselect(
+                                PossibleValues => $StdFieldValues{QueueID},
+                            ) || '';
+                        }
+                    }
+
+                    # check whether current selected value is still valid for the field
+                    if (
+                        $GetParam{ $Field->{FieldID} }
+                        && !$StdFieldValues{ $Field->{FieldID} }{ $GetParam{ $Field->{FieldID} } }
+                        )
+                    {
+                        # if not empty the field
+                        $GetParam{ $Field->{FieldID} }           = '';
+                        $NewChangedElements{ $Field->{FieldID} } = 1;
+                        $ChangedStdFields{ $Field->{FieldID} }   = 1;
+                    }
+
+                    # autoselect
+                    elsif ( !$GetParam{ $Field->{FieldID} } && $Autoselect && $Autoselect->{ $Field->{FieldID} } ) {
+                        $GetParam{ $Field->{FieldID} } = $FieldRestrictionsObject->Autoselect(
+                            PossibleValues => $StdFieldValues{ $Field->{FieldID} },
+                        ) || '';
+                        if ( $GetParam{ $Field->{FieldID} } ) {
+                            $NewChangedElements{ $Field->{FieldID} } = 1;
+                            $ChangedStdFields{ $Field->{FieldID} }   = 1;
+                        }
+                    }
+                }
+
+                if ( !%NewChangedElements ) {
+                    $Convergence{StdFields} = 1;
+                }
+                else {
+                    %ChangedElements = %NewChangedElements;
+                }
+
+                %ChangedElementsDFStart = (
+                    %ChangedElementsDFStart,
+                    %NewChangedElements,
+                );
+
+                if ( $LoopProtection-- < 1 ) {
+                    $Kernel::OM->Get('Kernel::System::Log')->Log(
+                        Priority => 'error',
+                        Message  => "Ran into unresolvable loop!",
+                    );
+                    return;
+                }
+
+            }
+
+            %ChangedElements        = %ChangedElementsDFStart;
+            %ChangedElementsDFStart = ();
+
+            # check dynamic fields
+            my %CurFieldStates;
+            if (%ChangedElements) {
+
+                # get values and visibility of dynamic fields
+                %CurFieldStates = $FieldRestrictionsObject->GetFieldStates(
+                    TicketObject              => $TicketObject,
+                    DynamicFields             => $Self->{DynamicField},
+                    DynamicFieldBackendObject => $DynamicFieldBackendObject,
+                    ChangedElements           => \%ChangedElements,            # optional to reduce ACL evaluation
+                    Action                    => $Self->{Action},
+                    UserID                    => $Self->{UserID},
+                    TicketID                  => $Self->{TicketID},
+                    FormID                    => $Self->{FormID},
+                    CustomerUser              => $CustomerUser || '',
+                    GetParam                  => {
+                        %GetParam,
+                        OwnerID => $GetParam{NewUserID},
+                    },
+                    Autoselect      => $Autoselect,
+                    ACLPreselection => $ACLPreselection,
+                    LoopProtection  => \$LoopProtection,
+                );
+
+                # combine FieldStates
+                $DynFieldStates{Fields} = {
+                    %{ $DynFieldStates{Fields} },
+                    %{ $CurFieldStates{Fields} },
+                };
+                $DynFieldStates{Visibility} = {
+                    %{ $DynFieldStates{Visibility} },
+                    %{ $CurFieldStates{Visibility} },
+                };
+
+                # store new values
+                $GetParam{DynamicField} = {
+                    %{ $GetParam{DynamicField} },
+                    %{ $CurFieldStates{NewValues} },
+                };
+            }
+            # if dynamic fields changed, check standard fields again
+            if ( %CurFieldStates && IsHashRefWithData( $CurFieldStates{NewValues} ) ) {
+                $Convergence{StdFields} = 0;
+                %ChangedElements = map { $_ => 1 } keys %{ $CurFieldStates{NewValues} };
+            }
+            else {
+                $Convergence{Fields} = 1;
+            }
+
+        }
+
+        # update Dynamic Fields Possible Values via AJAX
+        my @DynamicFieldAJAX;
+
+        # cycle through the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $Index ( sort keys %{ $DynFieldStates{Fields} } ) {
+            my $DynamicFieldConfig = $Self->{DynamicField}->[$Index];
+
+            my $DataValues = $DynFieldStates{Fields}{$Index}{NotACLReducible}
+                ? $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"}
+                :
+                (
+                    $DynamicFieldBackendObject->BuildSelectionDataGet(
+                        DynamicFieldConfig => $DynamicFieldConfig,
+                        PossibleValues     => $DynFieldStates{Fields}{$Index}{PossibleValues},
+                        Value              => $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
+                    )
+                    || $DynFieldStates{Fields}{$Index}{PossibleValues}
+                );
+
+            # add dynamic field to the list of fields to update
+            push @DynamicFieldAJAX, {
+                Name        => 'DynamicField_' . $DynamicFieldConfig->{Name},
+                Data        => $DataValues,
+                SelectedID  => $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
+                Translation => $DynamicFieldConfig->{Config}->{TranslatableValues} || 0,
+                Max         => 100,
+            };
+        }
+
+        # define dynamic field visibility
+        my %FieldVisibility;
+        if ( IsHashRefWithData( $DynFieldStates{Visibility} ) ) {
+            push @DynamicFieldAJAX, {
+                Name => 'Restrictions_Visibility',
+                Data => $DynFieldStates{Visibility},
+            };
+        }
+
+        # build AJAX return for the standard fields
+        my @StdFieldAJAX;
+        my %Attributes = (
+            Dest => {
+                Translation  => 0,
+                PossibleNone => 1,
+                TreeView     => $TreeView,
+                Max          => 100,
+            },
+            NewUserID => {
+                Translation  => 0,
+                PossibleNone => 1,
+                Max          => 100,
+            },
+            NewResponsibleID => {
+                Translation  => 0,
+                PossibleNone => 1,
+                Max          => 100,
+            },
+            NextStateID => {
+                Translation => 1,
+                Max         => 100,
+            },
+            PriorityID => {
+                Translation => 1,
+                Max         => 100,
+            },
+            ServiceID => {
+                PossibleNone => 1,
+                Translation  => 0,
+                TreeView     => $TreeView,
+                Max          => 100,
+            },
+            SLAID => {
+                PossibleNone => 1,
+                Translation  => 0,
+                Max          => 100,
+            },
+            StandardTemplateID => {
+                PossibleNone => 1,
+                Translation  => 1,
+                Max          => 100,
+            },
+            TypeID => {
+                PossibleNone => 1,
+                Translation  => 0,
+                Max          => 100,
+            }
+        );
+        delete $StdFieldValues{QueueID};
+        for my $Field ( sort keys %StdFieldValues ) {
+            push @StdFieldAJAX, {
+                Name       => $Field,
+                Data       => $StdFieldValues{$Field},
+                SelectedID => $GetParam{$Field},
+                %{ $Attributes{$Field} },
+            };
+        }
+
+        my @TemplateAJAX;
+
+        # update ticket body and attachements if needed.
+        if ( $ChangedStdFields{StandardTemplateID} ) {
+            my @TicketAttachments;
+            my $TemplateText;
+
+            # remove all attachments from the Upload cache
+            my $RemoveSuccess = $UploadCacheObject->FormIDRemove(
+                FormID => $Self->{FormID},
+            );
+            if ( !$RemoveSuccess ) {
+                $Kernel::OM->Get('Kernel::System::Log')->Log(
+                    Priority => 'error',
+                    Message  => "Form attachments could not be deleted!",
+                );
+            }
+
+            # get the template text and set new attachments if a template is selected
+            if ( IsPositiveInteger( $GetParam{StandardTemplateID} ) ) {
+                my $TemplateGenerator = $Kernel::OM->Get('Kernel::System::TemplateGenerator');
+
+                # set template text, replace smart tags (limited as ticket is not created)
+                $TemplateText = $TemplateGenerator->Template(
+                    TemplateID     => $GetParam{StandardTemplateID},
+                    UserID         => $Self->{UserID},
+                    CustomerUserID => $CustomerUser,
+                );
+
+                # create StdAttachmentObject
+                my $StdAttachmentObject = $Kernel::OM->Get('Kernel::System::StdAttachment');
+
+                # add std. attachments to ticket
+                my %AllStdAttachments = $StdAttachmentObject->StdAttachmentStandardTemplateMemberList(
+                    StandardTemplateID => $GetParam{StandardTemplateID},
+                );
+                for ( sort keys %AllStdAttachments ) {
+                    my %AttachmentsData = $StdAttachmentObject->StdAttachmentGet( ID => $_ );
+                    $UploadCacheObject->FormIDAddFile(
+                        FormID      => $Self->{FormID},
+                        Disposition => 'attachment',
+                        %AttachmentsData,
+                    );
+                }
+
+                # send a list of attachments in the upload cache back to the clientside JavaScript
+                # which renders then the list of currently uploaded attachments
+                @TicketAttachments = $UploadCacheObject->FormIDGetAllFilesMeta(
+                    FormID => $Self->{FormID},
+                );
+
+                for my $Attachment (@TicketAttachments) {
+                    $Attachment->{Filesize} = $LayoutObject->HumanReadableDataSize(
+                        Size => $Attachment->{Filesize},
+                    );
+                }
+            }
+
+            @TemplateAJAX = (
+                {
+                    Name => 'UseTemplateCreate',
+                    Data => '0',
+                },
+                {
+                    Name => 'RichText',
+                    Data => $TemplateText || '',
+                },
+                {
+                    Name     => 'TicketAttachments',
+                    Data     => \@TicketAttachments,
+                    KeepData => 1,
+                },
+            );
+        }
+
+        my $JSON = $LayoutObject->BuildSelectionJSON(
+            [
+                @StdFieldAJAX,
+                @DynamicFieldAJAX,
+                @TemplateAJAX,
+            ],
+        );
+        return $LayoutObject->Attachment(
+            ContentType => 'application/json; charset=' . $LayoutObject->{Charset},
+            Content     => $JSON,
+            Type        => 'inline',
+            NoCache     => 1,
+        );
+
+    }
+# EO AppointmentTicket
     # ------------------------------------------------------------ #
     # delete mask
     # ------------------------------------------------------------ #
