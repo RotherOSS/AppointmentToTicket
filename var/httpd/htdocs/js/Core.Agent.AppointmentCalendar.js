@@ -1391,7 +1391,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      *      This method initializes the ticket creation section behavior.
      */
     TargetNS.TicketInit = function (Fields) {
-        var ElementsRequired = ['TicketQueueID', 'TicketPriority', 'TicketStateID', 'TicketTypeID'];
 
         if (Fields.$TicketTemplate.val() === '0') {
 
@@ -1515,7 +1514,31 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             // process changes
             TargetNS.TicketInit(Fields);
         });
+
+        // Bind form update event to fields
+        $.each(Fields, function(Index, Value) {
+            ModifiedFields = Core.Data.CopyObject(Fields).concat(DynamicFieldNames);
+            ModifiedFields.splice(Index, 1);
+
+            FieldUpdate(Value, ModifiedFields);
+        });
     }
+
+    /** 
+     * @private
+     * @name FieldUpdate
+     * @memberof Core.Agent.TicketPhone.Init
+     * @function
+     * @param {String} Value - FieldID
+     * @param {Array} ModifiedFields - Fields
+     * @description
+     *      Create on change event handler
+     */
+    function FieldUpdate (Value, ModifiedFields) {
+        $('#' + Value).on('change', function () {
+            Core.AJAX.FormUpdate($('#NewPhoneTicket'), 'AJAXUpdate', Value, ModifiedFields);
+        }); 
+    }  
 // EO AppointmentToTicket
 
     /**
