@@ -32,6 +32,86 @@ sub new {
 
     $Self->{EmptyString} = '-';
 
+# RotherOSS / AppointmentTicket
+    # frontend specific config
+    my $Config = $Kernel::OM->Get('Kernel::Config')->Get("Ticket::Frontend::$Self->{Action}");
+
+    # get the dynamic fields for this screen
+    $Self->{DynamicField} = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+        Valid       => 1,
+        ObjectType  => [ 'Ticket', 'Article' ],
+        FieldFilter => $Config->{DynamicField} || {},
+    );
+
+    # create form id
+    if ( !$Self->{FormID} ) {
+        $Self->{FormID} = $Kernel::OM->Get('Kernel::System::Web::UploadCache')->FormIDCreate();
+    }
+
+    # methods which are used to determine the possible values of the standard fields
+    $Self->{FieldMethods} = [
+        {
+            FieldID => 'Dest',
+            Method  => \&_GetTos
+        },
+        {
+            FieldID => 'NewUserID',
+            Method  => \&_GetUsers
+        },
+        {
+            FieldID => 'NewResponsibleID',
+            Method  => \&_GetResponsibles
+        },
+        {
+            FieldID => 'NextStateID',
+            Method  => \&_GetNextStates
+        },
+        {
+            FieldID => 'PriorityID',
+            Method  => \&_GetPriorities
+        },
+        {
+            FieldID => 'ServiceID',
+            Method  => \&_GetServices
+        },
+        {
+            FieldID => 'SLAID',
+            Method  => \&_GetSLAs
+        },
+        {
+            FieldID => 'StandardTemplateID',
+            Method  => \&_GetStandardTemplates
+        },
+        {
+            FieldID => 'TypeID',
+            Method  => \&_GetTypes
+        },
+    ];
+
+
+    # dependancies of standard fields which are not defined via ACLs
+    $Self->{InternalDependancy} = {
+        Dest => {
+            NewUserID          => 1,
+            NewResponsibleID   => 1,
+            StandardTemplateID => 1,
+        },
+        ServiceID => {
+            SLAID     => 1,
+            ServiceID => 1,    #CustomerUser updates can be submitted as ElementChanged: ServiceID
+        },
+        CustomerUser => {
+            ServiceID => 1,
+        },
+        OwnerAll => {
+            NewUserID => 1,
+        },
+        ResponsibleAll => {
+            NewResponsibleID => 1,
+        },
+    };
+# EO AppointmentTicket
+
     return $Self;
 }
 
