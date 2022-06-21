@@ -32,7 +32,7 @@ sub new {
 
     $Self->{EmptyString} = '-';
 
-# RotherOSS / AppointmentTicket
+# RotherOSS / AppointmentToTicket
     # frontend specific config
     my $Config = $Kernel::OM->Get('Kernel::Config')->Get("Ticket::Frontend::$Self->{Action}");
 
@@ -51,39 +51,31 @@ sub new {
     # methods which are used to determine the possible values of the standard fields
     $Self->{FieldMethods} = [
         {
-            FieldID => 'Dest',
+            FieldID => 'TicketQueueID',
             Method  => \&_GetTos
         },
         {
-            FieldID => 'NewUserID',
+            FieldID => 'UserID',
             Method  => \&_GetUsers
         },
         {
-            FieldID => 'NewResponsibleID',
-            Method  => \&_GetResponsibles
+            FieldID => 'TicketStateID',
+            Method  => \&_GetStates
         },
         {
-            FieldID => 'NextStateID',
-            Method  => \&_GetNextStates
-        },
-        {
-            FieldID => 'PriorityID',
+            FieldID => 'TicketPriorityID',
             Method  => \&_GetPriorities
         },
         {
-            FieldID => 'ServiceID',
+            FieldID => 'TicketServiceID',
             Method  => \&_GetServices
         },
         {
-            FieldID => 'SLAID',
+            FieldID => 'TicketSLAID',
             Method  => \&_GetSLAs
         },
         {
-            FieldID => 'StandardTemplateID',
-            Method  => \&_GetStandardTemplates
-        },
-        {
-            FieldID => 'TypeID',
+            FieldID => 'TicketTypeID',
             Method  => \&_GetTypes
         },
     ];
@@ -91,26 +83,18 @@ sub new {
 
     # dependancies of standard fields which are not defined via ACLs
     $Self->{InternalDependancy} = {
-        Dest => {
-            NewUserID          => 1,
-            NewResponsibleID   => 1,
-            StandardTemplateID => 1,
+        TicketQueueID => {
+            UserID          => 1,
         },
-        ServiceID => {
-            SLAID     => 1,
-            ServiceID => 1,    #CustomerUser updates can be submitted as ElementChanged: ServiceID
+        TicketServiceID => {
+            TicketSLAID     => 1,
+            TicketServiceID => 1,    #CustomerUser updates can be submitted as ElementChanged: ServiceID
         },
         CustomerUser => {
             ServiceID => 1,
         },
-        OwnerAll => {
-            NewUserID => 1,
-        },
-        ResponsibleAll => {
-            NewResponsibleID => 1,
-        },
     };
-# EO AppointmentTicket
+# EO AppointmentToTicket
 
     return $Self;
 }
@@ -226,6 +210,9 @@ sub Run {
     my $Config = $ConfigObject->Get("Ticket::Frontend::AgentAppointmentEdit");
     my $CustomerUserObject = $Kernel::OM->Get('Kernel::System::CustomerUser');
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
+    my $FieldRestrictionsObject = $Kernel::OM->Get('Kernel::System::Ticket::FieldRestrictions');
+    my $TicketObject = $Kernel::OM->Get('Kernel::System::Ticket');
+    my $UploadCacheObject = $Kernel::OM->Get('Kernel::System::Web::UploadCache');
 # EO AppointmentToTicket
     my $LayoutObject      = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
     my $CalendarObject    = $Kernel::OM->Get('Kernel::System::Calendar');
@@ -2244,7 +2231,7 @@ sub Run {
         }
         
         my @DynamicFieldConfigs;
-        if ( defined $Config->{DynamicField} ) {
+        if ( $GetParam{TicketTemplate} && defined $Config->{DynamicField} ) {
             my $DynamicFieldConfigsRef= $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
                 Valid       => 1,
                 ObjectType  => [ 'Ticket', 'Article' ],
@@ -2678,21 +2665,19 @@ sub Run {
         );
     }
 
-# RotherOSS / AppointmentTicket
+# RotherOSS / AppointmentToTicket
     # ------------------------------------------------------------ #
     # AJAX update
     # ------------------------------------------------------------ #
     elsif ( $Self->{Subaction} eq 'AJAXUpdate' ) {
 
-        my $Dest           = $ParamObject->GetParam( Param => 'Dest' ) || '';
+        my $QueueID        = $ParamObject->GetParam( Param => 'TicketQueueID' ) || '';
         my $CustomerUser   = $ParamObject->GetParam( Param => 'SelectedCustomerUser' );
         my $ElementChanged = $ParamObject->GetParam( Param => 'ElementChanged' ) || '';
-        my $QueueID        = '';
-        if ( $Dest =~ /^(\d{1,100})\|\|.+?$/ ) {
-            $QueueID = $1;
-        }    
-        $GetParam{Dest}    = $Dest;
-        $GetParam{QueueID} = $QueueID;
+        my $NewQueueID        = '';
+        
+        $NewQueueID = $QueueID;
+        $GetParam{QueueID} = $NewQueueID;
 
         # get list type
         my $TreeView = 0; 
@@ -2739,14 +2724,11 @@ sub Run {
 
                 # which standard fields to check - FieldID => GetParamValue (neccessary for Dest)
                 my %Check = (
-                    Dest               => 'QueueID',
-                    NewUserID          => 'NewUserID',
-                    NewResponsibleID   => 'NewResponsibleID',
-                    NextStateID        => 'NextStateID',
+                    QueueID            => 'QueueID',
+                    StateID            => 'StateID',
                     PriorityID         => 'PriorityID',
                     ServiceID          => 'ServiceID',
                     SLAID              => 'SLAID',
-                    StandardTemplateID => 'StandardTemplateID',
                     TypeID             => 'TypeID',
                 );
                 if ($ACLPreselection) {
@@ -3108,7 +3090,7 @@ sub Run {
         );
 
     }
-# EO AppointmentTicket
+# EO AppointmentToTicket
     # ------------------------------------------------------------ #
     # delete mask
     # ------------------------------------------------------------ #
