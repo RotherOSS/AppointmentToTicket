@@ -2164,7 +2164,7 @@ sub Run {
         }
         
         my @DynamicFieldConfigs;
-        if ( defined $Config->{DynamicField} ) {
+        if ( $GetParam{Template} && defined $Config->{DynamicField} ) {
             my $DynamicFieldConfigsRef= $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
                 Valid       => 1,
                 ObjectType  => [ 'Ticket', 'Article' ],
