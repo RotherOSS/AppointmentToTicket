@@ -1604,7 +1604,7 @@ sub Run {
         }
 
         $Param{CustomerHiddenContainer} = $#MultipleCustomer != -1 ? '' : 'Hidden';
-        $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || $FutureTask{Data}->{AppointmentTicket}->{ArticleVisibleForCustomer}) ? 'checked=checked' : '';
+        $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || ( %FutureTask && $FutureTask{Data}->{AppointmentTicket}->{ArticleVisibleForCustomer})) ? 'checked=checked' : '';
 
         if ( %FutureTask ) {
             # html mask output
