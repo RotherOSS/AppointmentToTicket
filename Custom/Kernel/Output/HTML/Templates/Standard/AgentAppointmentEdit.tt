@@ -25,6 +25,9 @@
         <input type="hidden" id="RecurrenceDays" name="RecurrenceDays" value="[% Data.RecurrenceDays | html %]"/>
         <input type="hidden" id="RecurrenceMonths" name="RecurrenceMonths" value="[% Data.RecurrenceMonths | html %]"/>
         <input type="hidden" id="RecurrenceMonthDays" name="RecurrenceMonthDays" value="[% Data.RecurrenceMonthDays | html %]"/>
+# RotherOSS / AppointmentToTicket
+        <input type="hidden" id="AJAXAction" name="AJAXAction" value="[% Env("Action") %]" />
+# EO AppointmentToTicket
         <fieldset class="TableLike">
             <legend><span>[% Translate("Basic information") | html %]</span></legend>
             <label for="Title"[% IF Data.PermissionLevel >= 2 %] class="Mandatory"[% END %]>[% IF Data.PermissionLevel >= 2 %]<span class="Marker">*</span> [% END %][% Translate("Title") | html %]:</label>
