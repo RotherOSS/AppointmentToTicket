@@ -135,6 +135,7 @@ sub Run {
         $GetParam{$Key} = $SafeGetParam{String};
     }
 
+    use Data::Dx;
 # RotherOSS / AppointmentToTicket
     # hash for check duplicated entries
     my %AddressesList;
@@ -233,6 +234,37 @@ sub Run {
 
     my $Permissions = 'rw';
 
+#RotherOSS / AppointmentToTicket
+    # get Dynamic fields for ParamObject
+    my %DynamicFieldValues;
+
+    Dx $Self->{DynamicField};
+    # cycle through the activated Dynamic Fields for this screen
+    DYNAMICFIELD:
+    for my $DynamicFieldConfig ( @{ $Self->{DynamicField} } ) {
+        next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+
+        # extract the dynamic field value from the web request
+        $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+            DynamicFieldConfig => $DynamicFieldConfig,
+            ParamObject        => $ParamObject,
+            LayoutObject       => $LayoutObject,
+        );
+    }
+
+    Dx %DynamicFieldValues;
+    # convert dynamic field values into a structure for ACLs
+    my %DynamicFieldACLParameters;
+    DYNAMICFIELD:
+    for my $DynamicField ( sort keys %DynamicFieldValues ) {
+        next DYNAMICFIELD if !$DynamicField;
+        next DYNAMICFIELD if !defined $DynamicFieldValues{$DynamicField};
+
+        $DynamicFieldACLParameters{ 'DynamicField_' . $DynamicField } = $DynamicFieldValues{$DynamicField};
+    }
+    Dx %DynamicFieldACLParameters; 
+    $GetParam{DynamicField} = \%DynamicFieldACLParameters;
+#EO AppointmentToTicket
     # challenge token check
     $LayoutObject->ChallengeTokenCheck();
 
@@ -1674,6 +1706,8 @@ sub Run {
         $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || ( %FutureTask && $FutureTask{Data}->{AppointmentTicket}->{ArticleVisibleForCustomer})) ? 'checked=checked' : '';
 
         if ( %FutureTask ) {
+            use Data::Dx;
+            Dx %FutureTask;
             # html mask output
             $LayoutObject->Block(
                 Name => 'EditMask',
@@ -2672,6 +2706,7 @@ sub Run {
     elsif ( $Self->{Subaction} eq 'AJAXUpdate' ) {
 
         my $QueueID        = $ParamObject->GetParam( Param => 'TicketQueueID' ) || '';
+        # TODO Check how this is used later on since in case of external customer user, selected is not in SelectedCustomer but in CustomerSelected
         my $CustomerUser   = $ParamObject->GetParam( Param => 'SelectedCustomerUser' );
         my $ElementChanged = $ParamObject->GetParam( Param => 'ElementChanged' ) || '';
         my $NewQueueID        = '';
@@ -2685,6 +2720,8 @@ sub Run {
             $TreeView = 1; 
         }    
 
+        use Data::Dx;
+        Dx %GetParam;
         my $Autoselect = $ConfigObject->Get('TicketACL::Autoselect') || undef;
         my $ACLPreselection;
         if ( $ConfigObject->Get('TicketACL::ACLPreselection') ) {
@@ -2715,6 +2752,7 @@ sub Run {
             Fields     => {},
         );   
 
+        Dx $ACLPreselection;
         until ( $Convergence{Fields} ) {
 
             # determine standard field input
@@ -2724,12 +2762,12 @@ sub Run {
 
                 # which standard fields to check - FieldID => GetParamValue (neccessary for Dest)
                 my %Check = (
-                    QueueID            => 'QueueID',
-                    StateID            => 'StateID',
-                    PriorityID         => 'PriorityID',
-                    ServiceID          => 'ServiceID',
-                    SLAID              => 'SLAID',
-                    TypeID             => 'TypeID',
+                    TicketQueueID            => 'Dest',
+                    TicketStateID            => 'NextStateID',
+                    TicketPriorityID         => 'PriorityID',
+                    TicketServiceID          => 'ServiceID',
+                    TicketSLAID              => 'SLAID',
+                    TicketTypeID             => 'TypeID',
                 );
                 if ($ACLPreselection) {
                     FIELD:
@@ -2775,13 +2813,13 @@ sub Run {
                     $StdFieldValues{ $Check{ $Field->{FieldID} } } = $Field->{Method}->(
                         $Self,
                         %GetParam,
-                        OwnerID        => $GetParam{NewUserID},
                         CustomerUserID => $CustomerUser || '',
-                        QueueID        => $GetParam{QueueID},
-                        Services       => $StdFieldValues{ServiceID} || undef,    # needed for SLAID
+                        QueueID        => $GetParam{TicketQueueID},
+                        Services       => $StdFieldValues{TicketServiceID} || undef,    # needed for SLAID
                     );
 
                     # special stuff for QueueID/Dest: Dest is "QueueID||QueueName" => "QueueName";
+                    # TODO Check and possibly change
                     if ( $Field->{FieldID} eq 'Dest' ) {
                         TOs:
                         for my $QueueID ( sort keys %{ $StdFieldValues{QueueID} } ) {
@@ -2885,6 +2923,7 @@ sub Run {
                     %{ $CurFieldStates{Visibility} },
                 };
 
+                Dx %CurFieldStates;
                 # store new values
                 $GetParam{DynamicField} = {
                     %{ $GetParam{DynamicField} },
@@ -3323,11 +3362,11 @@ sub _GetPriorities {
     my ( $Self, %Param ) = @_;
 
     # use default Queue if none is provided
-    $Param{TicketQueueID} = $Param{TicketQueueID} || 1;
+    $Param{QueueID} = $Param{TicketQueueID} || 1;
 
     # get priority
     my %Priorities;
-    if ( $Param{TicketQueueID} ) {
+    if ( $Param{QueueID} ) {
         %Priorities = $Kernel::OM->Get('Kernel::System::Ticket')->TicketPriorityList(
             %Param,
             Action => $Self->{Action},
@@ -3413,7 +3452,7 @@ sub _GetTypes {
     my ( $Self, %Param ) = @_;
 
     # use default Queue if none is provided
-    $Param{QueueID} = $Param{QueueID} || 1;
+    $Param{QueueID} = $Param{TicketQueueID} || 1;
 
     # get type
     my %Type;
@@ -3431,7 +3470,7 @@ sub _GetStates {
     my ( $Self, %Param ) = @_;
 
     # use default Queue if none is provided
-    $Param{QueueID} = $Param{QueueID} || 1;
+    $Param{QueueID} = $Param{TicketQueueID} || 1;
 
     my %NextStates;
     if ( $Param{QueueID} || $Param{TicketID} ) {
@@ -3442,6 +3481,61 @@ sub _GetStates {
         );
     }
     return \%NextStates;
+}
+
+sub _GetServices {
+    my ( $Self, %Param ) = @_;
+
+    # get service
+    my %Service;
+
+    # use default Queue if none is provided
+    $Param{QueueID} = $Param{TicketQueueID} || 1;
+
+    # get options for default services for unknown customers
+    my $DefaultServiceUnknownCustomer = $Kernel::OM->Get('Kernel::Config')->Get('Ticket::Service::Default::UnknownCustomer');
+
+    # check if no CustomerUserID is selected
+    # if $DefaultServiceUnknownCustomer = 0 leave CustomerUserID empty, it will not get any services
+    # if $DefaultServiceUnknownCustomer = 1 set CustomerUserID to get default services
+    if ( !$Param{CustomerUserID} && $DefaultServiceUnknownCustomer ) {
+        $Param{CustomerUserID} = '<DEFAULT>';
+    }    
+
+    # get service list
+    if ( $Param{CustomerUserID} ) {
+        %Service = $Kernel::OM->Get('Kernel::System::Ticket')->TicketServiceList(
+            %Param,
+            Action => $Self->{Action},
+            UserID => $Self->{UserID},
+        );   
+    }    
+    return \%Service;
+}
+
+sub _GetSLAs {
+    my ( $Self, %Param ) = @_;
+
+    # use default Queue if none is provided
+    $Param{QueueID} = $Param{TicketQueueID} || 1;
+
+    # get services if they were not determined in an AJAX call
+    if ( !defined $Param{Services} ) {
+        $Param{Services} = $Self->_GetServices(%Param);
+    }
+
+    # get sla
+    my %SLA;
+    if ( $Param{ServiceID} && $Param{Services} && %{ $Param{Services} } ) {
+        if ( $Param{Services}->{ $Param{ServiceID} } ) {
+            %SLA = $Kernel::OM->Get('Kernel::System::Ticket')->TicketSLAList(
+                %Param,
+                Action => $Self->{Action},
+                UserID => $Self->{UserID},
+            );
+        }
+    }
+    return \%SLA;
 }
 # EO AppointmentToTicket
 
