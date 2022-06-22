@@ -1538,7 +1538,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      */
     function FieldUpdate (Value, ModifiedFields) {
         $('#' + Value).on('change', function () {
-            Core.AJAX.FormUpdate($('#NewPhoneTicket'), 'AJAXUpdate', Value, ModifiedFields);
+            Core.AJAX.FormUpdate($('#EditAppointmentForm'), 'AJAXUpdate', Value, ModifiedFields);
         }); 
     }  
 // EO AppointmentToTicket
