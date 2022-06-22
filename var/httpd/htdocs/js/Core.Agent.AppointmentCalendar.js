@@ -1516,8 +1516,10 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         });
 
         // Bind form update event to fields
-        $.each(Fields, function(Index, Value) {
-            ModifiedFields = Core.Data.CopyObject(Fields).concat(DynamicFieldNames);
+        var AJAXUpdateFields = ['TicketTypeID', 'TicketQueueID', 'TicketStateID', 'TicketPriorityID', 'TicketServiceID', 'TicketSLAID'],
+            ModifiedFields;
+        $.each(AJAXUpdateFields, function(Index, Value) {
+            ModifiedFields = Core.Data.CopyObject(AJAXUpdateFields).concat(Core.Config.Get('DynamicFieldNames'));
             ModifiedFields.splice(Index, 1);
 
             FieldUpdate(Value, ModifiedFields);
