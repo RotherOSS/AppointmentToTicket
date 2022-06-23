@@ -135,7 +135,6 @@ sub Run {
         $GetParam{$Key} = $SafeGetParam{String};
     }
 
-    use Data::Dx;
 # RotherOSS / AppointmentToTicket
     # hash for check duplicated entries
     my %AddressesList;
@@ -238,7 +237,6 @@ sub Run {
     # get Dynamic fields for ParamObject
     my %DynamicFieldValues;
 
-    Dx $Self->{DynamicField};
     # cycle through the activated Dynamic Fields for this screen
     DYNAMICFIELD:
     for my $DynamicFieldConfig ( @{ $Self->{DynamicField} } ) {
@@ -252,7 +250,6 @@ sub Run {
         );
     }
 
-    Dx %DynamicFieldValues;
     # convert dynamic field values into a structure for ACLs
     my %DynamicFieldACLParameters;
     DYNAMICFIELD:
@@ -262,7 +259,6 @@ sub Run {
 
         $DynamicFieldACLParameters{ 'DynamicField_' . $DynamicField } = $DynamicFieldValues{$DynamicField};
     }
-    Dx %DynamicFieldACLParameters; 
     $GetParam{DynamicField} = \%DynamicFieldACLParameters;
 #EO AppointmentToTicket
     # challenge token check
@@ -1504,6 +1500,14 @@ sub Run {
             %GetParam,
         );
 
+        my $ServiceValues = $Self->_GetServices(
+            %GetParam,
+        );
+
+        my $SLAValues = $Self->_GetSLAs(
+            %GetParam,
+        );
+
         my %DynamicFieldValues;
         # cycle through the activated Dynamic Fields for this screen
         DYNAMICFIELD:
@@ -1679,6 +1683,29 @@ sub Run {
             Mandatory    => 1,
         );
 
+        # build service string
+        my $ServiceHTMLString = $LayoutObject->BuildSelection(
+            Class        => 'Modernize Validate_Required',
+            Data         => $ServiceValues,
+            Name         => 'TicketServiceID',
+            SelectedID   => $GetParam{TicketServiceID},
+            PossibleNone => 1,
+            Sort         => 'AlphanumericValue',
+            Translation  => 1,
+            Mandatory    => 1,
+        );
+
+        # build state string
+        my $SLAHTMLString = $LayoutObject->BuildSelection(
+            Class        => 'Modernize Validate_Required',
+            Data         => $SLAValues,
+            Name         => 'TicketSLAID',
+            SelectedID   => $GetParam{TicketSLAID},
+            PossibleNone => 1,
+            Sort         => 'AlphanumericValue',
+            Translation  => 1,
+            Mandatory    => 1,
+        );
 
         # get priority data
         if ( !$GetParam{TicketPriority} ) {
@@ -1706,8 +1733,6 @@ sub Run {
         $Param{ArticleVisibleForCustomer} = ($Param{TicketArticleVisibleForCustomer} || ( %FutureTask && $FutureTask{Data}->{AppointmentTicket}->{ArticleVisibleForCustomer})) ? 'checked=checked' : '';
 
         if ( %FutureTask ) {
-            use Data::Dx;
-            Dx %FutureTask;
             # html mask output
             $LayoutObject->Block(
                 Name => 'EditMask',
@@ -1721,6 +1746,8 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
+                    ServiceHTMLString => $ServiceHTMLString,
+                    SLAHTMLString => $SLAHTMLString,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                 },
             );
@@ -1738,6 +1765,8 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
+                    ServiceHTMLString => $ServiceHTMLString,
+                    SLAHTMLString => $SLAHTMLString,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                },
             );
@@ -2720,8 +2749,6 @@ sub Run {
             $TreeView = 1; 
         }    
 
-        use Data::Dx;
-        Dx %GetParam;
         my $Autoselect = $ConfigObject->Get('TicketACL::Autoselect') || undef;
         my $ACLPreselection;
         if ( $ConfigObject->Get('TicketACL::ACLPreselection') ) {
@@ -2752,7 +2779,6 @@ sub Run {
             Fields     => {},
         );   
 
-        Dx $ACLPreselection;
         until ( $Convergence{Fields} ) {
 
             # determine standard field input
@@ -2762,12 +2788,12 @@ sub Run {
 
                 # which standard fields to check - FieldID => GetParamValue (neccessary for Dest)
                 my %Check = (
-                    TicketQueueID            => 'Dest',
-                    TicketStateID            => 'NextStateID',
-                    TicketPriorityID         => 'PriorityID',
-                    TicketServiceID          => 'ServiceID',
-                    TicketSLAID              => 'SLAID',
-                    TicketTypeID             => 'TypeID',
+                    TicketQueueID            => 'TicketQueueID',
+                    TicketStateID            => 'TicketStateID',
+                    TicketPriorityID         => 'TicketPriorityID',
+                    TicketServiceID          => 'TicketServiceID',
+                    TicketSLAID              => 'TicketSLAID',
+                    TicketTypeID             => 'TicketTypeID',
                 );
                 if ($ACLPreselection) {
                     FIELD:
@@ -2863,6 +2889,8 @@ sub Run {
                         }
                     }
                 }
+                use Data::Dx;
+                Dx %StdFieldValues;
 
                 if ( !%NewChangedElements ) {
                     $Convergence{StdFields} = 1;
@@ -2923,7 +2951,6 @@ sub Run {
                     %{ $CurFieldStates{Visibility} },
                 };
 
-                Dx %CurFieldStates;
                 # store new values
                 $GetParam{DynamicField} = {
                     %{ $GetParam{DynamicField} },
@@ -2983,54 +3010,41 @@ sub Run {
         # build AJAX return for the standard fields
         my @StdFieldAJAX;
         my %Attributes = (
-            Dest => {
+            TicketQueueID => {
                 Translation  => 0,
                 PossibleNone => 1,
                 TreeView     => $TreeView,
                 Max          => 100,
             },
-            NewUserID => {
-                Translation  => 0,
-                PossibleNone => 1,
-                Max          => 100,
-            },
-            NewResponsibleID => {
-                Translation  => 0,
-                PossibleNone => 1,
-                Max          => 100,
-            },
-            NextStateID => {
+            TicketStateID => {
                 Translation => 1,
                 Max         => 100,
             },
-            PriorityID => {
+            TicketPriorityID => {
                 Translation => 1,
                 Max         => 100,
             },
-            ServiceID => {
+            TicketServiceID => {
                 PossibleNone => 1,
                 Translation  => 0,
                 TreeView     => $TreeView,
                 Max          => 100,
             },
-            SLAID => {
+            TicketSLAID => {
                 PossibleNone => 1,
                 Translation  => 0,
                 Max          => 100,
             },
-            StandardTemplateID => {
-                PossibleNone => 1,
-                Translation  => 1,
-                Max          => 100,
-            },
-            TypeID => {
+            TicketTypeID => {
                 PossibleNone => 1,
                 Translation  => 0,
                 Max          => 100,
             }
         );
         delete $StdFieldValues{QueueID};
+        use Data::Dx;
         for my $Field ( sort keys %StdFieldValues ) {
+            Dx $Field;
             push @StdFieldAJAX, {
                 Name       => $Field,
                 Data       => $StdFieldValues{$Field},
@@ -3039,86 +3053,10 @@ sub Run {
             };
         }
 
-        my @TemplateAJAX;
-
-        # update ticket body and attachements if needed.
-        if ( $ChangedStdFields{StandardTemplateID} ) {
-            my @TicketAttachments;
-            my $TemplateText;
-
-            # remove all attachments from the Upload cache
-            my $RemoveSuccess = $UploadCacheObject->FormIDRemove(
-                FormID => $Self->{FormID},
-            );
-            if ( !$RemoveSuccess ) {
-                $Kernel::OM->Get('Kernel::System::Log')->Log(
-                    Priority => 'error',
-                    Message  => "Form attachments could not be deleted!",
-                );
-            }
-
-            # get the template text and set new attachments if a template is selected
-            if ( IsPositiveInteger( $GetParam{StandardTemplateID} ) ) {
-                my $TemplateGenerator = $Kernel::OM->Get('Kernel::System::TemplateGenerator');
-
-                # set template text, replace smart tags (limited as ticket is not created)
-                $TemplateText = $TemplateGenerator->Template(
-                    TemplateID     => $GetParam{StandardTemplateID},
-                    UserID         => $Self->{UserID},
-                    CustomerUserID => $CustomerUser,
-                );
-
-                # create StdAttachmentObject
-                my $StdAttachmentObject = $Kernel::OM->Get('Kernel::System::StdAttachment');
-
-                # add std. attachments to ticket
-                my %AllStdAttachments = $StdAttachmentObject->StdAttachmentStandardTemplateMemberList(
-                    StandardTemplateID => $GetParam{StandardTemplateID},
-                );
-                for ( sort keys %AllStdAttachments ) {
-                    my %AttachmentsData = $StdAttachmentObject->StdAttachmentGet( ID => $_ );
-                    $UploadCacheObject->FormIDAddFile(
-                        FormID      => $Self->{FormID},
-                        Disposition => 'attachment',
-                        %AttachmentsData,
-                    );
-                }
-
-                # send a list of attachments in the upload cache back to the clientside JavaScript
-                # which renders then the list of currently uploaded attachments
-                @TicketAttachments = $UploadCacheObject->FormIDGetAllFilesMeta(
-                    FormID => $Self->{FormID},
-                );
-
-                for my $Attachment (@TicketAttachments) {
-                    $Attachment->{Filesize} = $LayoutObject->HumanReadableDataSize(
-                        Size => $Attachment->{Filesize},
-                    );
-                }
-            }
-
-            @TemplateAJAX = (
-                {
-                    Name => 'UseTemplateCreate',
-                    Data => '0',
-                },
-                {
-                    Name => 'RichText',
-                    Data => $TemplateText || '',
-                },
-                {
-                    Name     => 'TicketAttachments',
-                    Data     => \@TicketAttachments,
-                    KeepData => 1,
-                },
-            );
-        }
-
         my $JSON = $LayoutObject->BuildSelectionJSON(
             [
                 @StdFieldAJAX,
                 @DynamicFieldAJAX,
-                @TemplateAJAX,
             ],
         );
         return $LayoutObject->Attachment(
@@ -3518,6 +3456,9 @@ sub _GetSLAs {
 
     # use default Queue if none is provided
     $Param{QueueID} = $Param{TicketQueueID} || 1;
+
+    # setting service id
+    $Param{ServiceID} = $Param{TicketServiceID};
 
     # get services if they were not determined in an AJAX call
     if ( !defined $Param{Services} ) {
