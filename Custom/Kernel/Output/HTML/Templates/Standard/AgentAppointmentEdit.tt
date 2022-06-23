@@ -568,6 +568,18 @@
             <div class="Field">
                 [% Data.QueueHTMLString %]
             </div>
+[% IF Data.ServiceHTMLString %]
+            <div class="Clear"></div>
+            <label class="Mandatory" for="TicketServiceID"><span class="Marker">*</span>[% Translate('Service') | html %]</label>
+            <div class="Field">
+                [% Data.ServiceHTMLString %]
+            </div>
+            <div class="Clear"></div>
+            <label class="Mandatory" for="TicketSLAID"><span class="Marker">*</span>[% Translate('Service Level Agreement') | html %]</label>
+            <div class="Field">
+                [% Data.SLAHTMLString %]
+            </div>
+[% END %]
             <div class="Clear"></div>
             <label class="Mandatory" for="TicketPriority"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
             <div class="Field">
