@@ -1471,6 +1471,8 @@ sub Run {
             $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
             $GetParam{TicketStateID} = $FutureTask{Data}->{AppointmentTicket}->{StateID};
             $GetParam{TicketTypeID} = $FutureTask{Data}->{AppointmentTicket}->{TypeID};
+            $GetParam{TicketServiceID} = $FutureTask{Data}->{AppointmentTicket}->{ServiceID};
+            $GetParam{TicketSLAID} = $FutureTask{Data}->{AppointmentTicket}->{SLAID};
         }
         else {
             my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
@@ -1482,31 +1484,6 @@ sub Run {
                 }
             }
         }
-
-        # for each standard field which has to be checked, run the defined method
-        my $QueueValues = $Self->_GetTos(
-            %GetParam,
-        );
-
-        my $PriorityValues = $Self->_GetPriorities(
-            %GetParam,
-        );
-
-        my $StateValues = $Self->_GetStates(
-            %GetParam,
-        );
-
-        my $TypeValues = $Self->_GetTypes(
-            %GetParam,
-        );
-
-        my $ServiceValues = $Self->_GetServices(
-            %GetParam,
-        );
-
-        my $SLAValues = $Self->_GetSLAs(
-            %GetParam,
-        );
 
         my %DynamicFieldValues;
         # cycle through the activated Dynamic Fields for this screen
@@ -1623,7 +1600,34 @@ sub Run {
                     }
                 }
             }
+            $GetParam{SelectedCustomerUser} = $FutureTask{Data}->{AppointmentTicket}->{SelectedCustomerUser};
         }
+
+
+        # for each standard field which has to be checked, run the defined method
+        my $QueueValues = $Self->_GetTos(
+            %GetParam,
+        );
+
+        my $PriorityValues = $Self->_GetPriorities(
+            %GetParam,
+        );
+
+        my $StateValues = $Self->_GetStates(
+            %GetParam,
+        );
+
+        my $TypeValues = $Self->_GetTypes(
+            %GetParam,
+        );
+
+        my $ServiceValues = $Self->_GetServices(
+            %GetParam,
+        );
+
+        my $SLAValues = $Self->_GetSLAs(
+            %GetParam,
+        );
 
         # Build queue html string
         my $QueueHTMLString;
@@ -1671,7 +1675,6 @@ sub Run {
             );
         }
 
-        print STDERR "AgentAppointmentEdit.pm, L.1570: " . $Config->{StateDefault} . "\n";
         # build state string
         my $StateHTMLString = $LayoutObject->BuildSelection(
             Class        => 'Modernize Validate_Required',
@@ -1685,29 +1688,33 @@ sub Run {
             Mandatory    => 1,
         );
 
-        # build service string
-        my $ServiceHTMLString = $LayoutObject->BuildSelection(
-            Class        => 'Modernize Validate_Required',
-            Data         => $ServiceValues,
-            Name         => 'TicketServiceID',
-            SelectedID   => $GetParam{TicketServiceID},
-            PossibleNone => 1,
-            Sort         => 'AlphanumericValue',
-            Translation  => 1,
-            Mandatory    => 1,
-        );
+        # build service and SLA string
+        my $ServiceHTMLString;
+        my $SLAHTMLString;
+        if ( $ConfigObject->Get('Ticket::Service') ) {
+            $ServiceHTMLString = $LayoutObject->BuildSelection(
+                Class        => 'Modernize Validate_Required',
+                Data         => $ServiceValues,
+                Name         => 'TicketServiceID',
+                SelectedID   => $GetParam{TicketServiceID},
+                PossibleNone => 1,
+                Sort         => 'AlphanumericValue',
+                Translation  => 1,
+                Mandatory    => 1,
+            );
+            $SLAHTMLString = $LayoutObject->BuildSelection(
+                Class        => 'Modernize Validate_Required',
+                Data         => $SLAValues,
+                Name         => 'TicketSLAID',
+                SelectedID   => $GetParam{TicketSLAID},
+                PossibleNone => 1,
+                Sort         => 'AlphanumericValue',
+                Translation  => 1,
+                Mandatory    => 1,
+            );
+        }
 
-        # build state string
-        my $SLAHTMLString = $LayoutObject->BuildSelection(
-            Class        => 'Modernize Validate_Required',
-            Data         => $SLAValues,
-            Name         => 'TicketSLAID',
-            SelectedID   => $GetParam{TicketSLAID},
-            PossibleNone => 1,
-            Sort         => 'AlphanumericValue',
-            Translation  => 1,
-            Mandatory    => 1,
-        );
+
 
         # get priority data
         if ( !$GetParam{TicketPriority} ) {
@@ -1880,6 +1887,28 @@ sub Run {
             if ( !$StateValues->{$GetParam{TicketStateID}} ) {
                 return $LayoutObject->ErrorScreen(
                     Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field state!' ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
+
+            }
+
+            my $ServiceValues = $Self->_GetServices(
+                %GetParam,
+            );
+            if ( $ConfigObject->Get('Ticket::Service') && !$ServiceValues->{$GetParam{TicketServiceID}} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field service!' ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
+
+            }
+
+            my $SLAValues = $Self->_GetSLAs(
+                %GetParam,
+            );
+            if ( $ConfigObject->Get('Ticket::Service') && !$SLAValues->{$GetParam{TicketSLAID}} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field SLA!' ),
                     Comment => Translatable('Please contact the administrator.'),
                 );
 
@@ -2577,6 +2606,8 @@ sub Run {
                 SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
                 PriorityID                => $GetParam{TicketPriorityID},
                 StateID                   => $GetParam{TicketStateID},
+                ServiceID                 => $GetParam{TicketServiceID},
+                SLAID                     => $GetParam{TicketSLAID},
                 TypeID                    => $GetParam{TicketTypeID},
                 ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
                 DynamicFields             => $GetParam{TicketDynamicFields},
@@ -2604,6 +2635,8 @@ sub Run {
                 SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
                 PriorityID                => $GetParam{TicketPriorityID},
                 StateID                   => $GetParam{TicketStateID},
+                ServiceID                 => $GetParam{TicketServiceID},
+                SLAID                     => $GetParam{TicketSLAID},
                 TypeID                    => $GetParam{TicketTypeID},
                 ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
                 DynamicFields             => $GetParam{TicketDynamicFields},
@@ -2891,8 +2924,6 @@ sub Run {
                         }
                     }
                 }
-                use Data::Dx;
-                Dx %StdFieldValues;
 
                 if ( !%NewChangedElements ) {
                     $Convergence{StdFields} = 1;
@@ -3044,9 +3075,7 @@ sub Run {
             }
         );
         delete $StdFieldValues{QueueID};
-        use Data::Dx;
         for my $Field ( sort keys %StdFieldValues ) {
-            Dx $Field;
             push @StdFieldAJAX, {
                 Name       => $Field,
                 Data       => $StdFieldValues{$Field},
@@ -3431,6 +3460,9 @@ sub _GetServices {
 
     # use default Queue if none is provided
     $Param{QueueID} = $Param{TicketQueueID} || 1;
+
+    # setting customer user id
+    $Param{CustomerUserID} = $Param{SelectedCustomerUser};
 
     # get options for default services for unknown customers
     my $DefaultServiceUnknownCustomer = $Kernel::OM->Get('Kernel::Config')->Get('Ticket::Service::Default::UnknownCustomer');
