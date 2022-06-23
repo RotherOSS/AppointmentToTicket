@@ -1470,7 +1470,7 @@ sub Run {
             $GetParam{TicketQueueID} = $FutureTask{Data}->{AppointmentTicket}->{QueueID};
             $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
             $GetParam{TicketStateID} = $FutureTask{Data}->{AppointmentTicket}->{StateID};
-            $GetParam{TicketTypeID} = $FutureTask{Data}->{AppointmentTicket}->{TicketTypeID};
+            $GetParam{TicketTypeID} = $FutureTask{Data}->{AppointmentTicket}->{TypeID};
         }
         else {
             my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
@@ -1671,12 +1671,14 @@ sub Run {
             );
         }
 
+        print STDERR "AgentAppointmentEdit.pm, L.1570: " . $Config->{StateDefault} . "\n";
         # build state string
         my $StateHTMLString = $LayoutObject->BuildSelection(
             Class        => 'Modernize Validate_Required',
             Data         => $StateValues,
             Name         => 'TicketStateID',
-            SelectedID   => $GetParam{TicketStateID},
+            SelectedID   => $GetParam{TicketStateID} || $Config->{StateDefault},
+            SelectedValue => $GetParam{TicketStateID} || $Config->{StateDefault},
             PossibleNone => 1,
             Sort         => 'AlphanumericValue',
             Translation  => 1,
