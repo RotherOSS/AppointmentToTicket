@@ -564,29 +564,29 @@
             </div>
 [% END %]
             <div class="Clear"></div>
-            <label class="Mandatory" for="TicketQueueID"><span class="Marker">*</span>[% Translate('Queue') | html %]</label>
+            <label class="Mandatory" for="Dest"><span class="Marker">*</span>[% Translate('Queue') | html %]</label>
             <div class="Field">
                 [% Data.QueueHTMLString %]
             </div>
 [% IF Data.ServiceHTMLString %]
             <div class="Clear"></div>
-            <label class="Mandatory" for="TicketServiceID"><span class="Marker">*</span>[% Translate('Service') | html %]</label>
+            <label for="ServiceID">[% Translate('Service') | html %]</label>
             <div class="Field">
                 [% Data.ServiceHTMLString %]
             </div>
             <div class="Clear"></div>
-            <label class="Mandatory" for="TicketSLAID"><span class="Marker">*</span>[% Translate('Service Level Agreement') | html %]</label>
+            <label for="SLAID">[% Translate('Service Level Agreement') | html %]</label>
             <div class="Field">
                 [% Data.SLAHTMLString %]
             </div>
 [% END %]
             <div class="Clear"></div>
-            <label class="Mandatory" for="TicketPriority"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
+            <label class="Mandatory" for="Priority"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
             <div class="Field">
                 [% Data.PriorityHTMLString %]
             </div>
             <div class="Clear"></div>
-            <label class="Mandatory" for="TicketStateID"><span class="Marker">*</span>[% Translate('State') | html %]</label>
+            <label class="Mandatory" for="NextStateID"><span class="Marker">*</span>[% Translate('State') | html %]</label>
             <div class="Field">
                 [% Data.StateHTMLString %]
             </div>

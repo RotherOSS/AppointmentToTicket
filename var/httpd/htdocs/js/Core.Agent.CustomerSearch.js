@@ -111,9 +111,23 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
             // show customer info
             $('#CustomerInfo .Content').html(Response.CustomerTableHTMLString);
 
-            // only execute this part, if in AgentTicketEmail or AgentTicketPhone
-            if (Core.Config.Get('Action') === 'AgentTicketEmail' || Core.Config.Get('Action') === 'AgentTicketPhone') {
-                var $Form = Core.Config.Get('Action') === 'AgentTicketEmail' ? $('#NewEmailTicket') : $('#NewPhoneTicket');
+// RotherOSS / AppointmentToTicket
+//             // only execute this part, if in AgentTicketEmail or AgentTicketPhone
+//             if (Core.Config.Get('Action') === 'AgentTicketEmail' || Core.Config.Get('Action') === 'AgentTicketPhone') {
+//                 var $Form = Core.Config.Get('Action') === 'AgentTicketEmail' ? $('#NewEmailTicket') : $('#NewPhoneTicket');
+            // only execute this part, if in AgentTicketEmail or AgentTicketPhone or AgentAppointmentEdit
+            if (Core.Config.Get('Action') === 'AgentTicketEmail' || Core.Config.Get('Action') === 'AgentTicketPhone' || Core.Config.Get('Action') === 'AgentAppointmentCalendarOverview') {
+                var $Form;
+                if (Core.Config.Get('Action') === 'AgentTicketEmail') {
+                    $Form = $('#NewEmailTicket');
+                }
+                else if (Core.Config.Get('Action') === 'AgentTicketPhone') {
+                    $Form = $('#NewPhoneTicket');
+                }
+                else if (Core.Config.Get('Action') === 'AgentAppointmentCalendarOverview') {
+                    $Form = $('#EditAppointmentForm');
+                }
+// EO AppointmentToTicket
 
                 // reset service
                 $('#ServiceID').attr('selectedIndex', 0);

@@ -1516,7 +1516,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         });
 
         // Bind form update event to fields
-        var AJAXUpdateFields = ['TicketTypeID', 'TicketQueueID', 'TicketStateID', 'TicketPriorityID', 'TicketServiceID', 'TicketSLAID'],
+        var AJAXUpdateFields = ['TypeID', 'Dest', 'NextStateID', 'PriorityID', 'ServiceID', 'SLAID'],
             ModifiedFields;
         $.each(AJAXUpdateFields, function(Index, Value) {
             ModifiedFields = Core.Data.CopyObject(AJAXUpdateFields).concat(Core.Config.Get('DynamicFieldNames'));
@@ -2055,9 +2055,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      * @param {Integer} Data.EndHour - Appointment end hour.
      * @param {Integer} Data.EndMinute - Appointment end minute.
      * @param {Integer} Data.AllDay - Is appointment an all-day appointment (0|1)?
-// RotherOSS / AppointmentToTicket
-     * @param 
-// EO AppointmentToTicket
      * @description
      *      This method submits an edit appointment call to the backend and refreshes the view.
       */
