@@ -18,7 +18,6 @@
         <File Permission="660" Location="var/packagesetup/AppointmentToTicket.pm" />
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.AppointmentCalendar.js" />
         <File Permission="660" Location="var/httpd/htdocs/js/Core.Agent.CustomerSearch.js" />
-        <File Permission="660" Location="var/httpd/htdocs/js/Core.AJAX.js" />
     </Filelist>
     <DatabaseInstall Type="post">
         <TableAlter Name="calendar_appointment">
