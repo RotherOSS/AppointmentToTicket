@@ -1462,7 +1462,7 @@ sub Run {
         }
         elsif ( %FutureTask ) {
             $GetParam{QueueID} = $FutureTask{Data}->{AppointmentTicket}->{QueueID};
-            $GetParam{Queue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{Dest} );
+            $GetParam{Queue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{QueueID} );
             $GetParam{NextStateID} = $FutureTask{Data}->{AppointmentTicket}->{StateID};
             $GetParam{TypeID} = $FutureTask{Data}->{AppointmentTicket}->{TypeID};
             $GetParam{ServiceID} = $FutureTask{Data}->{AppointmentTicket}->{ServiceID};
