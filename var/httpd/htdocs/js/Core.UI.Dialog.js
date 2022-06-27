@@ -167,6 +167,9 @@ Core.UI.Dialog = (function (TargetNS) {
             }
             // Escape pressed and CloseOnEscape is true
             else if (Event.keyCode === 27 && CloseOnEscape) {
+// RotherOSS / AppointmentToTicket
+                $Dialog.removeClass('Persistent');
+// EO AppointmentToTicket
                 TargetNS.CloseDialog($Dialog);
                 Event.preventDefault();
                 Event.stopPropagation();
@@ -224,6 +227,9 @@ Core.UI.Dialog = (function (TargetNS) {
      * @param {String} Params.Buttons.Type - 'Submit'|'Close' (default: none) Special type of the button - invokes a standard function.
      * @param {String} Params.Buttons.Class - Optional class parameters for the button element.
      * @param {Function} Params.Buttons.Function - The function which is executed on click (optional).
+// RotherOSS / AppointmentToTicket
+     * @param {Boolean} Params.Persistent - Add persistent class for prevent closing of the dialog
+// EO AppointmentToTicket
      * @description
      *      The main dialog function used for all different types of dialogs.
      */
@@ -234,7 +240,10 @@ Core.UI.Dialog = (function (TargetNS) {
             FullsizeMode = false,
             CustomerInterface = Core.Config.Get('SessionName') === Core.Config.Get('CustomerPanelSessionName');
 
-        DialogHTML = '<div class="Dialog">';
+// RotherOSS / AppointmentToTicket
+//         DialogHTML = '<div class="Dialog">';
+        DialogHTML = '<div class="Dialog' + (Params.Persistent ? ' Persistent' : '') + '">';
+// EO AppointmentToTicket
         if (!Params.HideHeader) {
             var CloseIcon = CustomerInterface ? 'ooofo ooofo-close' : 'fa fa-times';
             DialogHTML += '<div class="Header"><a class="Close" title="' + Core.Language.Translate('Close this dialog') + '" href="#"><i class="' + CloseIcon + '"></i></a></div>';
@@ -702,12 +711,15 @@ Core.UI.Dialog = (function (TargetNS) {
      * @description
      *      Closes all dialogs specified.
      */
+// RotherOSS / AppointmentTicket
+//     TargetNS.CloseDialog = function (Object) {
     TargetNS.CloseDialog = function (Object) {
+// EO AppointmentEdit
         var $Dialog, $DialogSelector, DialogCopy, DialogSelectorData, InternalDialogCounter, BackupHTML;
         $Dialog = $(Object).closest('.Dialog:visible');
 // RotherOSS / AppointmentToTicket
-        if ($Dialog.hasClass('AppointmentEditDialog')) {
-            return;
+        if ($Dialog.hasClass('Persistent')) {
+            return false;
         }
 // EO AppointmentTicket
 

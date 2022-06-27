@@ -724,6 +724,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      *      Shows waiting dialog.
      */
     TargetNS.ShowWaitingDialog = function () {
+// RotherOSS / AppointmentToTicket
+        $('.Modal.Dialog.Persistent').removeClass('Persistent');
+// EO AppointmentToTicket
         Core.UI.Dialog.ShowContentDialog('<div class="Spacing Center"><span class="AJAXLoader" title="' + Core.Language.Translate('Loading...') + '"></span></div>', Core.Language.Translate('Loading...'), '10px', 'Center', true);
     }
 
@@ -790,7 +793,8 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         PositionTop: '10px',
                         PositionLeft: 'Center',
                         Buttons: undefined,
-                        AllowAutoGrow: true
+                        AllowAutoGrow: true,
+                        Persistent: true
                     });
 // EO AppointmentToTicket
                     Core.UI.InputFields.Activate($('.Dialog:visible'));
@@ -809,6 +813,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
 // RotherOSS / AppointmentToTicket
                 // CloseOnClickOutside: true,
                 CloseOnClickOutside: false,
+                Persistent: true,
 // EO AppointmentToTicket
                 CloseOnEscape: true,
                 PositionTop: '20%',
@@ -886,6 +891,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         }
 
         function Update() {
+// RotherOSS / AppointmentToTicket
+            $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
             Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
             Core.AJAX.FunctionCall(
                 Core.Config.Get('CGIHandle'),
@@ -898,6 +906,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                     }
 
                     // Close the dialog
+// RotherOSS / AppointmentToTicket
+                    $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
                     Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
                 }
             );
@@ -968,6 +979,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         Type: 'Close',
                         Label: Core.Language.Translate('Close this dialog'),
                         Function: function() {
+// RotherOSS / AppointmentToTicket
+                            $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
                             Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
                             AppointmentData.RevertFunc();
                         }
@@ -1437,9 +1451,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             Core.Agent.CustomerSearchAutoComplete.Init();
             // initialize modern fields on custom selection
             Core.UI.InputFields.InitSelect($('select.Modernize'));
-            // initialize dynamic db fields
-            //TODO z index ui-overlay-autocomplete class
-            Core.Agent.DynamicFieldDBSearch.Init();
 
             // init selected customer user
             $('.CustomerTicketRadio').each(function(index, element) {
@@ -1540,7 +1551,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         $('#' + Value).on('change', function () {
             Core.AJAX.FormUpdate($('#EditAppointmentForm'), 'AJAXUpdate', Value, ModifiedFields);
         }); 
-        $('.Dialog:visible').addClass('AppointmentEditDialog');
+
     }  
 // EO AppointmentToTicket
 
@@ -2072,6 +2083,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                     $('#calendar').fullCalendar('refetchEvents');
 
                     // Close the dialog
+// RotherOSS / AppointmentToTicket
+                    $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
                     Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
 
                     // Reload page if necessary
@@ -2278,6 +2292,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
 
         // Close the dialog
         $('#EditFormCancel').on('click', function() {
+// RotherOSS / AppointmentToTicket
+            $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
             Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
         });
 
