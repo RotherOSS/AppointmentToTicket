@@ -1540,6 +1540,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         $('#' + Value).on('change', function () {
             Core.AJAX.FormUpdate($('#EditAppointmentForm'), 'AJAXUpdate', Value, ModifiedFields);
         }); 
+        $('.Dialog:visible').addClass('AppointmentEditDialog');
     }  
 // EO AppointmentToTicket
 
