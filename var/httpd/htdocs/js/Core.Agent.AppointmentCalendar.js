@@ -813,7 +813,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
 // RotherOSS / AppointmentToTicket
                 // CloseOnClickOutside: true,
                 CloseOnClickOutside: false,
-                Persistent: true,
 // EO AppointmentToTicket
                 CloseOnEscape: true,
                 PositionTop: '20%',

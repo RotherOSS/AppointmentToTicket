@@ -199,6 +199,9 @@ Core.UI.Dialog = (function (TargetNS) {
      *      The default function to close the dialog.
      */
     function DefaultCloseFunction() {
+// RotherOSS / AppointmentToTicket
+        $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
         TargetNS.CloseDialog($('.Dialog:visible'));
     }
 
