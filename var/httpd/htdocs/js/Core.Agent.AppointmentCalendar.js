@@ -724,6 +724,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      *      Shows waiting dialog.
      */
     TargetNS.ShowWaitingDialog = function () {
+// RotherOSS / AppointmentToTicket
+        $('.Modal.Dialog.Persistent').removeClass('Persistent');
+// EO AppointmentToTicket
         Core.UI.Dialog.ShowContentDialog('<div class="Spacing Center"><span class="AJAXLoader" title="' + Core.Language.Translate('Loading...') + '"></span></div>', Core.Language.Translate('Loading...'), '10px', 'Center', true);
     }
 
@@ -790,7 +793,8 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         PositionTop: '10px',
                         PositionLeft: 'Center',
                         Buttons: undefined,
-                        AllowAutoGrow: true
+                        AllowAutoGrow: true,
+                        Persistent: true
                     });
 // EO AppointmentToTicket
                     Core.UI.InputFields.Activate($('.Dialog:visible'));
@@ -886,6 +890,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         }
 
         function Update() {
+// RotherOSS / AppointmentToTicket
+            $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
             Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
             Core.AJAX.FunctionCall(
                 Core.Config.Get('CGIHandle'),
@@ -898,6 +905,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                     }
 
                     // Close the dialog
+// RotherOSS / AppointmentToTicket
+                    $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
                     Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
                 }
             );
@@ -968,6 +978,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         Type: 'Close',
                         Label: Core.Language.Translate('Close this dialog'),
                         Function: function() {
+// RotherOSS / AppointmentToTicket
+                            $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
                             Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
                             AppointmentData.RevertFunc();
                         }
@@ -1437,9 +1450,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             Core.Agent.CustomerSearchAutoComplete.Init();
             // initialize modern fields on custom selection
             Core.UI.InputFields.InitSelect($('select.Modernize'));
-            // initialize dynamic db fields
-            //TODO z index ui-overlay-autocomplete class
-            Core.Agent.DynamicFieldDBSearch.Init();
 
             // init selected customer user
             $('.CustomerTicketRadio').each(function(index, element) {
@@ -1514,7 +1524,34 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             // process changes
             TargetNS.TicketInit(Fields);
         });
+
+        // Bind form update event to fields
+        var AJAXUpdateFields = ['TypeID', 'Dest', 'NextStateID', 'PriorityID', 'ServiceID', 'SLAID'],
+            ModifiedFields;
+        $.each(AJAXUpdateFields, function(Index, Value) {
+            ModifiedFields = Core.Data.CopyObject(AJAXUpdateFields).concat(Core.Config.Get('DynamicFieldNames'));
+            ModifiedFields.splice(Index, 1);
+
+            FieldUpdate(Value, ModifiedFields);
+        });
     }
+
+    /** 
+     * @private
+     * @name FieldUpdate
+     * @memberof Core.Agent.TicketPhone.Init
+     * @function
+     * @param {String} Value - FieldID
+     * @param {Array} ModifiedFields - Fields
+     * @description
+     *      Create on change event handler
+     */
+    function FieldUpdate (Value, ModifiedFields) {
+        $('#' + Value).on('change', function () {
+            Core.AJAX.FormUpdate($('#EditAppointmentForm'), 'AJAXUpdate', Value, ModifiedFields);
+        }); 
+
+    }  
 // EO AppointmentToTicket
 
     /**
@@ -2029,9 +2066,6 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
      * @param {Integer} Data.EndHour - Appointment end hour.
      * @param {Integer} Data.EndMinute - Appointment end minute.
      * @param {Integer} Data.AllDay - Is appointment an all-day appointment (0|1)?
-// RotherOSS / AppointmentToTicket
-     * @param 
-// EO AppointmentToTicket
      * @description
      *      This method submits an edit appointment call to the backend and refreshes the view.
       */
@@ -2048,6 +2082,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                     $('#calendar').fullCalendar('refetchEvents');
 
                     // Close the dialog
+// RotherOSS / AppointmentToTicket
+                    $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
                     Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
 
                     // Reload page if necessary
@@ -2254,6 +2291,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
 
         // Close the dialog
         $('#EditFormCancel').on('click', function() {
+// RotherOSS / AppointmentToTicket
+            $('.Dialog:visible').removeClass('Persistent');
+// EO AppointmentToTicket
             Core.UI.Dialog.CloseDialog($('.Dialog:visible'));
         });
 

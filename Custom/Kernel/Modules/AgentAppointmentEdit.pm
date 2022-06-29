@@ -32,6 +32,62 @@ sub new {
 
     $Self->{EmptyString} = '-';
 
+# RotherOSS / AppointmentToTicket
+    # frontend specific config
+    my $Config = $Kernel::OM->Get('Kernel::Config')->Get("Ticket::Frontend::$Self->{Action}");
+
+    # get the dynamic fields for this screen
+    $Self->{DynamicField} = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+        Valid       => 1,
+        ObjectType  => [ 'Ticket', 'Article' ],
+        FieldFilter => $Config->{DynamicField} || {},
+    );
+
+    # create form id
+    if ( !$Self->{FormID} ) {
+        $Self->{FormID} = $Kernel::OM->Get('Kernel::System::Web::UploadCache')->FormIDCreate();
+    }
+
+    # methods which are used to determine the possible values of the standard fields
+    $Self->{FieldMethods} = [
+        {
+            FieldID => 'Dest',
+            Method  => \&_GetTos
+        },
+        {
+            FieldID => 'NextStateID',
+            Method  => \&_GetStates
+        },
+        {
+            FieldID => 'PriorityID',
+            Method  => \&_GetPriorities
+        },
+        {
+            FieldID => 'ServiceID',
+            Method  => \&_GetServices
+        },
+        {
+            FieldID => 'SLAID',
+            Method  => \&_GetSLAs
+        },
+        {
+            FieldID => 'TypeID',
+            Method  => \&_GetTypes
+        },
+    ];
+
+    # dependancies of standard fields which are not defined via ACLs
+    $Self->{InternalDependancy} = {
+        ServiceID => {
+            SLAID     => 1,
+            ServiceID => 1,    #CustomerUser updates can be submitted as ElementChanged: ServiceID
+        },
+        CustomerUser => {
+            ServiceID => 1,
+        },
+    };
+# EO AppointmentToTicket
+
     return $Self;
 }
 
@@ -146,6 +202,9 @@ sub Run {
     my $Config = $ConfigObject->Get("Ticket::Frontend::AgentAppointmentEdit");
     my $CustomerUserObject = $Kernel::OM->Get('Kernel::System::CustomerUser');
     my $DynamicFieldBackendObject = $Kernel::OM->Get('Kernel::System::DynamicField::Backend');
+    my $FieldRestrictionsObject = $Kernel::OM->Get('Kernel::System::Ticket::FieldRestrictions');
+    my $TicketObject = $Kernel::OM->Get('Kernel::System::Ticket');
+    my $UploadCacheObject = $Kernel::OM->Get('Kernel::System::Web::UploadCache');
 # EO AppointmentToTicket
     my $LayoutObject      = $Kernel::OM->Get('Kernel::Output::HTML::Layout');
     my $CalendarObject    = $Kernel::OM->Get('Kernel::System::Calendar');
@@ -166,6 +225,34 @@ sub Run {
 
     my $Permissions = 'rw';
 
+#RotherOSS / AppointmentToTicket
+    # get Dynamic fields for ParamObject
+    my %DynamicFieldValues;
+
+    # cycle through the activated Dynamic Fields for this screen
+    DYNAMICFIELD:
+    for my $DynamicFieldConfig ( @{ $Self->{DynamicField} } ) {
+        next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
+
+        # extract the dynamic field value from the web request
+        $DynamicFieldValues{ $DynamicFieldConfig->{Name} } = $DynamicFieldBackendObject->EditFieldValueGet(
+            DynamicFieldConfig => $DynamicFieldConfig,
+            ParamObject        => $ParamObject,
+            LayoutObject       => $LayoutObject,
+        );
+    }
+
+    # convert dynamic field values into a structure for ACLs
+    my %DynamicFieldACLParameters;
+    DYNAMICFIELD:
+    for my $DynamicField ( sort keys %DynamicFieldValues ) {
+        next DYNAMICFIELD if !$DynamicField;
+        next DYNAMICFIELD if !defined $DynamicFieldValues{$DynamicField};
+
+        $DynamicFieldACLParameters{ 'DynamicField_' . $DynamicField } = $DynamicFieldValues{$DynamicField};
+    }
+    $GetParam{DynamicField} = \%DynamicFieldACLParameters;
+#EO AppointmentToTicket
     # challenge token check
     $LayoutObject->ChallengeTokenCheck();
 
@@ -1368,42 +1455,28 @@ sub Run {
             @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{ $DynamicFieldConfigsRef } : ();
         }
 
-        if ( $GetParam{TicketQueueID} ) {
-            $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
+        if ( $GetParam{Dest} ) {
+            $GetParam{Queue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{Dest} );
+            $GetParam{QueueID} = $GetParam{Dest};
         }
         elsif ( %FutureTask ) {
-            $GetParam{TicketQueueID} = $FutureTask{Data}->{AppointmentTicket}->{QueueID};
-            $GetParam{TicketQueue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{TicketQueueID} );
-            $GetParam{TicketStateID} = $FutureTask{Data}->{AppointmentTicket}->{StateID};
-            $GetParam{TicketTypeID} = $FutureTask{Data}->{AppointmentTicket}->{TypeID};
+            $GetParam{QueueID} = $FutureTask{Data}->{AppointmentTicket}->{QueueID};
+            $GetParam{Queue} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( QueueID => $GetParam{QueueID} );
+            $GetParam{NextStateID} = $FutureTask{Data}->{AppointmentTicket}->{StateID};
+            $GetParam{TypeID} = $FutureTask{Data}->{AppointmentTicket}->{TypeID};
+            $GetParam{ServiceID} = $FutureTask{Data}->{AppointmentTicket}->{ServiceID};
+            $GetParam{SLAID} = $FutureTask{Data}->{AppointmentTicket}->{SLAID};
         }
         else {
             my $UserDefaultQueue = $ConfigObject->Get('Ticket::Frontend::UserDefaultQueue') || '';
 
             if ($UserDefaultQueue) {
-                $GetParam{TicketQueueID} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( Queue => $UserDefaultQueue );
-                if ( $GetParam{TicketQueueID} ) {
-                    $GetParam{TicketQueue} = "$GetParam{TicketQueueID}||$UserDefaultQueue";
+                $GetParam{QueueID} = $Kernel::OM->Get('Kernel::System::Queue')->QueueLookup( Queue => $UserDefaultQueue );
+                if ( $GetParam{QueueID} ) {
+                    $GetParam{Queue} = "$GetParam{TicketQueueID}||$UserDefaultQueue";
                 }
             }
         }
-
-        # for each standard field which has to be checked, run the defined method
-        my $QueueValues = $Self->_GetTos(
-            %GetParam,
-        );
-
-        my $PriorityValues = $Self->_GetPriorities(
-            %GetParam,
-        );
-
-        my $StateValues = $Self->_GetStates(
-            %GetParam,
-        );
-
-        my $TypeValues = $Self->_GetTypes(
-            %GetParam,
-        );
 
         my %DynamicFieldValues;
         # cycle through the activated Dynamic Fields for this screen
@@ -1456,7 +1529,7 @@ sub Run {
                 $Value = $FutureTask{Data}->{AppointmentTicket}->{DynamicFields}->{$DynamicFieldConfig->{Name}};
             }
 
-            $GetParam{TicketDynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
+            $GetParam{DynamicField}{ 'DynamicField_' . $DynamicFieldConfig->{Name} } = $Value;
         }
 
         # create html strings for all dynamic fields
@@ -1470,7 +1543,7 @@ sub Run {
             # get field html
             $DynamicFieldHTMLData{ $DynamicFieldConfig->{FieldOrder} } = $DynamicFieldBackendObject->EditFieldRender(
                 DynamicFieldConfig   => $DynamicFieldConfig,
-                Value           => $GetParam{TicketDynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
+                Value           => $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
                 LayoutObject    => $LayoutObject,
                 ParamObject     => $ParamObject,
                 AJAXUpdate      => 1,
@@ -1520,7 +1593,34 @@ sub Run {
                     }
                 }
             }
+            $GetParam{SelectedCustomerUser} = $FutureTask{Data}->{AppointmentTicket}->{SelectedCustomerUser};
         }
+
+
+        # for each standard field which has to be checked, run the defined method
+        my $QueueValues = $Self->_GetTos(
+            %GetParam,
+        );
+
+        my $PriorityValues = $Self->_GetPriorities(
+            %GetParam,
+        );
+
+        my $StateValues = $Self->_GetStates(
+            %GetParam,
+        );
+
+        my $TypeValues = $Self->_GetTypes(
+            %GetParam,
+        );
+
+        my $ServiceValues = $Self->_GetServices(
+            %GetParam,
+        );
+
+        my $SLAValues = $Self->_GetSLAs(
+            %GetParam,
+        );
 
         # Build queue html string
         my $QueueHTMLString;
@@ -1530,9 +1630,9 @@ sub Run {
                 Data           => $QueueValues,
                 Multiple       => 0,
                 Size           => 0,
-                Name           => 'TicketQueueID',
+                Name           => 'Dest',
                 TreeView       => $TreeView,
-                SelectedID     => $GetParam{TicketQueueID},
+                SelectedID     => $GetParam{QueueID},
                 Translation    => 0,
                 OnChangeSubmit => 0,
                 Mandatory      => 1,
@@ -1544,7 +1644,7 @@ sub Run {
                 Data           => $QueueValues,
                 Multiple       => 0,
                 Size           => 0,
-                Name           => 'TicketQueue',
+                Name           => 'Dest',
                 TreeView       => $TreeView,
                 SelectedID     => $GetParam{QueueID},
                 Translation    => 0,
@@ -1559,8 +1659,8 @@ sub Run {
             $TypeHTMLString = $LayoutObject->BuildSelection(
                 Class        => 'Modernize Validate_Required' . ( $Param{Errors}->{TypeIDInvalid} || ' ' ),
                 Data         => $TypeValues,
-                Name         => 'TicketTypeID',
-                SelectedID   => $GetParam{TicketTypeID},
+                Name         => 'TypeID',
+                SelectedID   => $GetParam{TypeID},
                 PossibleNone => 1,
                 Sort         => 'AlphanumericValue',
                 Translation  => 1,
@@ -1573,22 +1673,47 @@ sub Run {
         my $StateHTMLString = $LayoutObject->BuildSelection(
             Class        => 'Modernize Validate_Required',
             Data         => $StateValues,
-            Name         => 'TicketStateID',
-            SelectedID   => $GetParam{TicketStateID} || $Config->{StateDefault},
-            SelectedValue => $GetParam{TicketStateID} || $Config->{StateDefault},
+            Name         => 'NextStateID',
+            SelectedID   => $GetParam{NextStateID} || $Config->{StateDefault},
+            SelectedValue => $GetParam{NextStateID} || $Config->{StateDefault},
             PossibleNone => 1,
             Sort         => 'AlphanumericValue',
             Translation  => 1,
             Mandatory    => 1,
         );
 
+        # build service and SLA string
+        my $ServiceHTMLString;
+        my $SLAHTMLString;
+        if ( $ConfigObject->Get('Ticket::Service') ) {
+            $ServiceHTMLString = $LayoutObject->BuildSelection(
+                Class        => 'Modernize Validate_Required',
+                Data         => $ServiceValues,
+                Name         => 'ServiceID',
+                SelectedID   => $GetParam{ServiceID},
+                PossibleNone => 1,
+                Sort         => 'AlphanumericValue',
+                Translation  => 1,
+            );
+            $SLAHTMLString = $LayoutObject->BuildSelection(
+                Class        => 'Modernize Validate_Required',
+                Data         => $SLAValues,
+                Name         => 'SLAID',
+                SelectedID   => $GetParam{SLAID},
+                PossibleNone => 1,
+                Sort         => 'AlphanumericValue',
+                Translation  => 1,
+            );
+        }
+
+
 
         # get priority data
-        if ( !$GetParam{TicketPriority} ) {
-            $GetParam{TicketPriority} = $Config->{Priority};
+        if ( !$GetParam{Priority} ) {
+            $GetParam{Priority} = $Config->{Priority};
         }
         if ( %FutureTask ) {
-            $GetParam{TicketPriorityID} = $FutureTask{Data}->{AppointmentTicket}->{PriorityID};
+            $GetParam{PriorityID} = $FutureTask{Data}->{AppointmentTicket}->{PriorityID};
         }
 
         # build priority html string
@@ -1597,9 +1722,9 @@ sub Run {
             $PriorityHTMLString = $LayoutObject->BuildSelection(
                 Class         => 'Validate_Required Modernize',
                 Data          => $PriorityValues,
-                Name          => 'TicketPriorityID',
-                SelectedID    => $GetParam{TicketPriorityID},
-                SelectedValue => $GetParam{TicketPriority},
+                Name          => 'PriorityID',
+                SelectedID    => $GetParam{PriorityID},
+                SelectedValue => $GetParam{Priority},
                 Translation   => 1,
                 Mandatory     => 1,
             );
@@ -1622,6 +1747,8 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
+                    ServiceHTMLString => $ServiceHTMLString,
+                    SLAHTMLString => $SLAHTMLString,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                 },
             );
@@ -1639,6 +1766,8 @@ sub Run {
                     PriorityHTMLString => $PriorityHTMLString,
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
+                    ServiceHTMLString => $ServiceHTMLString,
+                    SLAHTMLString => $SLAHTMLString,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                },
             );
@@ -1737,9 +1866,9 @@ sub Run {
             my $QueueValues = $Self->_GetTos(
                 %GetParam,
             );
-            if ( !$QueueValues->{$GetParam{TicketQueueID}} ) {
+            if ( !$QueueValues->{$GetParam{Dest}} ) {
                 return $LayoutObject->ErrorScreen(
-                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field queue!' ),
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field dest!' ),
                     Comment => Translatable('Please contact the administrator.'),
                 );
             }
@@ -1747,9 +1876,31 @@ sub Run {
             my $StateValues = $Self->_GetStates(
                 %GetParam,
             );
-            if ( !$StateValues->{$GetParam{TicketStateID}} ) {
+            if ( !$StateValues->{$GetParam{NextStateID}} ) {
                 return $LayoutObject->ErrorScreen(
-                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field state!' ),
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field next state!' ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
+
+            }
+
+            my $ServiceValues = $Self->_GetServices(
+                %GetParam,
+            );
+            if ( $ConfigObject->Get('Ticket::Service') && !$ServiceValues->{$GetParam{ServiceID}} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field service!' ),
+                    Comment => Translatable('Please contact the administrator.'),
+                );
+
+            }
+
+            my $SLAValues = $Self->_GetSLAs(
+                %GetParam,
+            );
+            if ( $ConfigObject->Get('Ticket::Service') && !$SLAValues->{$GetParam{SLAID}} ) {
+                return $LayoutObject->ErrorScreen(
+                    Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field SLA!' ),
                     Comment => Translatable('Please contact the administrator.'),
                 );
 
@@ -1758,7 +1909,7 @@ sub Run {
             my $TypeValues = $Self->_GetTypes(
                 %GetParam,
             );
-            if ( $ConfigObject->Get('Ticket::Type') &&  !$TypeValues->{$GetParam{TicketTypeID}} ) {
+            if ( $ConfigObject->Get('Ticket::Type') &&  !$TypeValues->{$GetParam{TypeID}} ) {
                 return $LayoutObject->ErrorScreen(
                     Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field type!' ),
                     Comment => Translatable('Please contact the administrator.'),
@@ -1769,7 +1920,7 @@ sub Run {
             my $PriorityValues = $Self->_GetPriorities(
                 %GetParam,
             );
-            if ( !$PriorityValues->{$GetParam{TicketPriorityID}} ) {
+            if ( !$PriorityValues->{$GetParam{PriorityID}} ) {
                 return $LayoutObject->ErrorScreen(
                     Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field priority!' ),
                     Comment => Translatable('Please contact the administrator.'),
@@ -2254,7 +2405,7 @@ sub Run {
                 $Value= $DynamicFieldValues{$DynamicFieldConfig->{Name}};
             }
 
-            $GetParam{TicketDynamicFields}->{ $DynamicFieldConfig->{Name} } = $Value;
+            $GetParam{DynamicFields}->{ $DynamicFieldConfig->{Name} } = $Value;
         }
 
         # Parse possibly multiple customer users
@@ -2264,11 +2415,11 @@ sub Run {
                 if ( $CustomerUser->{CustomerSelected} ) {
                     $GetParam{SelectedCustomerUser} = $CustomerUserIdentifier;
                 }
-                if ( $GetParam{TicketCustomerUser} ) {
-                    $GetParam{TicketCustomerUser} .= ",$CustomerUserIdentifier";
+                if ( $GetParam{CustomerUser} ) {
+                    $GetParam{CustomerUser} .= ",$CustomerUserIdentifier";
                 }
                 else {
-                    $GetParam{TicketCustomerUser} = $CustomerUserIdentifier;
+                    $GetParam{CustomerUser} = $CustomerUserIdentifier;
                 }
             }
         }
@@ -2277,7 +2428,7 @@ sub Run {
         my %SelectedCustomerUserData = $CustomerUserObject->CustomerUserDataGet(
             User => $GetParam{SelectedCustomerUser},
         );
-        $GetParam{TicketCustomerID} = %SelectedCustomerUserData ? $SelectedCustomerUserData{CustomerID} : '';
+        $GetParam{CustomerID} = %SelectedCustomerUserData ? $SelectedCustomerUserData{CustomerID} : '';
 # EO AppointmentToTicket
 
         # team
@@ -2441,15 +2592,17 @@ sub Run {
                 CustomRelativeUnitCount   => $GetParam{TicketCustomRelativeUnitCount},
                 CustomRelativePointOfTime => $GetParam{TicketCustomRelativePointOfTime},
                 CustomDateTime            => $GetParam{TicketCustomDateTime},
-                QueueID                   => $GetParam{TicketQueueID},
-                CustomerID                => $GetParam{TicketCustomerID},
-                CustomerUser              => $GetParam{TicketCustomerUser},
+                QueueID                   => $GetParam{Dest},
+                CustomerID                => $GetParam{CustomerID},
+                CustomerUser              => $GetParam{CustomerUser},
                 SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
-                PriorityID                => $GetParam{TicketPriorityID},
-                StateID                   => $GetParam{TicketStateID},
-                TypeID                    => $GetParam{TicketTypeID},
+                PriorityID                => $GetParam{PriorityID},
+                StateID                   => $GetParam{NextStateID},
+                ServiceID                 => $GetParam{ServiceID},
+                SLAID                     => $GetParam{SLAID},
+                TypeID                    => $GetParam{TypeID},
                 ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
-                DynamicFields             => $GetParam{TicketDynamicFields},
+                DynamicFields             => $GetParam{DynamicFields},
                 $GetParam{AppointmentTicket}->%*,
             };
         }
@@ -2468,15 +2621,17 @@ sub Run {
                 CustomRelativeUnitCount   => $GetParam{TicketCustomRelativeUnitCount},
                 CustomRelativePointOfTime => $GetParam{TicketCustomRelativePointOfTime},
                 CustomDateTime            => $GetParam{TicketCustomDateTime},
-                QueueID                   => $GetParam{TicketQueueID},
-                CustomerID                => $GetParam{TicketCustomerID},
-                CustomerUser              => $GetParam{TicketCustomerUser},
+                QueueID                   => $GetParam{Dest},
+                CustomerID                => $GetParam{CustomerID},
+                CustomerUser              => $GetParam{CustomerUser},
                 SelectedCustomerUser      => $GetParam{SelectedCustomerUser},
-                PriorityID                => $GetParam{TicketPriorityID},
-                StateID                   => $GetParam{TicketStateID},
-                TypeID                    => $GetParam{TicketTypeID},
+                PriorityID                => $GetParam{PriorityID},
+                StateID                   => $GetParam{NextStateID},
+                ServiceID                 => $GetParam{ServiceID},
+                SLAID                     => $GetParam{SLAID},
+                TypeID                    => $GetParam{TypeID},
                 ArticleVisibleForCustomer => $GetParam{TicketArticleVisibleForCustomer},
-                DynamicFields             => $GetParam{TicketDynamicFields},
+                DynamicFields             => $GetParam{DynamicFields},
             };
         }
 # EO AppointmentToTicket
@@ -2600,6 +2755,341 @@ sub Run {
         );
     }
 
+# RotherOSS / AppointmentToTicket
+    # ------------------------------------------------------------ #
+    # AJAX update
+    # ------------------------------------------------------------ #
+    elsif ( $Self->{Subaction} eq 'AJAXUpdate' ) {
+
+        my $Dest        = $ParamObject->GetParam( Param => 'Dest' ) || '';
+        # TODO Check how this is used later on since in case of external customer user, selected is not in SelectedCustomer but in CustomerSelected
+        my $CustomerUser   = $ParamObject->GetParam( Param => 'SelectedCustomerUser' );
+        my $ElementChanged = $ParamObject->GetParam( Param => 'ElementChanged' ) || '';
+        my $QueueID        = '';
+        
+        $QueueID = $Dest;
+        $GetParam{QueueID} = $QueueID;
+
+        # get list type
+        my $TreeView = 0; 
+        if ( $ConfigObject->Get('Ticket::Frontend::ListType') eq 'tree' ) {
+            $TreeView = 1; 
+        }    
+
+        my $Autoselect = $ConfigObject->Get('TicketACL::Autoselect') || undef;
+        my $ACLPreselection;
+        if ( $ConfigObject->Get('TicketACL::ACLPreselection') ) {
+
+            # get cached preselection rules
+            my $CacheObject = $Kernel::OM->Get('Kernel::System::Cache');
+            $ACLPreselection = $CacheObject->Get(
+                Type => 'TicketACL',
+                Key  => 'Preselection',
+            );   
+            if ( !$ACLPreselection ) {
+                $ACLPreselection = $FieldRestrictionsObject->SetACLPreselectionCache();
+            }    
+        }    
+
+        my %Convergence = (
+            StdFields => 0,
+            Fields    => 0,
+        );   
+        my %ChangedElements        = $ElementChanged                                        ? ( $ElementChanged => 1 ) : ();
+        my %ChangedElementsDFStart = $ElementChanged                                        ? ( $ElementChanged => 1 ) : ();
+        my %ChangedStdFields       = $ElementChanged && $ElementChanged !~ /^DynamicField_/ ? ( $ElementChanged => 1 ) : ();
+
+        my $LoopProtection = 100; 
+        my %StdFieldValues;
+        my %DynFieldStates = (
+            Visibility => {},
+            Fields     => {},
+        );   
+
+        until ( $Convergence{Fields} ) {
+
+            # determine standard field input
+            until ( $Convergence{StdFields} ) {
+
+                my %NewChangedElements;
+
+                # which standard fields to check - FieldID => GetParamValue (neccessary for Dest)
+                my %Check = (
+                    Dest        => 'QueueID',
+                    NextStateID => 'NextStateID',
+                    PriorityID  => 'PriorityID',
+                    ServiceID   => 'ServiceID',
+                    SLAID       => 'SLAID',
+                    TypeID      => 'TypeID',
+                );
+                if ($ACLPreselection) {
+                    FIELD:
+                    for my $FieldID ( sort keys %Check ) {
+                        if ( !$ACLPreselection->{Fields}{$FieldID} ) {
+                            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                                Priority => 'debug',
+                                Message  => "$FieldID not defined in TicketACL preselection rules!"
+                            );
+                            next FIELD;
+                        }
+                        if ( $Autoselect && $Autoselect->{$FieldID} && $ChangedElements{$FieldID} ) {
+                            next FIELD;
+                        }
+                        for my $Element ( sort keys %ChangedElements ) {
+                            if (
+                                $ACLPreselection->{Rules}{Ticket}{$Element}{$FieldID}
+                                || $Self->{InternalDependancy}{$Element}{$FieldID}
+                                )
+                            {
+                                next FIELD;
+                            }
+                            if ( !$ACLPreselection->{Fields}{$Element} ) {
+                                $Kernel::OM->Get('Kernel::System::Log')->Log(
+                                    Priority => 'debug',
+                                    Message  => "$Element not defined in TicketACL preselection rules!"
+                                );
+                                next FIELD;
+                            }
+                        }
+
+                        # delete unaffected fields
+                        delete $Check{$FieldID};
+                    }
+                }
+
+                # for each standard field which has to be checked, run the defined method
+                METHOD:
+                for my $Field ( @{ $Self->{FieldMethods} } ) {
+                    next METHOD if !$Check{ $Field->{FieldID} };
+
+                    # use $Check{ $Field->{FieldID} } for Dest=>QueueID
+                    $StdFieldValues{ $Check{ $Field->{FieldID} } } = $Field->{Method}->(
+                        $Self,
+                        %GetParam,
+                        CustomerUserID => $CustomerUser || '',
+                        QueueID        => $GetParam{TicketQueueID},
+                        Services       => $StdFieldValues{TicketServiceID} || undef,    # needed for SLAID
+                    );
+
+                    # special stuff for QueueID/Dest: Dest is "QueueID||QueueName" => "QueueName";
+                    if ( $Field->{FieldID} eq 'Dest' ) {
+                        TOs:
+                        for my $QueueID ( sort keys %{ $StdFieldValues{QueueID} } ) {
+                            next TOs if ( $StdFieldValues{QueueID}{$QueueID} eq '-' );
+                            $StdFieldValues{Dest}{"$QueueID||$StdFieldValues{QueueID}{ $QueueID }"} = $StdFieldValues{QueueID}{$QueueID};
+                        }
+
+                        # check current selection of QueueID (Dest will be done together with the other fields)
+                        if ( $GetParam{QueueID} && !$StdFieldValues{Dest}{ $GetParam{Dest} } ) {
+                            $GetParam{QueueID} = '';
+                        }
+
+                        # autoselect
+                        elsif ( !$GetParam{QueueID} && $Autoselect && $Autoselect->{Dest} ) {
+                            $GetParam{QueueID} = $FieldRestrictionsObject->Autoselect(
+                                PossibleValues => $StdFieldValues{QueueID},
+                            ) || '';
+                        }
+                    }
+
+                    # check whether current selected value is still valid for the field
+                    if (
+                        $GetParam{ $Field->{FieldID} }
+                        && !$StdFieldValues{ $Field->{FieldID} }{ $GetParam{ $Field->{FieldID} } }
+                        )
+                    {
+                        # if not empty the field
+                        $GetParam{ $Field->{FieldID} }           = '';
+                        $NewChangedElements{ $Field->{FieldID} } = 1;
+                        $ChangedStdFields{ $Field->{FieldID} }   = 1;
+                    }
+
+                    # autoselect
+                    elsif ( !$GetParam{ $Field->{FieldID} } && $Autoselect && $Autoselect->{ $Field->{FieldID} } ) {
+                        $GetParam{ $Field->{FieldID} } = $FieldRestrictionsObject->Autoselect(
+                            PossibleValues => $StdFieldValues{ $Field->{FieldID} },
+                        ) || '';
+                        if ( $GetParam{ $Field->{FieldID} } ) {
+                            $NewChangedElements{ $Field->{FieldID} } = 1;
+                            $ChangedStdFields{ $Field->{FieldID} }   = 1;
+                        }
+                    }
+                }
+
+                if ( !%NewChangedElements ) {
+                    $Convergence{StdFields} = 1;
+                }
+                else {
+                    %ChangedElements = %NewChangedElements;
+                }
+
+                %ChangedElementsDFStart = (
+                    %ChangedElementsDFStart,
+                    %NewChangedElements,
+                );
+
+                if ( $LoopProtection-- < 1 ) {
+                    $Kernel::OM->Get('Kernel::System::Log')->Log(
+                        Priority => 'error',
+                        Message  => "Ran into unresolvable loop!",
+                    );
+                    return;
+                }
+
+            }
+
+            %ChangedElements        = %ChangedElementsDFStart;
+            %ChangedElementsDFStart = ();
+
+            # check dynamic fields
+            my %CurFieldStates;
+            if (%ChangedElements) {
+
+                # get values and visibility of dynamic fields
+                %CurFieldStates = $FieldRestrictionsObject->GetFieldStates(
+                    TicketObject              => $TicketObject,
+                    DynamicFields             => $Self->{DynamicField},
+                    DynamicFieldBackendObject => $DynamicFieldBackendObject,
+                    ChangedElements           => \%ChangedElements,            # optional to reduce ACL evaluation
+                    Action                    => $Self->{Action},
+                    UserID                    => $Self->{UserID},
+                    TicketID                  => $Self->{TicketID},
+                    FormID                    => $Self->{FormID},
+                    CustomerUser              => $CustomerUser || '',
+                    GetParam                  => {
+                        %GetParam,
+                        OwnerID => $GetParam{NewUserID},
+                    },
+                    Autoselect      => $Autoselect,
+                    ACLPreselection => $ACLPreselection,
+                    LoopProtection  => \$LoopProtection,
+                );
+
+                # combine FieldStates
+                $DynFieldStates{Fields} = {
+                    %{ $DynFieldStates{Fields} },
+                    %{ $CurFieldStates{Fields} },
+                };
+                $DynFieldStates{Visibility} = {
+                    %{ $DynFieldStates{Visibility} },
+                    %{ $CurFieldStates{Visibility} },
+                };
+
+                # store new values
+                $GetParam{DynamicField} = {
+                    %{ $GetParam{DynamicField} },
+                    %{ $CurFieldStates{NewValues} },
+                };
+            }
+            # if dynamic fields changed, check standard fields again
+            if ( %CurFieldStates && IsHashRefWithData( $CurFieldStates{NewValues} ) ) {
+                $Convergence{StdFields} = 0;
+                %ChangedElements = map { $_ => 1 } keys %{ $CurFieldStates{NewValues} };
+            }
+            else {
+                $Convergence{Fields} = 1;
+            }
+
+        }
+
+        # update Dynamic Fields Possible Values via AJAX
+        my @DynamicFieldAJAX;
+
+        # cycle through the activated Dynamic Fields for this screen
+        DYNAMICFIELD:
+        for my $Index ( sort keys %{ $DynFieldStates{Fields} } ) {
+            my $DynamicFieldConfig = $Self->{DynamicField}->[$Index];
+
+            my $DataValues = $DynFieldStates{Fields}{$Index}{NotACLReducible}
+                ? $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"}
+                :
+                (
+                    $DynamicFieldBackendObject->BuildSelectionDataGet(
+                        DynamicFieldConfig => $DynamicFieldConfig,
+                        PossibleValues     => $DynFieldStates{Fields}{$Index}{PossibleValues},
+                        Value              => $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
+                    )
+                    || $DynFieldStates{Fields}{$Index}{PossibleValues}
+                );
+
+            # add dynamic field to the list of fields to update
+            push @DynamicFieldAJAX, {
+                Name        => 'DynamicField_' . $DynamicFieldConfig->{Name},
+                Data        => $DataValues,
+                SelectedID  => $GetParam{DynamicField}{"DynamicField_$DynamicFieldConfig->{Name}"},
+                Translation => $DynamicFieldConfig->{Config}->{TranslatableValues} || 0,
+                Max         => 100,
+            };
+        }
+
+        # define dynamic field visibility
+        my %FieldVisibility;
+        if ( IsHashRefWithData( $DynFieldStates{Visibility} ) ) {
+            push @DynamicFieldAJAX, {
+                Name => 'Restrictions_Visibility',
+                Data => $DynFieldStates{Visibility},
+            };
+        }
+
+        # build AJAX return for the standard fields
+        my @StdFieldAJAX;
+        my %Attributes = (
+            Dest => {
+                Translation  => 0,
+                PossibleNone => 1,
+                TreeView     => $TreeView,
+                Max          => 100,
+            },
+            NextStateID => {
+                Translation => 1,
+                Max         => 100,
+            },
+            PriorityID => {
+                Translation => 1,
+                Max         => 100,
+            },
+            ServiceID => {
+                PossibleNone => 1,
+                Translation  => 0,
+                TreeView     => $TreeView,
+                Max          => 100,
+            },
+            SLAID => {
+                PossibleNone => 1,
+                Translation  => 0,
+                Max          => 100,
+            },
+            TypeID => {
+                PossibleNone => 1,
+                Translation  => 0,
+                Max          => 100,
+            }
+        );
+        delete $StdFieldValues{QueueID};
+        for my $Field ( sort keys %StdFieldValues ) {
+            push @StdFieldAJAX, {
+                Name       => $Field,
+                Data       => $StdFieldValues{$Field},
+                SelectedID => $GetParam{$Field},
+                %{ $Attributes{$Field} },
+            };
+        }
+
+        my $JSON = $LayoutObject->BuildSelectionJSON(
+            [
+                @StdFieldAJAX,
+                @DynamicFieldAJAX,
+            ],
+        );
+        return $LayoutObject->Attachment(
+            ContentType => 'application/json; charset=' . $LayoutObject->{Charset},
+            Content     => $JSON,
+            Type        => 'inline',
+            NoCache     => 1,
+        );
+
+    }
+# EO AppointmentToTicket
     # ------------------------------------------------------------ #
     # delete mask
     # ------------------------------------------------------------ #
@@ -2832,11 +3322,11 @@ sub _GetPriorities {
     my ( $Self, %Param ) = @_;
 
     # use default Queue if none is provided
-    $Param{TicketQueueID} = $Param{TicketQueueID} || 1;
+    $Param{QueueID} = $Param{QueueID} || 1;
 
     # get priority
     my %Priorities;
-    if ( $Param{TicketQueueID} ) {
+    if ( $Param{QueueID} ) {
         %Priorities = $Kernel::OM->Get('Kernel::System::Ticket')->TicketPriorityList(
             %Param,
             Action => $Self->{Action},
@@ -2951,6 +3441,64 @@ sub _GetStates {
         );
     }
     return \%NextStates;
+}
+
+sub _GetServices {
+    my ( $Self, %Param ) = @_;
+
+    # get service
+    my %Service;
+
+    # use default Queue if none is provided
+    $Param{QueueID} = $Param{QueueID} || 1;
+
+    # setting customer user id
+    $Param{CustomerUserID} = $Param{SelectedCustomerUser};
+
+    # get options for default services for unknown customers
+    my $DefaultServiceUnknownCustomer = $Kernel::OM->Get('Kernel::Config')->Get('Ticket::Service::Default::UnknownCustomer');
+
+    # check if no CustomerUserID is selected
+    # if $DefaultServiceUnknownCustomer = 0 leave CustomerUserID empty, it will not get any services
+    # if $DefaultServiceUnknownCustomer = 1 set CustomerUserID to get default services
+    if ( !$Param{CustomerUserID} && $DefaultServiceUnknownCustomer ) {
+        $Param{CustomerUserID} = '<DEFAULT>';
+    }    
+
+    # get service list
+    if ( $Param{CustomerUserID} ) {
+        %Service = $Kernel::OM->Get('Kernel::System::Ticket')->TicketServiceList(
+            %Param,
+            Action => $Self->{Action},
+            UserID => $Self->{UserID},
+        );   
+    }    
+    return \%Service;
+}
+
+sub _GetSLAs {
+    my ( $Self, %Param ) = @_;
+
+    # use default Queue if none is provided
+    $Param{QueueID} = $Param{QueueID} || 1;
+
+    # get services if they were not determined in an AJAX call
+    if ( !defined $Param{Services} ) {
+        $Param{Services} = $Self->_GetServices(%Param);
+    }
+
+    # get sla
+    my %SLA;
+    if ( $Param{ServiceID} && $Param{Services} && %{ $Param{Services} } ) {
+        if ( $Param{Services}->{ $Param{ServiceID} } ) {
+            %SLA = $Kernel::OM->Get('Kernel::System::Ticket')->TicketSLAList(
+                %Param,
+                Action => $Self->{Action},
+                UserID => $Self->{UserID},
+            );
+        }
+    }
+    return \%SLA;
 }
 # EO AppointmentToTicket
 

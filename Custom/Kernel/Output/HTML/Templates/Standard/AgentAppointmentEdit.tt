@@ -25,6 +25,9 @@
         <input type="hidden" id="RecurrenceDays" name="RecurrenceDays" value="[% Data.RecurrenceDays | html %]"/>
         <input type="hidden" id="RecurrenceMonths" name="RecurrenceMonths" value="[% Data.RecurrenceMonths | html %]"/>
         <input type="hidden" id="RecurrenceMonthDays" name="RecurrenceMonthDays" value="[% Data.RecurrenceMonthDays | html %]"/>
+# RotherOSS / AppointmentToTicket
+        <input type="hidden" id="AJAXAction" name="AJAXAction" value="[% Env("Action") %]" />
+# EO AppointmentToTicket
         <fieldset class="TableLike">
             <legend><span>[% Translate("Basic information") | html %]</span></legend>
             <label for="Title"[% IF Data.PermissionLevel >= 2 %] class="Mandatory"[% END %]>[% IF Data.PermissionLevel >= 2 %]<span class="Marker">*</span> [% END %][% Translate("Title") | html %]:</label>
@@ -561,17 +564,29 @@
             </div>
 [% END %]
             <div class="Clear"></div>
-            <label class="Mandatory" for="TicketQueueID"><span class="Marker">*</span>[% Translate('Queue') | html %]</label>
+            <label class="Mandatory" for="Dest"><span class="Marker">*</span>[% Translate('Queue') | html %]</label>
             <div class="Field">
                 [% Data.QueueHTMLString %]
             </div>
+[% IF Data.ServiceHTMLString %]
             <div class="Clear"></div>
-            <label class="Mandatory" for="TicketPriority"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
+            <label for="ServiceID">[% Translate('Service') | html %]</label>
+            <div class="Field">
+                [% Data.ServiceHTMLString %]
+            </div>
+            <div class="Clear"></div>
+            <label for="SLAID">[% Translate('Service Level Agreement') | html %]</label>
+            <div class="Field">
+                [% Data.SLAHTMLString %]
+            </div>
+[% END %]
+            <div class="Clear"></div>
+            <label class="Mandatory" for="Priority"><span class="Marker">*</span>[% Translate('Priority') | html %]</label>
             <div class="Field">
                 [% Data.PriorityHTMLString %]
             </div>
             <div class="Clear"></div>
-            <label class="Mandatory" for="TicketStateID"><span class="Marker">*</span>[% Translate('State') | html %]</label>
+            <label class="Mandatory" for="NextStateID"><span class="Marker">*</span>[% Translate('State') | html %]</label>
             <div class="Field">
                 [% Data.StateHTMLString %]
             </div>

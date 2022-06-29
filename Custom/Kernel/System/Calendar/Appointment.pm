@@ -147,11 +147,14 @@ creates a new appointment.
             Lock => 'unlock',                                             # (optional) Ticket lock state
             PriorityID => 3,                                              # (optional) Ticket priority
             StateID => 1,                                                 # (optional) Ticket state
+            ServiceID => 1,                                               # (optional) Ticket service
+            SLAID => 1,                                                   # (optional) Ticker service level agreement
             TypeID => 1,                                                  # (optional) Ticket type id
             DynamicFields => {                                            # (optional) Name value combinations for dynamic fields
                 DynamicFieldName1 => Value1,
                 DynamicFieldName2 => Value2,
             },
+            ArticleVisibleForCustomer => 1,                               # (optional) If the first Ticket Article is visible for the Customer
         },
 # EO AppointmentToTicket
     );
@@ -1341,6 +1344,8 @@ updates an existing appointment.
             Lock => 'unlock',                                             # (optional) Ticket lock state
             PriorityID => 3,                                              # (optional) Ticket priority
             StateID => 1,                                                 # (optional) Ticket state
+            ServiceID => 1,                                               # (optional) Ticket service
+            SLAID => 1,                                                   # (optional) Ticket service level agreement
             TypeID => 1,                                                  # (optional) Ticket type id
             DynamicFields => {                                            # (optional) Name value combinations for dynamic fields
                 DynamicFieldName1 => Value1,
