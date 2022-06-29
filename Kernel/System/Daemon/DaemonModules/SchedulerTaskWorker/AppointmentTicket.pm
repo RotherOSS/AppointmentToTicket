@@ -254,7 +254,7 @@ sub Run {
     if ( $Appointment{Recurring} || $Appointment{ParentID} ) {
 
         # Get all related appointments
-        my @Appointments = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
+        my @AppointmentsAll = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
             CalendarID => $Appointment{CalendarID},
             ParentID   => $Appointment{ParentID} || $Appointment{AppointmentID},
         );
@@ -263,7 +263,13 @@ sub Run {
         my %ParentAppointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
             AppointmentID => ( $Appointment{ParentID} ? $Appointment{ParentID} : $Appointment{AppointmentID} )
         );
-        push @Appointments, \%ParentAppointment;
+        push @AppointmentsAll, \%ParentAppointment;
+
+        # Remove current appointment from list
+        my @Appointments;
+        for my $AppointmentRef (@AppointmentsAll) {
+            push @Appointments, $AppointmentRef unless $AppointmentRef->{AppointmentID} == $Appointment{AppointmentID};
+        }
 
         my $CurrentTimeObject = $Kernel::OM->Create(
             'Kernel::System::DateTime'
