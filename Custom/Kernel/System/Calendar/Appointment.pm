@@ -154,6 +154,7 @@ creates a new appointment.
                 DynamicFieldName1 => Value1,
                 DynamicFieldName2 => Value2,
             },
+            ArticleVisibleForCustomer => 1,                               # (optional) If the first Ticket Article is visible for the Customer
         },
 # EO AppointmentToTicket
     );
