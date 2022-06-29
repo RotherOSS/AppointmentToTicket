@@ -47,11 +47,6 @@ $Self->Is(
     "Kernel::System::Daemon::SchedulerDB->new()",
 );
 
-use Data::Dx;
-Dx $CalendarObject;
-Dx $AppointmentObject;
-Dx $SchedulerDBObject;
-
 # Create calendar
 my $CalendarName = 'Test_' . $HelperObject->GetRandomID();
 my %Calendar = $CalendarObject->CalendarCreate(
