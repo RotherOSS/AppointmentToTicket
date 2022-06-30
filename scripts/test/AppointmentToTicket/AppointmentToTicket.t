@@ -244,37 +244,26 @@ my %FutureTaskRecurring = $SchedulerDBObject->FutureTaskGet(
     TaskID => $RecurringAppointment{FutureTaskID},
 );
 
-# Trigger Future Task Execution
-$TaskHandlerObject->Run(
-    TaskID => $FutureTaskRecurring{TaskID},
-    TaskName => $FutureTaskRecurring{Name},
-    Data => $FutureTaskRecurring{Data},
+my $StartTimePastObj = $Kernel::OM->Create(
+    'Kernel::System::DateTime',
+);
+$StartTimePastObj->Subtract(
+    Days => 4,
 );
 
-# Check if ticket was created -> via link object
-my $LinkListRecurring = $LinkObject->LinkList(
-    Object => 'Appointment',
-    Key => $RecurringAppointmentID,
-    State => 'Valid',
+my $EndTimePastObj = $Kernel::OM->Create(
+    'Kernel::System::DateTime',
+    Days => 3,
+    Hours => 23,
+);
+
+# Shift Appointment to the past and check if FutureTask was shifted to the correct Child Appointment
+my $Success = $AppointmentObject->AppointmentUpdate(
+    %RecurringAppointment,
+    AppointmentTicket => $FutureTaskRecurring{Data}->{AppointmentTicket},
+    StartTime => $StartTimePastObj->ToString(),
+    EndTime => $EndTimePastObj->ToString(),
     UserID => 1,
-);
-
-$Self->Is(
-    scalar keys %{ $LinkListRecurring },
-    1,
-    "The number of created links for the appointment is not correct",
-);
-
-# Fetch Ticket
-my %Ticket2 = $TicketObject->TicketGet(
-    TicketID => (keys $LinkListRecurring->{Ticket}->{Normal}->{Source}->%*)[0],
-    UserID => 1,
-);
-
-$Self->IsNot(
-    scalar keys %Ticket,
-    0,
-    "Ticket was not created",
 );
 
 # Check if FutureTask was shifted correctly
@@ -324,7 +313,7 @@ $EndTimeObj->Add(
 );
 
 # Update Appointment
-my $Success = $AppointmentObject->AppointmentUpdate(
+$Success = $AppointmentObject->AppointmentUpdate(
     %SingleAppointment2,
     AppointmentTicket => $FutureTask2{Data}->{AppointmentTicket},
     StartTime => $StartTimeObj->ToString(),
@@ -398,12 +387,12 @@ $Self->Is(
     "Appointment update was not successful",
 );
 
-my %FutureTaskRecurring2 = $SchedulerDBObject->FutureTaskGet(
+my %FutureTaskRecurring2Updated = $SchedulerDBObject->FutureTaskGet(
     TaskID => $RecurringAppointment2{FutureTaskID},
 );
 
 $Self->Is(
-    $FutureTaskRecurring2{ExecutionTime},
+    $FutureTaskRecurring2Updated{ExecutionTime},
     $StartTimeObj->ToString(),
     "Future task was not updated correctly",
 );
