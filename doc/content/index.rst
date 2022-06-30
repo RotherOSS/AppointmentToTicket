@@ -11,7 +11,7 @@ This package brings the functionality to automatically create a ticket with conf
 
 Ticket Creation is initiated in the AppointmentEdit mask under the section 'Ticket Creation'. A point in time relative to the appointment, as well as ticket data can be configured. Recurring appointments are supported.
 
-The feature as of now does not support the form update functionality to dynamically adjust possible content, database fields are also not supported.
+The feature as of now does not support dynamic fields of type database.
 
 .. figure:: screenshot_en.png
    :scale: 50%
@@ -46,6 +46,10 @@ Loadermodule registration for the agent interface.
 
 Frontend::Agent::View::AgentAppointmentEdit
 ------------------------------------------------------------------------------------------------------------------------------
+
+Ticket::Frontend::AgentAppointmentEdit###StateDefault
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sets the default next state for new tickets in the AgentAppointmentEdit interface.
 
 Ticket::Frontend::AgentAppointmentEdit###DynamicField
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
