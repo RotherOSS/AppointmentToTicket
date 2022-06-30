@@ -561,23 +561,43 @@
             <label class="Mandatory" for="TicketTypeID"><span class="Marker">*</span>[% Translate('Type') | html %]</label>
             <div class="Field">
                 [% Data.TypeHTMLString %]
+                <div id="TicketTypeIDError" class="TooltipErrorMessage"><p>[% Translate("This field is required.") | html %]</p></div>
+                <div id="TicketTypeIDServerError" class="TooltipErrorMessage"><p>[% Translate("This field is required.") | html %]</p></div>
             </div>
 [% END %]
             <div class="Clear"></div>
             <label class="Mandatory" for="Dest"><span class="Marker">*</span>[% Translate('Queue') | html %]</label>
             <div class="Field">
                 [% Data.QueueHTMLString %]
+                <div id="DestError" class="TooltipErrorMessage" ><p>[% Translate("This field is required.") | html %]</p></div>
+                <div id="DestServerError" class="TooltipErrorMessage"><p>[% Translate("This field is required.") | html %]</p></div>
             </div>
 [% IF Data.ServiceHTMLString %]
             <div class="Clear"></div>
-            <label for="ServiceID">[% Translate('Service') | html %]</label>
+            [% IF Data.ServiceMandatory %]
+                <label class="Mandatory" for="ServiceID"><span class="Marker">*</span> [% Translate("Service") | html %]:</label>
+            [% ELSE %]
+                <label for="ServiceID">[% Translate("Service") | html %]:</label>
+            [% END %]
             <div class="Field">
                 [% Data.ServiceHTMLString %]
+                [% IF Data.ServiceMandatory %]
+                    <div id="ServiceIDError" class="TooltipErrorMessage" ><p>[% Translate("This field is required.") | html %]</p></div>
+                [% END %]
+                <div id="ServiceIDServerError" class="TooltipErrorMessage"><p>[% Translate("Service invalid.") | html %]</p></div>
             </div>
             <div class="Clear"></div>
-            <label for="SLAID">[% Translate('Service Level Agreement') | html %]</label>
+            [% IF Data.SLAMandatory %]
+                <label class="Mandatory" for="SLAID"><span class="Marker">*</span> [% Translate("Service Level Agreement") | html %]:</label>
+            [% ELSE %]
+                <label for="SLAID">[% Translate("Service Level Agreement") | html %]:</label>
+            [% END %]
             <div class="Field">
                 [% Data.SLAHTMLString %]
+                [% IF Data.SLAMandatory %]
+                    <div id="SLAIDError" class="TooltipErrorMessage" ><p>[% Translate("This field is required.") | html %]</p></div>
+                    <div id="SLAIDServerError" class="TooltipErrorMessage"><p>[% Translate("This field is required.") | html %]</p></div>
+                [% END %]
             </div>
 [% END %]
             <div class="Clear"></div>

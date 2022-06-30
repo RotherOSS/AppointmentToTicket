@@ -47,13 +47,21 @@ Loadermodule registration for the agent interface.
 Frontend::Agent::View::AgentAppointmentEdit
 ------------------------------------------------------------------------------------------------------------------------------
 
-Ticket::Frontend::AgentAppointmentEdit###StateDefault
+Ticket::Frontend::AgentAppointmentEdit###ServiceMandatory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Sets the default next state for new tickets in the AgentAppointmentEdit interface.
+Sets if service must be selected by the agent.
 
 Ticket::Frontend::AgentAppointmentEdit###DynamicField
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Dynamic fields shown in the appointment edit screen of the agent interface
+
+Ticket::Frontend::AgentAppointmentEdit###StateDefault
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sets the default next state for new tickets in the AgentAppointmentEdit interface.
+
+Ticket::Frontend::AgentAppointmentEdit###SLAMandatory
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sets if SLA must be selected by the agent.
 
 Ticket::Frontend::AgentAppointmentEdit###Priority
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

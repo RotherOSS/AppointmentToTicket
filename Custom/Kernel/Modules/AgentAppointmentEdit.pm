@@ -1687,7 +1687,9 @@ sub Run {
         my $SLAHTMLString;
         if ( $ConfigObject->Get('Ticket::Service') ) {
             $ServiceHTMLString = $LayoutObject->BuildSelection(
-                Class        => 'Modernize Validate_Required',
+                Class => 'Modernize '
+                    . ( $Config->{ServiceMandatory} ? 'Validate_Required ' : '' ) 
+                    . ( $Param{Errors}->{ServiceIDInvalid} || '' ),
                 Data         => $ServiceValues,
                 Name         => 'ServiceID',
                 SelectedID   => $GetParam{ServiceID},
@@ -1696,7 +1698,9 @@ sub Run {
                 Translation  => 1,
             );
             $SLAHTMLString = $LayoutObject->BuildSelection(
-                Class        => 'Modernize Validate_Required',
+                Class      => 'Modernize '
+                    . ( $Config->{SLAMandatory} ? 'Validate_Required ' : '' ) 
+                    . ( $Param{Errors}->{SLAInvalid} || '' ),
                 Data         => $SLAValues,
                 Name         => 'SLAID',
                 SelectedID   => $GetParam{SLAID},
@@ -1748,7 +1752,9 @@ sub Run {
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
                     ServiceHTMLString => $ServiceHTMLString,
+                    ServiceMandatory => $Config->{ServiceMandatory} || 0,
                     SLAHTMLString => $SLAHTMLString,
+                    SLAMandatory => $Config->{SLAMandatory} || 0,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                 },
             );
@@ -1767,7 +1773,9 @@ sub Run {
                     TypeHTMLString => $TypeHTMLString,
                     StateHTMLString => $StateHTMLString,
                     ServiceHTMLString => $ServiceHTMLString,
+                    ServiceMandatory => $Config->{ServiceMandatory} || 0,
                     SLAHTMLString => $SLAHTMLString,
+                    SLAMandatory => $Config->{SLAMandatory} || 0,
                     DynamicFieldHTML => \@DynamicFieldHTML,
                },
             );
