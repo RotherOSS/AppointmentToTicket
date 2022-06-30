@@ -1668,7 +1668,6 @@ sub Run {
             );
         }
 
-        print STDERR "AgentAppointmentEdit.pm, L.1570: " . $Config->{StateDefault} . "\n";
         # build state string
         my $StateHTMLString = $LayoutObject->BuildSelection(
             Class        => 'Modernize Validate_Required',
@@ -1895,7 +1894,7 @@ sub Run {
             my $ServiceValues = $Self->_GetServices(
                 %GetParam,
             );
-            if ( $ConfigObject->Get('Ticket::Service') && !$ServiceValues->{$GetParam{ServiceID}} ) {
+            if ( $ConfigObject->Get('Ticket::Service') && ($GetParam{ServiceID} || $Config->{ServiceMandatory}) && !$ServiceValues->{$GetParam{ServiceID}} ) {
                 return $LayoutObject->ErrorScreen(
                     Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field service!' ),
                     Comment => Translatable('Please contact the administrator.'),
@@ -1906,7 +1905,7 @@ sub Run {
             my $SLAValues = $Self->_GetSLAs(
                 %GetParam,
             );
-            if ( $ConfigObject->Get('Ticket::Service') && !$SLAValues->{$GetParam{SLAID}} ) {
+            if ( $ConfigObject->Get('Ticket::Service') && ($GetParam{SLAID} || $Config->{SLAMandatory}) && !$SLAValues->{$GetParam{SLAID}} ) {
                 return $LayoutObject->ErrorScreen(
                     Message => $LayoutObject->{LanguageObject}->Translate( 'Could not perform validation on field SLA!' ),
                     Comment => Translatable('Please contact the administrator.'),
