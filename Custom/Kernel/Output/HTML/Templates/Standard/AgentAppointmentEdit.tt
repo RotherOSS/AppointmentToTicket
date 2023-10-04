@@ -2,7 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2023 Rother OSS GmbH, https://otobo.de/
+# --
+# $origin: otobo - a077e914380d1a13d5aa31472ea687353b614622 - Kernel/Output/HTML/Templates/Standard/AgentAppointmentEdit.tt
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -94,9 +96,9 @@
 [% END %]
             </div>
         </fieldset>
+[% IF Data.TeamIDStrg %]
         <fieldset class="TableLike">
             <legend><span>[% Translate("Resource") | html %]</span></legend>
-[% IF Data.TeamIDStrg %]
             <label for="TeamID">[% Translate("Team") | html %]:</label>
             <div class="Field">
 [% IF Data.PermissionLevel < 2 %]
@@ -114,14 +116,8 @@
                 [% Data.ResourceIDStrg %]
 [% END %]
             </div>
-[% ELSE %]
-            <div class="Field">
-                <p class="FieldExplanation">
-                    [% Translate("This feature is currently not available.") | html %]
-                </p>
-            </div>
-[% END %]
         </fieldset>
+[% END %]
         <fieldset class="TableLike">
             <legend><span>[% Translate("Date/Time") | html %]</span></legend>
             <label for="StartDay">[% Translate("Start date") | html %]:</label>

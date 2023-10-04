@@ -2,7 +2,9 @@
 // OTOBO is a web-based ticketing system for service organisations.
 // --
 // Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-// Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
+// Copyright (C) 2019-2023 Rother OSS GmbH, https://otobo.de/
+// --
+// $origin: otobo - a077e914380d1a13d5aa31472ea687353b614622 - var/httpd/htdocs/js/Core.Agent.AppointmentCalendar.js
 // --
 // This program is free software: you can redistribute it and/or modify it under
 // the terms of the GNU General Public License as published by the Free Software
@@ -515,19 +517,28 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             }
         });
 
+        var SessionIDCookie = Core.Config.Get('SessionIDCookie'),
+            SessionID = SessionIDCookie ? '' : Core.Config.Get('SessionID'),
+            SessionName = Core.Config.Get('SessionName'),
+            CustomerPanelSessionName = Core.Config.Get('CustomerPanelSessionName');
         $.each(CalendarConfig, function (Index, Calendar) {
+            var CalendarData = {
+                ChallengeToken: $("#ChallengeToken").val(),
+                Action: 'AgentAppointmentList',
+                Subaction: 'ListAppointments',
+                CalendarID: Calendar.CalendarID,
+                ResourceID: Core.Config.Get('ResourceID'),
+                TeamID: Core.Config.Get('TeamID')
+            };
+            if (!SessionIDCookie) {
+                CalendarData[SessionName] = SessionID;
+                CalendarData[CustomerPanelSessionName] = SessionID;
+            }
             CalendarSources[Calendar.CalendarID] = {
                 id: Calendar.CalendarID,
                 url: Core.Config.Get('CGIHandle'),
                 type: 'POST',
-                data: {
-                    ChallengeToken: $("#ChallengeToken").val(),
-                    Action: 'AgentAppointmentList',
-                    Subaction: 'ListAppointments',
-                    CalendarID: Calendar.CalendarID,
-                    ResourceID: Core.Config.Get('ResourceID'),
-                    TeamID: Core.Config.Get('TeamID')
-                },
+                data: CalendarData,
                 color: Calendar.Color,
                 textColor: Calendar.TextColor,
                 borderColor: 'rgba(0, 0, 0, 0.2)',
@@ -566,7 +577,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         startEditable: typeof AppointmentData.TicketAppointmentStartDate === 'undefined' ? true :
                             typeof TicketAppointmentConfig[AppointmentData.TicketAppointmentStartDate].NoDrag !== 'undefined' ? false : true,
                         durationEditable: typeof AppointmentData.TicketAppointmentEndDate === 'undefined' ? true :
-                            typeof TicketAppointmentConfig[AppointmentData.TicketAppointmentStartDate].NoDrag !== 'undefined' ? true : false,
+                            typeof TicketAppointmentConfig[AppointmentData.TicketAppointmentStartDate].NoDrag !== 'undefined' ? true : false
                     };
                 }
             };
@@ -800,7 +811,8 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                     Core.UI.InputFields.Activate($('.Dialog:visible'));
 
                     TargetNS.AgentAppointmentEdit();
-                }, 'html'
+                },
+                'html'
             );
         }
 
@@ -2017,23 +2029,30 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                             MaxResults: 20
                         };
 
-                    $Element.data('AutoCompleteXHR', Core.AJAX.FunctionCall(URL, Data, function (Result) {
-                        var Data = [];
+                    $Element.data(
+                        'AutoCompleteXHR',
+                        Core.AJAX.FunctionCall(
+                            URL,
+                            Data,
+                            function (Result) {
+                                var Data = [];
 
-                        // Check if the result is from the latest ajax request
-                        if (AJAXCounter !== CurrentAJAXNumber) {
-                            return false;
-                        }
+                                // Check if the result is from the latest ajax request
+                                if (AJAXCounter !== CurrentAJAXNumber) {
+                                    return false;
+                                }
 
-                        $.each(Result, function () {
-                            Data.push({
-                                label: this.Value,
-                                key:  this.Key,
-                                value: this.Value
-                            });
-                        });
-                        Response(Data);
-                    }));
+                                $.each(Result, function () {
+                                    Data.push({
+                                        label: this.Value,
+                                        key:  this.Key,
+                                        value: this.Value
+                                    });
+                                });
+                                Response(Data);
+                            }
+                        )
+                    );
             }, function (Event, UI) {
                 Event.stopPropagation();
                 $Element.val('').trigger('select.Autocomplete');
@@ -2284,7 +2303,8 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                         Core.UI.Dialog.ShowContentDialog(HTML, Core.Language.Translate('Appointment'), '10px', 'Center', true, undefined, true);
                         Core.UI.InputFields.Activate($('.Dialog:visible'));
                         TargetNS.AgentAppointmentEdit();
-                    }, 'html'
+                    },
+                    'html'
                 );
             });
         }

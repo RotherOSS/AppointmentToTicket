@@ -2,7 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2022 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2023 Rother OSS GmbH, https://otobo.de/
+# --
+# $origin: otobo - d9b4e9b09779e7bcf4b87d8c62a5a4a0e57fdf91 - Kernel/System/Calendar/Appointment.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -19,12 +21,15 @@ package Kernel::System::Calendar::Appointment;
 use strict;
 use warnings;
 
+use parent qw(Kernel::System::EventHandler);
+
+# core modules
 use Digest::MD5;
 
-use vars qw(@ISA);
+# CPAN modules
 
+# OTOBO modules
 use Kernel::System::VariableCheck qw(:all);
-use Kernel::System::EventHandler;
 
 our @ObjectDependencies = (
     'Kernel::Config',
@@ -63,12 +68,7 @@ sub new {
     my ( $Type, %Param ) = @_;
 
     # allocate new hash for object
-    my $Self = {%Param};
-    bless( $Self, $Type );
-
-    @ISA = qw(
-        Kernel::System::EventHandler
-    );
+    my $Self = bless {%Param}, $Type;
 
     # init of event handler
     $Self->EventHandlerInit(
@@ -414,7 +414,7 @@ sub AppointmentCreate {
         return if !$DBObject->Prepare(
             SQL => '
                 SELECT id FROM calendar_appointment
-                WHERE unique_id=? AND parent_id IS NULL
+                WHERE unique_id = ? AND parent_id IS NULL
             ',
             Bind  => [ \$Param{UniqueID} ],
             Limit => 1,
@@ -600,7 +600,7 @@ returns an array of hashes with select Appointment data or simple array of Appoi
 
 Result => 'HASH':
 
-    @Appointments = [
+    @Appointments = (
         {
             AppointmentID => 1,
             CalendarID    => 1,
@@ -649,11 +649,11 @@ Result => 'HASH':
             TicketAppointmentRuleID               => '9bb20ea035e7a9930652a9d82d00c725',    # for ticket appointments only!
         },
         ...
-    ];
+    );
 
 Result => 'ARRAY':
 
-    @Appointments = [ 1, 2, ... ]
+    @Appointments = ( 1, 2, ... )
 
 =cut
 
@@ -687,7 +687,7 @@ sub AppointmentList {
 # RotherOSS / AppointmentToTicket
     my $CacheKeyParent = $Param{ParentID} || 'any';
 
-    # EO AppointmentToTicket
+# EO AppointmentToTicket
 
     if ( defined $Param{Title} && $Param{Title} =~ /^[\*]+$/ ) {
         $CacheKeyTitle = 'any';
@@ -763,7 +763,7 @@ sub AppointmentList {
             notify_custom, notify_custom_unit_count, notify_custom_unit, notify_custom_unit_point,
             notify_custom_date, ticket_appointment_rule_id, future_task_id
         FROM calendar_appointment
-        WHERE calendar_id=?
+        WHERE calendar_id = ?
     ';
 # EO AppointmentToTicket
 
@@ -820,14 +820,14 @@ sub AppointmentList {
     while ( my @Row = $DBObject->FetchrowArray() ) {
 
         # team id
-        my @TeamID = split( ',', $Row[9] // '' );
+        my @TeamID = split( /,/, $Row[9] // '' );
         if ( $Param{TeamID} ) {
             next ROW if !grep { $_ == $Param{TeamID} } @TeamID;
         }
 
         # resource id
         $Row[10] = $Row[10] ? $Row[10] : 0;
-        my @ResourceID = $Row[10] =~ /,/ ? split( ',', $Row[10] ) : ( $Row[10] );
+        my @ResourceID = $Row[10] =~ /,/ ? split( /,/, $Row[10] ) : ( $Row[10] );
         if ( $Param{ResourceID} ) {
             next ROW if !grep { $_ == $Param{ResourceID} } @ResourceID;
         }
@@ -1024,7 +1024,7 @@ sub AppointmentDays {
 
     while ( my @Row = $DBObject->FetchrowArray() ) {
 
-        my ( $StartTime, $EndTime, $StartTimeSystem, $EndTimeSystem );
+        my ( $StartTime, $EndTime );
 
         # StartTime
         if ( $Param{StartTime} ) {
@@ -1203,11 +1203,11 @@ sub AppointmentGet {
 # EO AppointmentToTicket
 
     if ( $Param{AppointmentID} ) {
-        $SQL .= 'id=? ';
+        $SQL .= 'id = ? ';
         push @Bind, \$Param{AppointmentID};
     }
     else {
-        $SQL .= 'unique_id=? AND calendar_id=? AND parent_id IS NULL ';
+        $SQL .= 'unique_id = ? AND calendar_id = ? AND parent_id IS NULL ';
         push @Bind, \$Param{UniqueID}, \$Param{CalendarID};
     }
 
@@ -1223,16 +1223,16 @@ sub AppointmentGet {
     while ( my @Row = $DBObject->FetchrowArray() ) {
 
         # team id
-        my @TeamID = split( ',', $Row[10] // '' );
+        my @TeamID = split( /,/, $Row[10] // '' );
 
         # resource id
-        my @ResourceID = split( ',', $Row[11] // '0' );
+        my @ResourceID = split( /,/, $Row[11] // '0' );
 
         # recurrence frequency
-        my @RecurrenceFrequency = $Row[14] ? split( ',', $Row[14] ) : undef;
+        my @RecurrenceFrequency = $Row[14] ? split( /,/, $Row[14] ) : undef;
 
         # recurrence exclude
-        my @RecurrenceExclude = $Row[19] ? split( ',', $Row[19] ) : undef;
+        my @RecurrenceExclude = $Row[19] ? split( /,/, $Row[19] ) : undef;
 
         $Result{AppointmentID}                         = $Row[0];
         $Result{ParentID}                              = $Row[1];
@@ -1595,13 +1595,13 @@ sub AppointmentUpdate {
     my $SQL = '
         UPDATE calendar_appointment
         SET
-            calendar_id=?, title=?, description=?, location=?, start_time=?, end_time=?, all_day=?,
-            team_id=?, resource_id=?, recurring=?, recur_type=?, recur_freq=?, recur_count=?,
-            recur_interval=?, recur_until=?, recur_exclude=?, notify_time=?, notify_template=?,
-            notify_custom=?, notify_custom_unit_count=?, notify_custom_unit=?,
-            notify_custom_unit_point=?, notify_custom_date=?, ticket_appointment_rule_id=?,
-            change_time=current_timestamp, change_by=?, future_task_id=?
-        WHERE id=?
+            calendar_id = ?, title = ?, description = ?, location = ?, start_time = ?, end_time = ?, all_day = ?,
+            team_id = ?, resource_id = ?, recurring = ?, recur_type = ?, recur_freq = ?, recur_count = ?,
+            recur_interval = ?, recur_until = ?, recur_exclude = ?, notify_time = ?, notify_template = ?,
+            notify_custom = ?, notify_custom_unit_count = ?, notify_custom_unit = ?,
+            notify_custom_unit_point = ?, notify_custom_date = ?, ticket_appointment_rule_id = ?,
+            change_time = current_timestamp, change_by = ?, future_task_id = ?
+        WHERE id = ?
     ';
 
     # update db record
@@ -1929,7 +1929,7 @@ sub AppointmentDelete {
     # delete appointment
     my $SQL = '
         DELETE FROM calendar_appointment
-        WHERE id=?
+        WHERE id = ?
     ';
 
     # delete db record
@@ -2003,7 +2003,7 @@ sub AppointmentDeleteOccurrence {
     return if !$DBObject->Prepare(
         SQL => '
             SELECT id FROM calendar_appointment
-            WHERE unique_id=? AND calendar_id=? AND recur_id=?',
+            WHERE unique_id = ? AND calendar_id = ? AND recur_id = ?',
         Bind  => [ \$Param{UniqueID}, \$Param{CalendarID}, \$Param{RecurrenceID} ],
         Limit => 1,
     );
@@ -2018,7 +2018,7 @@ sub AppointmentDeleteOccurrence {
 
     # delete db record
     return if !$DBObject->Do(
-        SQL   => 'DELETE FROM calendar_appointment WHERE id=?',
+        SQL   => 'DELETE FROM calendar_appointment WHERE id = ?',
         Bind  => [ \$Appointment{AppointmentID} ],
         Limit => 1,
     );
@@ -3008,7 +3008,7 @@ sub _AppointmentRecurringDelete {
     # delete recurring appointments
     my $SQL = '
         DELETE FROM calendar_appointment
-        WHERE parent_id=?
+        WHERE parent_id = ?
     ';
 
     # delete db record
@@ -3041,14 +3041,14 @@ sub _AppointmentRecurringExclude {
 
     # db query
     return if !$DBObject->Prepare(
-        SQL  => 'SELECT recur_exclude FROM calendar_appointment WHERE id=?',
+        SQL  => 'SELECT recur_exclude FROM calendar_appointment WHERE id = ?',
         Bind => [ \$Param{ParentID} ],
     );
 
     # get existing exclusions
     my @RecurrenceExclude;
     while ( my @Row = $DBObject->FetchrowArray() ) {
-        @RecurrenceExclude = split( ',', $Row[0] ) if $Row[0];
+        @RecurrenceExclude = split( /,/, $Row[0] ) if $Row[0];
     }
     push @RecurrenceExclude, $Param{RecurrenceID};
     @RecurrenceExclude = sort @RecurrenceExclude;
@@ -3061,7 +3061,7 @@ sub _AppointmentRecurringExclude {
 
     # update db record
     return if !$DBObject->Do(
-        SQL  => 'UPDATE calendar_appointment SET recur_exclude=? WHERE id=?',
+        SQL  => 'UPDATE calendar_appointment SET recur_exclude = ? WHERE id = ?',
         Bind => [ \$RecurrenceExclude, \$Param{ParentID} ],
     );
 
@@ -3089,7 +3089,7 @@ sub _AppointmentGetCalendarID {
     }
 
     # sql query
-    my $SQL  = 'SELECT calendar_id FROM calendar_appointment WHERE id=?';
+    my $SQL  = 'SELECT calendar_id FROM calendar_appointment WHERE id = ?';
     my @Bind = ( \$Param{AppointmentID} );
 
     # get database object
@@ -3125,7 +3125,7 @@ sub _AppointmentGetRecurrenceID {
     }
 
     # sql query
-    my $SQL  = 'SELECT recur_id FROM calendar_appointment WHERE id=?';
+    my $SQL  = 'SELECT recur_id FROM calendar_appointment WHERE id = ?';
     my @Bind = ( \$Param{AppointmentID} );
 
     # get database object
