@@ -1695,7 +1695,7 @@ sub Run {
                 PossibleNone => 1,
                 TreeView     => $TreeView,
                 Sort         => 'TreeView',
-                Translation  => 0,
+                Translation  => 1,
             );
             $SLAHTMLString = $LayoutObject->BuildSelection(
                 Class      => 'Modernize '
@@ -1706,7 +1706,7 @@ sub Run {
                 SelectedID   => $GetParam{SLAID},
                 PossibleNone => 1,
                 Sort         => 'AlphanumericValue',
-                Translation  => 0,
+                Translation  => 1,
             );
         }
 
