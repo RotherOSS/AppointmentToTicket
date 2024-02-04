@@ -797,7 +797,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                     // Core.UI.Dialog.ShowContentDialog(HTML, Core.Language.Translate('Appointment'), '10px', 'Center', true, undefined, true);
                     Core.UI.Dialog.ShowDialog({
                         HTML: HTML,
-                        Title: Core.Language.Translate('Appointment'), 
+                        Title: Core.Language.Translate('Appointment'),
                         Modal: true,
                         CloseOnClickOutside: false,
                         CloseOnEscape: true,
@@ -1466,11 +1466,11 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             // init selected customer user
             $('.CustomerTicketRadio').each(function(index, element) {
                 if ($(this).prop('checked')){
-                    
+
                     CustomerKey = $('#CustomerKey_' +$(this).val()).val();
                     // get customer tickets
                     Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
-                    
+
                 }
             });
 
@@ -1548,7 +1548,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         });
     }
 
-    /** 
+    /**
      * @private
      * @name FieldUpdate
      * @memberof Core.Agent.TicketPhone.Init
@@ -1561,9 +1561,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
     function FieldUpdate (Value, ModifiedFields) {
         $('#' + Value).on('change', function () {
             Core.AJAX.FormUpdate($('#EditAppointmentForm'), 'AJAXUpdate', Value, ModifiedFields);
-        }); 
+        });
 
-    }  
+    }
 // EO AppointmentToTicket
 
     /**
