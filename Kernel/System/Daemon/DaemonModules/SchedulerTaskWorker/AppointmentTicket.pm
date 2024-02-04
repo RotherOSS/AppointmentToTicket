@@ -2,7 +2,7 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2023 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -132,23 +132,25 @@ sub Run {
     my @DynamicFieldConfigs;
     my %DynamicFields;
     if ( $Param{Data}->{AppointmentTicket}->{DynamicFields} ) {
+
         # Fetch dynamic field configs
         if ( defined $Config->{DynamicField} ) {
             my $DynamicFieldConfigsRef = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
                 Valid       => 1,
                 ObjectType  => [ 'Ticket', 'Article' ],
                 FieldFilter => $Config->{DynamicField} || {},
-            );   
-            @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{ $DynamicFieldConfigsRef } : ();
+            );
+            @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{$DynamicFieldConfigsRef} : ();
         }
- 
+
         # set ticket dynamic fields
         %DynamicFields = %{ $Param{Data}->{AppointmentTicket}->{DynamicFields} };
         DYNAMICFIELDTICKET:
-        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+        for my $DynamicFieldConfig (@DynamicFieldConfigs) {
             next DYNAMICFIELDTICKET if !IsHashRefWithData($DynamicFieldConfig);
             next DYNAMICFIELDTICKET if $DynamicFieldConfig->{ObjectType} ne 'Ticket';
             if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
+
                 # set the value
                 my $Success = $DynamicFieldBackendObject->ValueSet(
                     DynamicFieldConfig => $DynamicFieldConfig,
@@ -167,7 +169,8 @@ sub Run {
         my %CustomerUserData = $Kernel::OM->Get('Kernel::System::CustomerUser')->CustomerUserDataGet(
             User => $CustomerUser,
         );
-        my $CustomerUserString = %CustomerUserData ? "\"$CustomerUserData{UserFirstname} $CustomerUserData{UserLastname}\" <$CustomerUserData{UserEmail}>" : $CustomerUser;
+        my $CustomerUserString
+            = %CustomerUserData ? "\"$CustomerUserData{UserFirstname} $CustomerUserData{UserLastname}\" <$CustomerUserData{UserEmail}>" : $CustomerUser;
         if ($ArticleFrom) {
             $ArticleFrom .= ", $CustomerUserString";
         }
@@ -212,11 +215,12 @@ sub Run {
 
     # set article dynamic fields
     if ( $Param{Data}->{AppointmentTicket}->{DynamicFields} ) {
-    DYNAMICFIELDARTICLE:
-        for my $DynamicFieldConfig ( @DynamicFieldConfigs ) {
+        DYNAMICFIELDARTICLE:
+        for my $DynamicFieldConfig (@DynamicFieldConfigs) {
             next DYNAMICFIELDARTICLE if !IsHashRefWithData($DynamicFieldConfig);
             next DYNAMICFIELDARTICLE if $DynamicFieldConfig->{ObjectType} ne 'Article';
             if ( $DynamicFields{ $DynamicFieldConfig->{Name} } ) {
+
                 # set the value
                 my $Success = $DynamicFieldBackendObject->ValueSet(
                     DynamicFieldConfig => $DynamicFieldConfig,
@@ -246,7 +250,7 @@ sub Run {
     # delete future task id from appointment
     my $Success = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentUpdate(
         %Appointment,
-        UserID => $Param{Data}->{AppointmentTicket}->{UserID},
+        UserID       => $Param{Data}->{AppointmentTicket}->{UserID},
         FutureTaskID => undef,
     );
 
@@ -308,10 +312,11 @@ sub Run {
         }
 
         if ($NextAppointment) {
+
             # update appointment in db
             $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentUpdate(
                 $NextAppointment->%*,
-                UserID => $Param{Data}->{AppointmentTicket}->{UserID},
+                UserID            => $Param{Data}->{AppointmentTicket}->{UserID},
                 AppointmentTicket => {
                     $Param{Data}->{AppointmentTicket}->%*,
                 },

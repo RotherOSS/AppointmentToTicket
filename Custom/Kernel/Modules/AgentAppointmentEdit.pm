@@ -141,7 +141,7 @@ sub Run {
 
     # get check item object
     my $CheckItemObject = $Kernel::OM->Get('Kernel::System::CheckItem');
- 
+
     if ($CustomersNumber) {
         my $CustomerCounter = 1;
         for my $Count ( 0 ... $CustomersNumber ) {
@@ -1149,7 +1149,7 @@ sub Run {
             if ( $Appointment{FutureTaskID} ) {
                 $TaskID = $Appointment{FutureTaskID};
             }
-            # Only for parent appointments 
+            # Only for parent appointments
             elsif ( $Appointment{Recurring} ) {
                 # Check all appointments of series for future task id
                 my @AppointmentList = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
@@ -1227,7 +1227,7 @@ sub Run {
         my %TicketTemplateLookup = map {
             $_->{Key} => $_->{Value}
         } @TicketTemplates;
-        
+
         my $SelectedTicketTemplate = defined $FutureTask{Data} ? $FutureTask{Data}->{AppointmentTicket}->{Template} : '0';
         $Param{TicketValue} = $TicketTemplateLookup{$SelectedTicketTemplate};
 
@@ -1440,7 +1440,7 @@ sub Run {
 #             },
 #         );
 
-        # Build ticket fields    
+        # Build ticket fields
         # frontend specific config
         my %UserPreferences = $Kernel::OM->Get('Kernel::System::User')->GetUserData(
             UserID => $Self->{UserID},
@@ -1526,7 +1526,7 @@ sub Run {
             if ( $DynamicFieldValues{$DynamicFieldConfig->{Name}} ) {
                 $Value = $DynamicFieldValues{$DynamicFieldConfig->{Name}};
             }
- 
+
             if ( %FutureTask && $FutureTask{Data}->{AppointmentTicket}->{DynamicFields}->{$DynamicFieldConfig->{Name}} ) {
                 $Value = $FutureTask{Data}->{AppointmentTicket}->{DynamicFields}->{$DynamicFieldConfig->{Name}};
             }
@@ -1558,7 +1558,7 @@ sub Run {
         }
 
         # get list type
-        my $TreeView = 0;               
+        my $TreeView = 0;
         if ( $ConfigObject->Get('Ticket::Frontend::ListType') eq 'tree' ) {
             $TreeView = 1;
         }
@@ -1651,7 +1651,7 @@ sub Run {
                 SelectedID     => $GetParam{QueueID},
                 Translation    => 0,
                 OnChangeSubmit => 0,
-                Mandatory      => 1,                
+                Mandatory      => 1,
             );
         }
 
@@ -1689,7 +1689,7 @@ sub Run {
         if ( $ConfigObject->Get('Ticket::Service') ) {
             $ServiceHTMLString = $LayoutObject->BuildSelection(
                 Class => 'Modernize '
-                    . ( $Config->{ServiceMandatory} ? 'Validate_Required ' : '' ) 
+                    . ( $Config->{ServiceMandatory} ? 'Validate_Required ' : '' )
                     . ( $Param{Errors}->{ServiceIDInvalid} || '' ),
                 Data         => $ServiceValues,
                 Name         => 'ServiceID',
@@ -1701,7 +1701,7 @@ sub Run {
             );
             $SLAHTMLString = $LayoutObject->BuildSelection(
                 Class      => 'Modernize '
-                    . ( $Config->{SLAMandatory} ? 'Validate_Required ' : '' ) 
+                    . ( $Config->{SLAMandatory} ? 'Validate_Required ' : '' )
                     . ( $Param{Errors}->{SLAInvalid} || '' ),
                 Data         => $SLAValues,
                 Name         => 'SLAID',
@@ -1790,7 +1790,7 @@ sub Run {
                 $Item->{CustomerError}    = '';
                 $Item->{CustomerDisabled} = '';
                 $Item->{CustomerErrorMsg} = 'CustomerGenericServerErrorMsg';
-                
+
                 $LayoutObject->Block(
                     Name => 'MultipleCustomer',
                     Data => $Item,
@@ -1811,7 +1811,7 @@ sub Run {
         if ( !$CustomerCounter ) {
             $Param{CustomerHiddenContainer} = 'Hidden';
         }
-        
+
         $LayoutObject->Block(
             Name => 'MultipleCustomerCounter',
             Data => {
@@ -2301,7 +2301,7 @@ sub Run {
             if ( $Appointment{FutureTaskID} ) {
                 $TaskID = $Appointment{FutureTaskID};
             }
-            # Only for parent appointments 
+            # Only for parent appointments
             elsif ( $Appointment{Recurring} ) {
                 # Check all appointments of series for future task id
                 my @AppointmentList = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
@@ -2325,14 +2325,14 @@ sub Run {
                 );
             }
         }
-        
+
         my @DynamicFieldConfigs;
         if ( $GetParam{TicketTemplate} && defined $Config->{DynamicField} ) {
             my $DynamicFieldConfigsRef= $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
                 Valid       => 1,
                 ObjectType  => [ 'Ticket', 'Article' ],
                 FieldFilter => $Config->{DynamicField} || {},
-            ); 
+            );
             @DynamicFieldConfigs = defined $DynamicFieldConfigsRef ? @{ $DynamicFieldConfigsRef } : ();
         }
 
@@ -2379,7 +2379,7 @@ sub Run {
             );
 
             if ( !$DynamicFieldValues{ $DynamicFieldConfig->{Name} }
-                || (ref($DynamicFieldValues{ $DynamicFieldConfig->{Name} }) eq 'ARRAY' 
+                || (ref($DynamicFieldValues{ $DynamicFieldConfig->{Name} }) eq 'ARRAY'
                     && !IsArrayRefWithData($DynamicFieldValues{ $DynamicFieldConfig->{Name} }))
             ) {
                 # extract the dynamic field value from the web request with approach for array
@@ -2433,7 +2433,7 @@ sub Run {
                 }
             }
         }
-        
+
         # fetch customer id for selected customer user
         my %SelectedCustomerUserData = $CustomerUserObject->CustomerUserDataGet(
             User => $GetParam{SelectedCustomerUser},
@@ -2516,11 +2516,11 @@ sub Run {
                 my %Appointment = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentGet(
                     AppointmentID => $GetParam{AppointmentID},
                 );
-                
+
                 my $FutureTaskID;
                 if ( $Appointment{FutureTaskID} ) {
                     $FutureTaskID = $Appointment{FutureTaskID};
-                } 
+                }
                 elsif ( $Appointment{Recurring} || $Appointment{ParentID} ) {
                     my @AppointmentList = $Kernel::OM->Get('Kernel::System::Calendar::Appointment')->AppointmentList(
                         CalendarID => $Appointment{CalendarID},
@@ -2549,7 +2549,7 @@ sub Run {
                 }
             }
         }
-        
+
         # Determine ticket custom type, if supplied.
         if ( defined $GetParam{TicketTemplate} ) {
             if ( $GetParam{TicketTemplate} ne 'Custom' ) {
@@ -2776,15 +2776,15 @@ sub Run {
         my $CustomerUser   = $ParamObject->GetParam( Param => 'SelectedCustomerUser' );
         my $ElementChanged = $ParamObject->GetParam( Param => 'ElementChanged' ) || '';
         my $QueueID        = '';
-        
+
         $QueueID = $Dest;
         $GetParam{QueueID} = $QueueID;
 
         # get list type
-        my $TreeView = 0; 
+        my $TreeView = 0;
         if ( $ConfigObject->Get('Ticket::Frontend::ListType') eq 'tree' ) {
-            $TreeView = 1; 
-        }    
+            $TreeView = 1;
+        }
 
         my $Autoselect = $ConfigObject->Get('TicketACL::Autoselect') || undef;
         my $ACLPreselection;
@@ -2795,26 +2795,26 @@ sub Run {
             $ACLPreselection = $CacheObject->Get(
                 Type => 'TicketACL',
                 Key  => 'Preselection',
-            );   
+            );
             if ( !$ACLPreselection ) {
                 $ACLPreselection = $FieldRestrictionsObject->SetACLPreselectionCache();
-            }    
-        }    
+            }
+        }
 
         my %Convergence = (
             StdFields => 0,
             Fields    => 0,
-        );   
+        );
         my %ChangedElements        = $ElementChanged                                        ? ( $ElementChanged => 1 ) : ();
         my %ChangedElementsDFStart = $ElementChanged                                        ? ( $ElementChanged => 1 ) : ();
         my %ChangedStdFields       = $ElementChanged && $ElementChanged !~ /^DynamicField_/ ? ( $ElementChanged => 1 ) : ();
 
-        my $LoopProtection = 100; 
+        my $LoopProtection = 100;
         my %StdFieldValues;
         my %DynFieldStates = (
             Visibility => {},
             Fields     => {},
-        );   
+        );
 
         until ( $Convergence{Fields} ) {
 
@@ -3033,7 +3033,6 @@ sub Run {
         }
 
         # define dynamic field visibility
-        my %FieldVisibility;
         if ( IsHashRefWithData( $DynFieldStates{Visibility} ) ) {
             push @DynamicFieldAJAX, {
                 Name => 'Restrictions_Visibility',
@@ -3431,8 +3430,8 @@ sub _GetTypes {
             %Param,
             Action => $Self->{Action},
             UserID => $Self->{UserID},
-        );   
-    }    
+        );
+    }
     return \%Type;
 }
 
@@ -3473,7 +3472,7 @@ sub _GetServices {
     # if $DefaultServiceUnknownCustomer = 1 set CustomerUserID to get default services
     if ( !$Param{CustomerUserID} && $DefaultServiceUnknownCustomer ) {
         $Param{CustomerUserID} = '<DEFAULT>';
-    }    
+    }
 
     # get service list
     if ( $Param{CustomerUserID} ) {
@@ -3481,8 +3480,8 @@ sub _GetServices {
             %Param,
             Action => $Self->{Action},
             UserID => $Self->{UserID},
-        );   
-    }    
+        );
+    }
     return \%Service;
 }
 

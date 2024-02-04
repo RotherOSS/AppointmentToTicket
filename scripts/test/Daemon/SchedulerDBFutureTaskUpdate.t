@@ -2,7 +2,7 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2023 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -27,7 +27,7 @@ $Kernel::OM->ObjectParamAdd(
     'Kernel::System::UnitTest::Helper' => {
         RestoreDatabase => 1,
     },
-); 
+);
 my $HelperObject = $Kernel::OM->Get('Kernel::System::UnitTest::Helper');
 my $ConfigObject = $Kernel::OM->Get('Kernel::Config');
 
@@ -38,7 +38,7 @@ $ConfigObject->Set(
 );
 
 # Get necessary objects.
-my $CalendarObject = $Kernel::OM->Get('Kernel::System::Calendar');
+my $CalendarObject    = $Kernel::OM->Get('Kernel::System::Calendar');
 my $AppointmentObject = $Kernel::OM->Get('Kernel::System::Calendar::Appointment');
 my $SchedulerDBObject = $Kernel::OM->Get('Kernel::System::Daemon::SchedulerDB');
 $Self->Is(
@@ -49,11 +49,11 @@ $Self->Is(
 
 # Create calendar
 my $CalendarName = 'Test_' . $HelperObject->GetRandomID();
-my %Calendar = $CalendarObject->CalendarCreate(
+my %Calendar     = $CalendarObject->CalendarCreate(
     CalendarName => $CalendarName,
-    GroupID => 1,
-    Color => '#FF7700',
-    UserID => 1,
+    GroupID      => 1,
+    Color        => '#FF7700',
+    UserID       => 1,
 );
 
 my $StartTimeObj = $Kernel::OM->Create(
@@ -66,19 +66,19 @@ my $EndTimeObj = $Kernel::OM->Create(
     'Kernel::System::DateTime'
 );
 $EndTimeObj->Add(
-    Days => 1,
+    Days  => 1,
     Hours => 1,
 );
 
 # Create appointment
-my $RandomID = $HelperObject->GetRandomID();
+my $RandomID      = $HelperObject->GetRandomID();
 my $AppointmentID = $AppointmentObject->AppointmentCreate(
-    CalendarID => $Calendar{CalendarID},
-    Title => 'SomeTitle_' . $RandomID,
+    CalendarID  => $Calendar{CalendarID},
+    Title       => 'SomeTitle_' . $RandomID,
     Description => 'SomeDescription_' . $RandomID,
-    StartTime => $StartTimeObj->ToString(),
-    EndTime => $EndTimeObj->ToString(),
-    UserID => 1,
+    StartTime   => $StartTimeObj->ToString(),
+    EndTime     => $EndTimeObj->ToString(),
+    UserID      => 1,
 );
 
 # Create test customer user
@@ -87,27 +87,27 @@ my $TestCustomerUserLogin = $HelperObject->TestCustomerUserCreate();
 # Create initial future task
 my $FutureTaskID = $SchedulerDBObject->FutureTaskAdd(
     ExecutionTime => $StartTimeObj->ToString(),
-    Type => 'AppointmentTicket',
-    Data => {
+    Type          => 'AppointmentTicket',
+    Data          => {
         AppointmentTicket => {
-            Time => undef,
-            Template => 'Start',
-            Custom => undef,
-            CustomRelativeUnitCount => undef,
-            CustomRelativeUnit => 'minutes',
+            Time                      => undef,
+            Template                  => 'Start',
+            Custom                    => undef,
+            CustomRelativeUnitCount   => undef,
+            CustomRelativeUnit        => 'minutes',
             CustomRelativePointOfTime => 'beforestart',
-            CustomDateTime => undef,
-            QueueID => 1,
-            CustomerID => $TestCustomerUserLogin,
-            CustomerUser => $TestCustomerUserLogin,
-            SelectedCustomerUser => 'test',
-            Title => 'SomeTitle_' . $RandomID,
-            Subject => 'SomeTitle_' . $RandomID,
-            Body => 'SomeDescription_' . $RandomID,
-            UserID => 1,
-            Lock => 'unlock',
-            PriorityID => 3,
-            StateID => 1,
+            CustomDateTime            => undef,
+            QueueID                   => 1,
+            CustomerID                => $TestCustomerUserLogin,
+            CustomerUser              => $TestCustomerUserLogin,
+            SelectedCustomerUser      => 'test',
+            Title                     => 'SomeTitle_' . $RandomID,
+            Subject                   => 'SomeTitle_' . $RandomID,
+            Body                      => 'SomeDescription_' . $RandomID,
+            UserID                    => 1,
+            Lock                      => 'unlock',
+            PriorityID                => 3,
+            StateID                   => 1,
         },
         AppointmentID => $AppointmentID,
     }
@@ -134,19 +134,19 @@ my $ExecutionTimeNew = $Kernel::OM->Create(
     'Kernel::System::DateTime'
 );
 $ExecutionTimeNew->Add(
-    Days => 2,
+    Days  => 2,
     Hours => 1,
 );
 my $Success = $SchedulerDBObject->FutureTaskUpdate(
-    TaskID => $FutureTaskID,
+    TaskID        => $FutureTaskID,
     ExecutionTime => $ExecutionTimeNew->ToString(),
-    Data => {
-        AppointmentID => $FutureTask{Data}->{AppointmentID},
+    Data          => {
+        AppointmentID     => $FutureTask{Data}->{AppointmentID},
         AppointmentTicket => {
             $FutureTask{Data}->{AppointmentTicket}->%*,
-            Title => 'SomeTitle2_' . $RandomID,
+            Title   => 'SomeTitle2_' . $RandomID,
             Subject => 'SomeTitle2_' . $RandomID,
-            Body => 'SomeDescription2_' . $RandomID,
+            Body    => 'SomeDescription2_' . $RandomID,
         }
     },
 );
