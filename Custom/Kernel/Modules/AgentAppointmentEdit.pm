@@ -2,9 +2,9 @@
 # OTOBO is a web-based ticketing system for service organisations.
 # --
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-# Copyright (C) 2019-2023 Rother OSS GmbH, https://otobo.de/
+# Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - a077e914380d1a13d5aa31472ea687353b614622 - Kernel/Modules/AgentAppointmentEdit.pm
+# $origin: otobo - a91d81cefdca00286973c582ab7b27e93cf6d795 - Kernel/Modules/AgentAppointmentEdit.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -22,7 +22,7 @@ use strict;
 use warnings;
 
 use Kernel::System::VariableCheck qw(:all);
-use Kernel::Language qw(Translatable);
+use Kernel::Language              qw(Translatable);
 
 our $ObjectManagerDisabled = 1;
 
@@ -568,7 +568,7 @@ sub Run {
             )
         {
             $Param{AllDayString}  = Translatable('Yes');
-            $Param{AllDayChecked} = 'checked="checked"';
+            $Param{AllDayChecked} = 'checked ';
 
             # start date
             $Param{StartDate} = sprintf(
@@ -1110,13 +1110,13 @@ sub Run {
         $Appointment{NotificationCustom} ||= '';
 
         if ( $Appointment{NotificationCustom} eq 'datetime' ) {
-            $Param{NotificationCustomDateTimeInputRadio} = 'checked="checked"';
+            $Param{NotificationCustomDateTimeInputRadio} = 'checked ';
         }
         elsif ( $Appointment{NotificationCustom} eq 'relative' ) {
-            $Param{NotificationCustomRelativeInputRadio} = 'checked="checked"';
+            $Param{NotificationCustomRelativeInputRadio} = 'checked ';
         }
         else {
-            $Param{NotificationCustomRelativeInputRadio} = 'checked="checked"';
+            $Param{NotificationCustomRelativeInputRadio} = 'checked ';
         }
 
         # notification custom string value
@@ -1419,7 +1419,7 @@ sub Run {
                 $Param{PluginData}->{$PluginKey} = [];
                 for my $LinkID ( sort keys %{$LinkList} ) {
                     push @{ $Param{PluginData}->{$PluginKey} }, $LinkList->{$LinkID};
-                    push @LinkArray, $LinkList->{$LinkID}->{LinkID};
+                    push @LinkArray,                            $LinkList->{$LinkID}->{LinkID};
                 }
 
                 $Param{PluginList}->{$PluginKey}->{LinkList} = $LayoutObject->JSONEncode(
@@ -1974,7 +1974,7 @@ sub Run {
 
                 # send JSON response
                 return $LayoutObject->Attachment(
-                    ContentType => 'application/json; charset=' . $LayoutObject->{Charset},
+                    ContentType => 'application/json',
                     Content     => $JSON,
                     Type        => 'inline',
                     NoCache     => 1,
@@ -2168,7 +2168,7 @@ sub Run {
 
                 if ( $GetParam{RecurrenceCustomType} eq 'CustomWeekly' ) {
                     if ( $GetParam{Days} ) {
-                        my @Days = split( ",", $GetParam{Days} );
+                        my @Days = split /,/, $GetParam{Days};
                         $GetParam{RecurrenceFrequency} = \@Days;
                     }
                     else {
@@ -2184,7 +2184,7 @@ sub Run {
                 }
                 elsif ( $GetParam{RecurrenceCustomType} eq 'CustomMonthly' ) {
                     if ( $GetParam{MonthDays} ) {
-                        my @MonthDays = split( ",", $GetParam{MonthDays} );
+                        my @MonthDays = split /,/, $GetParam{MonthDays};
                         $GetParam{RecurrenceFrequency} = \@MonthDays;
                     }
                     else {
@@ -2200,7 +2200,7 @@ sub Run {
                 }
                 elsif ( $GetParam{RecurrenceCustomType} eq 'CustomYearly' ) {
                     if ( $GetParam{Months} ) {
-                        my @Months = split( ",", $GetParam{Months} );
+                        my @Months = split /,/, $GetParam{Months};
                         $GetParam{RecurrenceFrequency} = \@Months;
                     }
                     else {
@@ -3281,7 +3281,7 @@ sub Run {
 
     # send JSON response
     return $LayoutObject->Attachment(
-        ContentType => 'application/json; charset=' . $LayoutObject->{Charset},
+        ContentType => 'application/json',
         Content     => $JSON,
         Type        => 'inline',
         NoCache     => 1,
