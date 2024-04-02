@@ -4,7 +4,7 @@
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
 # Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - 954d3bf84cfcb2666f5d9715f14f4ca2d921621c - Kernel/System/Daemon/SchedulerDB.pm
+# $origin: otobo - 5026f5f9654e1660bf6d1057839d22019cc35615 - Kernel/System/Daemon/SchedulerDB.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -23,12 +23,11 @@ use warnings;
 
 # core modules
 use MIME::Base64 qw(decode_base64 encode_base64);
-use Time::HiRes;
+use Time::HiRes  ();
 
 # CPAN modules
 
 # OTOBO modules
-
 use Kernel::System::VariableCheck qw(:all);
 
 our @ObjectDependencies = (

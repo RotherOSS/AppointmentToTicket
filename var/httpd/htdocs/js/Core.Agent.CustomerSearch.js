@@ -4,7 +4,7 @@
 // Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
 // Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 // --
-// $origin: otobo - 55126f4ab25373dded7533aeb0d7cd7743e7e7a9 - var/httpd/htdocs/js/Core.Agent.CustomerSearch.js
+// $origin: otobo - be06db7f2552c0f03721ffea3a40b8940341fe3f - var/httpd/htdocs/js/Core.Agent.CustomerSearch.js
 // --
 // This program is free software: you can redistribute it and/or modify it under
 // the terms of the GNU General Public License as published by the Free Software
@@ -102,6 +102,7 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                 CustomerUserID: CustomerUserID
             },
             SignatureURL;
+
         Core.AJAX.FunctionCall(Core.Config.Get('Baselink'), Data, function (Response) {
 
             $('#CustomerID').val(Response.CustomerID);
@@ -134,7 +135,7 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                 // reset service
                 $('#ServiceID').attr('selectedIndex', 0);
                 // update services (trigger ServiceID change event)
-                Core.AJAX.FormUpdate($Form, 'AJAXUpdate', 'ServiceID', ['Dest', 'SelectedCustomerUser', 'Signature', 'NextStateID', 'PriorityID', 'ServiceID', 'SLAID', 'CryptKeyID', 'OwnerAll', 'ResponsibleAll', 'TicketFreeText1', 'TicketFreeText2', 'TicketFreeText3', 'TicketFreeText4', 'TicketFreeText5', 'TicketFreeText6', 'TicketFreeText7', 'TicketFreeText8', 'TicketFreeText9', 'TicketFreeText10', 'TicketFreeText11', 'TicketFreeText12', 'TicketFreeText13', 'TicketFreeText14', 'TicketFreeText15', 'TicketFreeText16']);
+                Core.AJAX.FormUpdate($Form, 'AJAXUpdate', 'ServiceID');
 
                 // Update signature if needed.
                 if ($('#Dest').val() !== '') {
@@ -145,12 +146,11 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                     $('#Signature').attr('src', SignatureURL);
                 }
             }
-            if (Core.Config.Get('Action') === 'AgentTicketProcess' &&
-                typeof Core.Config.Get('CustomerFieldsToUpdate') !== 'undefined'){
+            if (Core.Config.Get('Action') === 'AgentTicketProcess') {
                 // reset service
                 $('#ServiceID').attr('selectedIndex', 0);
                 // update services (trigger ServiceID change event)
-                Core.AJAX.FormUpdate($('#CustomerID').closest('form'), 'AJAXUpdate', 'ServiceID', Core.Config.Get('CustomerFieldsToUpdate'));
+                Core.AJAX.FormUpdate($('#CustomerID').closest('form'), 'AJAXUpdate', 'ServiceID');
             }
         });
     }
@@ -643,9 +643,9 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
                             $('#CustomerID').val('');
                         }
 
-                        if (Core.Config.Get('Action') === 'AgentTicketProcess' && typeof Core.Config.Get('CustomerFieldsToUpdate') !== 'undefined') {
+                        if (Core.Config.Get('Action') === 'AgentTicketProcess') {
                             // update services (trigger ServiceID change event)
-                            Core.AJAX.FormUpdate($('#CustomerID').closest('form'), 'AJAXUpdate', 'ServiceID', Core.Config.Get('CustomerFieldsToUpdate'));
+                            Core.AJAX.FormUpdate($('#CustomerID').closest('form'), 'AJAXUpdate', 'ServiceID');
                         }
                     }
                 });
@@ -871,7 +871,7 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
             && $('#CryptKeyID').length
             )
         {
-            Core.AJAX.FormUpdate($('#' + Field).closest('form'), 'AJAXUpdate', '', ['CryptKeyID']);
+            Core.AJAX.FormUpdate($('#' + Field).closest('form'), 'AJAXUpdate');
         }
 
         // now that we know that at least one customer has been added,
@@ -929,7 +929,7 @@ Core.Agent.CustomerSearch = (function (TargetNS) {
             && $('#CryptKeyID').length
             )
         {
-            Core.AJAX.FormUpdate($Form, 'AJAXUpdate', '', ['CryptKeyID']);
+            Core.AJAX.FormUpdate($Form, 'AJAXUpdate');
         }
 
         if(!$('.CustomerContainer input[type="radio"]').is(':checked')){

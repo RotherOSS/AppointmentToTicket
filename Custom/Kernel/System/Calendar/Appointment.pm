@@ -4,7 +4,7 @@
 # Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
 # Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 # --
-# $origin: otobo - 4cdd2f2766468573cc2970dfbd38a6c9781f0bd0 - Kernel/System/Calendar/Appointment.pm
+# $origin: otobo - 52aa5f2e655d68d585253cb4b2739751318ff45e - Kernel/System/Calendar/Appointment.pm
 # --
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -24,7 +24,7 @@ use warnings;
 use parent qw(Kernel::System::EventHandler);
 
 # core modules
-use Digest::MD5;
+use Digest::MD5 ();
 
 # CPAN modules
 
