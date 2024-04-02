@@ -39,11 +39,13 @@ sub new {
     my $Config = $Kernel::OM->Get('Kernel::Config')->Get("Ticket::Frontend::$Self->{Action}");
 
     # get the dynamic fields for this screen
-    $Self->{DynamicField} = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
+    my $DynamicFieldList = $Kernel::OM->Get('Kernel::System::DynamicField')->DynamicFieldListGet(
         Valid       => 1,
         ObjectType  => [ 'Ticket', 'Article' ],
         FieldFilter => $Config->{DynamicField} || {},
     );
+
+    $Self->{DynamicField}->%* = map { $_->{Name} => $_ } @{ $DynamicFieldList // [] };
 
     # create form id
     if ( !$Self->{FormID} ) {
@@ -233,7 +235,7 @@ sub Run {
 
     # cycle through the activated Dynamic Fields for this screen
     DYNAMICFIELD:
-    for my $DynamicFieldConfig ( @{ $Self->{DynamicField} } ) {
+    for my $DynamicFieldConfig ( values $Self->{DynamicField}->%* ) {
         next DYNAMICFIELD if !IsHashRefWithData($DynamicFieldConfig);
 
         # extract the dynamic field value from the web request
