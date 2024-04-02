@@ -32,10 +32,10 @@
         </TableAlter>
     </DatabaseUninstall>
     <CodeUninstall Type="pre"><![CDATA[
-        
+
         # create the package name
         my $CodeModule = 'var::packagesetup::AppointmentToTicket';
-        
+
         $Kernel::OM->Get($CodeModule)->CodeUninstall();
     ]]></CodeUninstall>
 </otobo_package>

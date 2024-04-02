@@ -2,9 +2,9 @@
 // OTOBO is a web-based ticketing system for service organisations.
 // --
 // Copyright (C) 2001-2020 OTRS AG, https://otrs.com/
-// Copyright (C) 2019-2023 Rother OSS GmbH, https://otobo.de/
+// Copyright (C) 2019-2024 Rother OSS GmbH, https://otobo.de/
 // --
-// $origin: otobo - a077e914380d1a13d5aa31472ea687353b614622 - var/httpd/htdocs/js/Core.Agent.AppointmentCalendar.js
+// $origin: otobo - 55126f4ab25373dded7533aeb0d7cd7743e7e7a9 - var/httpd/htdocs/js/Core.Agent.AppointmentCalendar.js
 // --
 // This program is free software: you can redistribute it and/or modify it under
 // the terms of the GNU General Public License as published by the Free Software
@@ -797,7 +797,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
                     // Core.UI.Dialog.ShowContentDialog(HTML, Core.Language.Translate('Appointment'), '10px', 'Center', true, undefined, true);
                     Core.UI.Dialog.ShowDialog({
                         HTML: HTML,
-                        Title: Core.Language.Translate('Appointment'), 
+                        Title: Core.Language.Translate('Appointment'),
                         Modal: true,
                         CloseOnClickOutside: false,
                         CloseOnEscape: true,
@@ -1466,11 +1466,11 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
             // init selected customer user
             $('.CustomerTicketRadio').each(function(index, element) {
                 if ($(this).prop('checked')){
-                    
+
                     CustomerKey = $('#CustomerKey_' +$(this).val()).val();
                     // get customer tickets
                     Core.Agent.CustomerSearch.ReloadCustomerInfo(CustomerKey);
-                    
+
                 }
             });
 
@@ -1548,7 +1548,7 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
         });
     }
 
-    /** 
+    /**
      * @private
      * @name FieldUpdate
      * @memberof Core.Agent.TicketPhone.Init
@@ -1561,9 +1561,9 @@ Core.Agent.AppointmentCalendar = (function (TargetNS) {
     function FieldUpdate (Value, ModifiedFields) {
         $('#' + Value).on('change', function () {
             Core.AJAX.FormUpdate($('#EditAppointmentForm'), 'AJAXUpdate', Value, ModifiedFields);
-        }); 
+        });
 
-    }  
+    }
 // EO AppointmentToTicket
 
     /**
