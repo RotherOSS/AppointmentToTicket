@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: AppointmentToTicket\n"
 "POT-Creation-Date: 2024-05-13 10:00+0000\n"
 "PO-Revision-Date: 2024-05-14 15:51+0000\n"
-"Last-Translator: DeepL <noreply-mt-deepl@weblate.org>\n"
+"Last-Translator: Weblate <noreply-mt-weblate@weblate.org>\n"
 "Language-Team: German <http://weblate.otobo.org/projects/opm-packages/"
 "appointmenttoticket/de/>\n"
 "Language: de\n"
@@ -123,7 +123,7 @@ msgstr "Definieren Sie private Addon-Repos."
 
 #. SysConfig
 msgid "Defines the filter that processes the HTML templates."
-msgstr ""
+msgstr "Definiert den zum Verarbeiten der HTML-Vorlagen verwendeten Filter."
 
 #. SysConfig
 msgid "Defines the test module for checking code policy."
@@ -186,7 +186,7 @@ msgstr "Dynamische Felder Oberflächen"
 
 #. SysConfig
 msgid "DynamicFieldScreen"
-msgstr ""
+msgstr "DynamicFieldScreen"
 
 #. SysConfig
 msgid "Export all available public keys to authorized_keys file."
@@ -218,7 +218,7 @@ msgstr "Frontendmodul-Registration für das PublicPackageVerification Objekt im 
 
 #. SysConfig
 msgid "Frontend module registration for the admin interface."
-msgstr ""
+msgstr "Frontend-Modulregistrierung im Agentenbereich."
 
 #. SysConfig
 msgid "GIT Author registration."
@@ -227,6 +227,8 @@ msgstr "Registrierung der GIT Verfasser"
 #. SysConfig
 msgid "Generate HTML comment hooks for the specified blocks so that filters can use them."
 msgstr ""
+"Generiert HTML-Kommentar-Anker für die angegebenen Blöcke, damit Filter "
+"diese nutzen können."
 
 #. SysConfig
 msgid "Generate documentations once per night."
