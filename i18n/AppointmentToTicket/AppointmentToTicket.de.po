@@ -414,3 +414,23 @@ msgstr "Benutzer, die rw-Berechtigungen in einer dieser Gruppen haben, dürfen F
 msgid "Users who have rw permissions in one of these groups are permitted to manage projects. Additionally the members have administration permissions to the git management."
 msgstr "Benutzer die über rw-Berechtigungen in einer dieser Gruppen verfügen, können Projekte verwalten. Zusätzlich haben die Mitglieder Administrationsberechtigungen für die Git-Verwaltung."
 
+#. SysConfig
+msgid "Determines the next possible ticket states, after the creation of a new ticket from a calendar appointment in the agent interface."
+msgstr ""
+
+#. SysConfig
+msgid "Dynamic fields shown in the appointment edit screen of the agent interface"
+msgstr ""
+
+#. SysConfig
+msgid "Loadermodule registration for the agent interface."
+msgstr ""
+
+#. SysConfig
+msgid "Sets the default next state for new tickets in the AgentAppointmentEdit interface."
+msgstr ""
+
+#. SysConfig
+msgid "Sets the default priority for new tickets in the AgentAppointmentEdit interface."
+msgstr ""
+
