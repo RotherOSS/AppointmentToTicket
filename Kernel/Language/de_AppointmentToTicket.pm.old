@@ -24,28 +24,28 @@ sub Data {
     my $Self = shift;
 
     # Template: AgentAppointmentEdit
-    $Self->{Translation}->{'Ticket Creation'} = '';
-    $Self->{Translation}->{'Article is visible for customer'} = '';
+    $Self->{Translation}->{'Ticket Creation'} = 'Ticket-Erstellung';
+    $Self->{Translation}->{'Article is visible for customer'} = 'Artikel ist für Kunden sichtbar';
 
     # Perl Module: Kernel/Modules/AgentAppointmentEdit.pm
-    $Self->{Translation}->{'No ticket creation'} = '';
-    $Self->{Translation}->{'Could not perform validation on field dest!'} = '';
-    $Self->{Translation}->{'Could not perform validation on field next state!'} = '';
-    $Self->{Translation}->{'Could not perform validation on field service!'} = '';
-    $Self->{Translation}->{'Could not perform validation on field SLA!'} = '';
-    $Self->{Translation}->{'Could not perform validation on field type!'} = '';
-    $Self->{Translation}->{'Could not perform validation on field priority!'} = '';
+    $Self->{Translation}->{'No ticket creation'} = 'Keine Ticket-Erstellung';
+    $Self->{Translation}->{'Could not perform validation on field dest!'} = 'Die Überprüfung des Feldes dest konnte nicht durchgeführt werden!';
+    $Self->{Translation}->{'Could not perform validation on field next state!'} = 'Die Überprüfung des Feldes next state konnte nicht durchgeführt werden!';
+    $Self->{Translation}->{'Could not perform validation on field service!'} = 'Validierung im Außendienst konnte nicht durchgeführt werden!';
+    $Self->{Translation}->{'Could not perform validation on field SLA!'} = 'Die Validierung des Feldes SLA konnte nicht durchgeführt werden!';
+    $Self->{Translation}->{'Could not perform validation on field type!'} = 'Die Überprüfung des Feldtyps konnte nicht durchgeführt werden!';
+    $Self->{Translation}->{'Could not perform validation on field priority!'} = 'Die Überprüfung des Feldes Priorität konnte nicht durchgeführt werden!';
 
     # SysConfig
     $Self->{Translation}->{'Determines the next possible ticket states, after the creation of a new ticket from a calendar appointment in the agent interface.'} =
-        '';
+        'Ermittelt die nächstmöglichen Ticketstatus, nachdem ein neues Ticket aus einem Kalendertermin in der Agentenoberfläche erstellt wurde.';
     $Self->{Translation}->{'Dynamic fields shown in the appointment edit screen of the agent interface'} =
-        '';
-    $Self->{Translation}->{'Loadermodule registration for the agent interface.'} = '';
+        'Dynamische Felder, die in der Terminbearbeitungsmaske der Agentenschnittstelle angezeigt werden';
+    $Self->{Translation}->{'Loadermodule registration for the agent interface.'} = 'Loadermodul-Registrierung für die Agentenschnittstelle.';
     $Self->{Translation}->{'Sets the default next state for new tickets in the AgentAppointmentEdit interface.'} =
-        '';
+        'Legt den Standardnachfolgestatus für neue Tickets in der Schnittstelle AgentAppointmentEdit fest.';
     $Self->{Translation}->{'Sets the default priority for new tickets in the AgentAppointmentEdit interface.'} =
-        '';
+        'Legt die Standardpriorität für neue Tickets in der Schnittstelle AgentAppointmentEdit fest.';
 
 
     push @{ $Self->{JavaScriptStrings} // [] }, (
