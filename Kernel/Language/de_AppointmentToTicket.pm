@@ -53,7 +53,7 @@ sub Data {
         'Blockhaken, die für Paketmanager-Ausgabefilter erstellt werden sollen.';
     $Self->{Translation}->{'Branch View commit limit'} = 'Commit-Limit der Zweigansicht';
     $Self->{Translation}->{'CodePolicy'} = 'CodePolicy';
-    $Self->{Translation}->{'Commit limit per page for Branch view screen'} = 'Commit-Limit pro Seite für die Zweigansicht.';
+    $Self->{Translation}->{'Commit limit per page for Branch view screen'} = 'Commit-Limit pro Seite für die Zweigansicht';
     $Self->{Translation}->{'Create analysis file'} = 'Erstelle Analysedatei';
     $Self->{Translation}->{'Creates a analysis file from this ticket and sends to Znuny.'} =
         'Erstellt einen Analysedatei von diesem Ticket und sendet ihn an Znuny.';
@@ -61,7 +61,7 @@ sub Data {
     $Self->{Translation}->{'Define private addon repos.'} = 'Definieren Sie private Addon-Repos.';
     $Self->{Translation}->{'Defines the filter that processes the HTML templates.'} = 'Definiert den zum Verarbeiten der HTML-Vorlagen verwendeten Filter.';
     $Self->{Translation}->{'Defines the test module for checking code policy.'} = 'Definiert das Testmodul zur Überprüfung der Code-Policy.';
-    $Self->{Translation}->{'Definition of GIT clone/push URL Prefix.'} = 'Definition des GIT clone/push URL Präfix';
+    $Self->{Translation}->{'Definition of GIT clone/push URL Prefix.'} = 'Definition des GIT clone/push URL Präfix.';
     $Self->{Translation}->{'Definition of a Dynamic Field: Group => Group with access to the Dynamic Fields; AlwaysVisible => Field can be removed (0|1); InformationAreaName => Name of the Widgets; InformationAreaSize => Size and position of the widgets (Large|Small); Name => Name of the Dynamic Field which should be used; Priority => Order of the Dynamic Fields; State => State of the Fields (0 = disabled, 1 = active, 2 = mandatory), FilterRelease => Regex which the repository name has to match to be displayed, FilterPackage => Regex which the package name has to match to be displayed, FilterBranch => Regex which the branch name has to match to be displayed, FilterRelease => Regex which the repelase version string has to match to be displayed.'} =
         'Definition eines dynamischen Feldes: Group => Gruppe mit Zugriff zu den dynamischen Feldern; AlwaysVisible => Feld kann entfernt werden (0|1); InformationAreaName => Name des Widgets; InformationAreaSize => Größe und Position des Widgets (Large|Small); Name => Der Name des zu benutzenden dynamischen Feldes; Priority => Sortierung des dynamischen Feldes; State => Status des Feldes (0 = deaktiviert, 1 = aktiviert, 2 = zwingend erforderlich), FilterRelease => Regulärer Ausdruck welcher den Repository Namen beschreibt, der angezeigt werden soll; FilterPackage => Regulärer Ausdruck welcher den Paketnamen beschreibt das angezeigt werden soll; FilterBranch => Regulärer Ausdruck welcher den Namen des Zweigs (Branch) beschreibt, der angezeigt werden soll; FilterRelease => Regulärer Ausdruck den Versions-String eines Releases beschreibt, das angezeigt werden soll.';
     $Self->{Translation}->{'Definition of a Dynamic Field: Group => Group with access to the Dynamic Fields; AlwaysVisible => Field can be removed (0|1); InformationAreaName => Name of the Widgets; InformationAreaSize => Size and position of the widgets (Large|Small); Name => Name of the Dynamic Field which should be used; Priority => Order of the Dynamic Fields; State => State of the Fields (0 = disabled, 1 = active, 2 = mandatory), FilterRepository => Regex which the repository name has to match to be displayed, FilterPackage => Regex which the package name has to match to be displayed, FilterBranch => Regex which the branch name has to match to be displayed, FilterRelease => Regex which the repelase version string has to match to be displayed.'} =
@@ -93,7 +93,7 @@ sub Data {
     $Self->{Translation}->{'Frontend module registration for the PublicPackageVerification object in the public interface.'} =
         'Frontendmodul-Registration für das PublicPackageVerification Objekt im Public-Interface.';
     $Self->{Translation}->{'Frontend module registration for the admin interface.'} = 'Frontend-Modulregistrierung im Agentenbereich.';
-    $Self->{Translation}->{'GIT Author registration.'} = 'Registrierung der GIT Verfasser';
+    $Self->{Translation}->{'GIT Author registration.'} = 'Registrierung der GIT Verfasser.';
     $Self->{Translation}->{'Generate HTML comment hooks for the specified blocks so that filters can use them.'} =
         'Generiert HTML-Kommentar-Anker für die angegebenen Blöcke, damit Filter diese nutzen können.';
     $Self->{Translation}->{'Generate documentations once per night.'} = 'Erstellen Sie einmal pro Nacht Dokumentationen.';
