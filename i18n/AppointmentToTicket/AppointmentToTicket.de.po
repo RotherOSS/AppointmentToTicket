@@ -436,3 +436,7 @@ msgstr "Legt den Standardnachfolgestatus für neue Tickets in der Schnittstelle 
 msgid "Sets the default priority for new tickets in the AgentAppointmentEdit interface."
 msgstr "Legt die Standardpriorität für neue Tickets in der Schnittstelle AgentAppointmentEdit fest."
 
+#. SysConfig
+msgid "Defines the initial height for the rich text editor component in pixels."
+msgstr ""
+
