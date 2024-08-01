@@ -440,3 +440,11 @@ msgstr "Legt die Standardpriorität für neue Tickets in der Schnittstelle Agent
 msgid "Defines the initial height for the rich text editor component in pixels."
 msgstr ""
 
+#. SysConfig
+msgid "Defines if parent-child translations for queues and services should be generated automatically."
+msgstr ""
+
+#. SysConfig
+msgid "Defines the initial height in pixels for the rich text editor component for this screen."
+msgstr ""
+
