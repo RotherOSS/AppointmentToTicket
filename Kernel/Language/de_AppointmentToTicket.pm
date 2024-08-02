@@ -37,12 +37,6 @@ sub Data {
     $Self->{Translation}->{'Could not perform validation on field priority!'} = 'Die Überprüfung des Feldes Priorität konnte nicht durchgeführt werden!';
 
     # SysConfig
-    $Self->{Translation}->{'Defines if parent-child translations for queues and services should be generated automatically.'} =
-        '';
-    $Self->{Translation}->{'Defines the initial height for the rich text editor component in pixels.'} =
-        '';
-    $Self->{Translation}->{'Defines the initial height in pixels for the rich text editor component for this screen.'} =
-        '';
     $Self->{Translation}->{'Determines the next possible ticket states, after the creation of a new ticket from a calendar appointment in the agent interface.'} =
         'Ermittelt die nächstmöglichen Ticketstatus, nachdem ein neues Ticket aus einem Kalendertermin in der Agentenoberfläche erstellt wurde.';
     $Self->{Translation}->{'Dynamic fields shown in the appointment edit screen of the agent interface'} =
