@@ -4,8 +4,7 @@ msgstr ""
 "POT-Creation-Date: 2024-05-13 10:00+0000\n"
 "PO-Revision-Date: 2024-08-21 07:13+0000\n"
 "Last-Translator: DeepL <noreply-mt-deepl@weblate.org>\n"
-"Language-Team: German <http://weblate.otobo.org/projects/opm-packages/"
-"appointmenttoticket/de/>\n"
+"Language-Team: German <http://weblate.otobo.org/projects/opm-packages/appointmenttoticket/de/>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -439,17 +438,13 @@ msgstr "Legt die Standardpriorität für neue Tickets in der Schnittstelle Agent
 
 #. SysConfig
 msgid "Defines the initial height for the rich text editor component in pixels."
-msgstr ""
-"Legt die Anfangshöhe für die Rich-Text-Editor-Komponente in Pixeln fest."
+msgstr "Legt die Anfangshöhe für die Rich-Text-Editor-Komponente in Pixeln fest."
 
 #. SysConfig
 msgid "Defines if parent-child translations for queues and services should be generated automatically."
-msgstr ""
-"Legt fest, ob Eltern-Kind-Übersetzungen für Warteschlangen und Dienste "
-"automatisch erstellt werden sollen."
+msgstr "Legt fest, ob Eltern-Kind-Übersetzungen für Warteschlangen und Dienste automatisch erstellt werden sollen."
 
 #. SysConfig
 msgid "Defines the initial height in pixels for the rich text editor component for this screen."
-msgstr ""
-"Definiert die Anfangshöhe in Pixeln für die Rich-Text-Editor-Komponente für "
-"diesen Bildschirm."
+msgstr "Definiert die Anfangshöhe in Pixeln für die Rich-Text-Editor-Komponente für diesen Bildschirm."
+
