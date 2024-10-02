@@ -118,7 +118,7 @@ sub Run {
     # create the appointment ticket
     my $TicketID = $Kernel::OM->Get('Kernel::System::Ticket')->TicketCreate(
         $Param{Data}->{AppointmentTicket}->%*,
-        CustomerUser => %CustomerUser ? $CustomerUser{UserEmail} : $Param{Data}->{AppointmentTicket}->{SelectedCustomerUser},
+        CustomerUser => %CustomerUser ? $CustomerUser{UserLogin} : $Param{Data}->{AppointmentTicket}->{SelectedCustomerUser},
     );
 
     if ( !$TicketID ) {
