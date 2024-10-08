@@ -448,3 +448,11 @@ msgstr "Legt fest, ob Eltern-Kind-Übersetzungen für Warteschlangen und Dienste
 msgid "Defines the initial height in pixels for the rich text editor component for this screen."
 msgstr "Definiert die Anfangshöhe in Pixeln für die Rich-Text-Editor-Komponente für diesen Bildschirm."
 
+#. SysConfig
+msgid "Dynamic fields shown in the appointment edit screen of the agent interface."
+msgstr ""
+
+#. SysConfig
+msgid "This option will deny the access to customer company tickets, which are not created by the customer user. Please also deactivate \"CustomerFrontend::Navigation###CustomerTicketOverview###002-Ticket\" so that the button is no longer visible."
+msgstr ""
+
